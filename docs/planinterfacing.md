@@ -1,5 +1,7 @@
 # FlintFloats.jl — Interfacing Plan
 
+> **Superseded.** This first draft is kept for history only. Current documents: [plan_interfacing.md](plan_interfacing.md) (decisions), [enact_interfacing.md](enact_interfacing.md) (procedure) and [float_interfacing.md](float_interfacing.md) (interface contract). Names here are partly updated (`DFloatBall`), but its design choices (runtime ball precision, scoped `setprecision`, `NFloat{L}` vs bits, private `arf`, `ArfFloat`/`MagFloat` names) are replaced by those documents.
+
 Goal: Julia interface to FLINT floating-point types via `FLINT_jll`, maximally fast, source clean and clear.
 Prior art studied: Nemo.jl (ring-oriented, GC-managed wrappers), Arblib.jl (thin generated `ccall` layer + ergonomic layer).
 
@@ -62,7 +64,7 @@ src/
 
 Source: FLINT dfloat docs. Fits the plan well because it needs no memory management.
 
-- **Layout → pure Julia isbits.** `dN_struct` is `double d[N]`; ball adds `double rad`. Map to `struct DFloat{N} <: AbstractFloat; d::NTuple{N,Float64}; end` and `struct DBall{N}; mid::NTuple{N,Float64}; rad::Float64; end`; complex = pair of these. No finalizer, no `clear`, no `GC.@preserve`, arrays of them (`Vector{DFloat{2}}`) are contiguous for free. Faster and simpler than `ArfFloat`; skip a separate vector type.
+- **Layout → pure Julia isbits.** `dN_struct` is `double d[N]`; ball adds `double rad`. Map to `struct DFloat{N} <: AbstractFloat; d::NTuple{N,Float64}; end` and `struct DFloatBall{N}; mid::NTuple{N,Float64}; rad::Float64; end`; complex = pair of these. No finalizer, no `clear`, no `GC.@preserve`, arrays of them (`Vector{DFloat{2}}`) are contiguous for free. Faster and simpler than `ArfFloat`; skip a separate vector type.
 - **Pass by `Ref`/`Ptr`, aliasing allowed** (docs: input/output aliasing is permitted everywhere), so in-place `add!(z,x,y)` with `z===x` is safe.
 - **Two implementation routes, benchmark-decided:**
   1. `ccall` to FLINT (`d2_add`, `d2b_mul`, `d4_exp`, ...), if those are real exported symbols.
@@ -134,6 +136,6 @@ Review pass looked for gaps, over-engineering, and risk. Changes folded in above
 2. **M1** — L0/L1 for `mag`, `arf`; `ArfFloat` scalar type with finalizer; in-place ops; `Float64`/`BigFloat`/`Int` conversion; `show`. Differential + allocation tests.
 3. **M2** — operator layer, precision scoping, `ArfVector`, benchmarks vs `BigFloat` and Arblib.
 4. **M2b** — `arb`/`acb` (`ArbFloat`, complex type decision by benchmark).
-5. **M2c** — `dfloat` (`DFloat{N}`, `DBall{N}`, complex): isbits types, `ccall` binding, `dfloat_is_supported` gate, benchmark native-Julia fast paths vs FLINT.
+5. **M2c** — `dfloat` (`DFloat{N}`, `DFloatBall{N}`, complex): isbits types, `ccall` binding, `dfloat_is_supported` gate, benchmark native-Julia fast paths vs FLINT.
 6. **M3** — `nfloat` on a `gr` layer; performance go/no-go.
 7. **M4** — package extensions, docs, registration.

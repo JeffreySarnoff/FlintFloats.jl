@@ -1,6 +1,6 @@
 [[FLINT]]
 arch = "x86_64"
-git-tree-sha1 = "f5687abd6dea07b20ac64f7be9b77dbbe487fec4"
+git-tree-sha1 = "b375a8872bc46fbeeae1a15e10297b29900d2451"
 lazy = true
 libc = "glibc"
 os = "linux"
