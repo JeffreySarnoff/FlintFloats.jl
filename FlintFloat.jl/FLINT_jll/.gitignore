@@ -1,0 +1,7 @@
+/Manifest.toml
+/build/Manifest.toml
+/deps/Manifest.toml
+/deps/build.log
+/build/products/
+/build/downloads/
+/override/

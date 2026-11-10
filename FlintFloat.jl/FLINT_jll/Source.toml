@@ -1,0 +1,29 @@
+repository = "https://github.com/flintlib/flint"
+branch = "main"
+revision = "82c40b299084b92299c2d8dac464e39d6743fce4"
+upstream_version = "3.7.0-dev"
+wrapper_version = "301.690.0+0"
+source_url = "https://codeload.github.com/flintlib/flint/tar.gz/82c40b299084b92299c2d8dac464e39d6743fce4"
+source_sha256 = "c12ad132bd392a1471b84609be67537ba078d224277ade7ec2693c968d2eca4b"
+source_archive = "sources/flint-82c40b299084b92299c2d8dac464e39d6743fce4.tar.gz"
+documentation = "https://flintlib.org/doc/index.html"
+wrapper_reference = "https://github.com/JuliaBinaryWrappers/FLINT_jll.jl/blob/main/src/FLINT_jll.jl"
+soname_major = 25
+
+[native_build]
+platform = "x86_64-linux-gnu"
+cpu = "Intel Core i9-14900K (configure selected raptorlake)"
+libc = "glibc 2.43"
+compiler = "GCC 16.2.1"
+gmp_headers = "6.3.0"
+mpfr_headers = "4.2.2"
+blas = "OpenBLAS32_jll 0.3.34"
+note = "Locally built CPU-tuned artifact, not a portable BinaryBuilder release."
+
+[build_dependencies.GMP]
+url = "https://github.com/JuliaBinaryWrappers/GMP_jll.jl/releases/download/GMP-v6.3.0+5/GMP.v6.3.0.x86_64-linux-gnu-cxx11.tar.gz"
+sha256 = "c3678b0f2d329af6dccb3c02f443109e84c45ff0422f22cea020fe193153d91b"
+
+[build_dependencies.MPFR]
+url = "https://github.com/JuliaBinaryWrappers/MPFR_jll.jl/releases/download/MPFR-v4.2.2+2/MPFR.v4.2.2.x86_64-linux-gnu.tar.gz"
+sha256 = "e399318793eb096325a0a0a801b60b8212e288a83ae36356e82b96fd3bb4da99"

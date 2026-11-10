@@ -1,0 +1,6 @@
+[[FLINT]]
+arch = "x86_64"
+git-tree-sha1 = "f5687abd6dea07b20ac64f7be9b77dbbe487fec4"
+lazy = true
+libc = "glibc"
+os = "linux"
