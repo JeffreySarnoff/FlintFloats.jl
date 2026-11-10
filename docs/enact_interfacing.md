@@ -99,7 +99,7 @@ Deliver a small, useful interface across all families before adding large functi
 - Copying, `zero`, `one`, `precision`, classification predicates, parsing, and display.
 - Addition, subtraction, multiplication, division, negation, absolute value, and square root where their domains are supported.
 - Explicit conversions and a narrowly defined set of mixed arithmetic methods.
-- For `AcbFloat` and `AcbBall`: `real`, `imag`, `conj`, and `abs2`; absolute value returns `realtype(T)` (`ArbFloat` value or `ArbBall` enclosure).
+- For `AcbFloat` and `AcbBall`: `real`, `imag`, `conj`, `abs2`, and `abs`; the modulus returns `realtype(T)` (`ArbFloat` value or `ArbBall` enclosure). `AcbFloat` `abs` and `abs2` are correctly rounded although FLINT exports no `acf_abs` (see `src/acf.jl`).
 - For `ArbFloat` and `AcbFloat`: a trailing `RoundingMode` argument on rounding operations, and `_inexact` variants returning FLINT's inexact flag.
 - For mutable owned destinations (`ArbFloat`, `AcbFloat`, `ArbBall`, `AcbBall`): destination-first `add!`, `sub!`, `mul!`, and `div!`, returning the destination.
 

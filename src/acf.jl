@@ -101,8 +101,100 @@ Base.:-(x::AcbFloat{P}) where {P} = neg!(AcbFloat{P}(), x)
 "Complex conjugate; exact (the imaginary part's sign flips)."
 Base.conj(x::AcbFloat{P}) where {P} = AcbFloat{P}(real(x), -imag(x))
 
-"Squared modulus `re² + im²`: three roundings, not correctly rounded."
-Base.abs2(x::AcbFloat) = (r = real(x); i = imag(x); r * r + i * i)
+# ---- modulus ------------------------------------------------------------------------------------
+#
+# FLINT exports no acf_abs, so both are built from arf operations and are still correctly rounded:
+#
+# abs2: re² and im² are formed exactly (ARF_PREC_EXACT; a product of two P-bit values has at most 2P
+#   bits), then added with ONE rounding to P bits.
+#
+# abs: sqrt(re² + im²) needs the exact sum, which can be arbitrarily wide. Instead bracket it: add the
+#   exact squares at W = 2P + 4 bits rounding down (s_lo) and up (s_hi), s_lo <= s <= s_hi, and take
+#   the correctly rounded square root of each. Rounding is monotone, so equal results are the answer.
+#   If they differ, s_lo and s_hi are adjacent W-bit numbers, so a rounding boundary b (a number of
+#   at most P+1 bits, b² of at most 2P+2 < W bits) must equal sqrt of one of them. If sqrt(s_lo) is
+#   exactly representable in P+1 bits then b² = s_lo < s and the answer is round(sqrt(s_hi));
+#   otherwise b² = s_hi > s and the answer is round(sqrt(s_lo)). No loop, no dependence on the
+#   exponent gap.
+#
+# Scratch values below are ArbFloat{P} owners that hold up to 2P+4 bits. They never escape, so the
+# public precision invariant is not affected.
+
+const ARF_PREC_EXACT = typemax(Int)
+
+# Special values of hypot: infinity wins over NaN. Returns true if `z` was set.
+function _modulus_special!(z::ArbFloat, ar, ai)
+    if LibFlint.arf_is_pos_inf(ar) != 0 || LibFlint.arf_is_neg_inf(ar) != 0 ||
+       LibFlint.arf_is_pos_inf(ai) != 0 || LibFlint.arf_is_neg_inf(ai) != 0
+        LibFlint.arf_pos_inf(z)
+        return true
+    elseif LibFlint.arf_is_nan(ar) != 0 || LibFlint.arf_is_nan(ai) != 0
+        LibFlint.arf_nan(z)
+        return true
+    end
+    return false
+end
+
+# t1 = re², t2 = im², both exact.
+function _exact_squares!(t1::ArbFloat, t2::ArbFloat, ar, ai)
+    LibFlint.arf_mul_rnd_any(t1, ar, ar, ARF_PREC_EXACT, ARF_RND_NEAR)
+    LibFlint.arf_mul_rnd_any(t2, ai, ai, ARF_PREC_EXACT, ARF_RND_NEAR)
+    return nothing
+end
+
+"""
+    abs2(z::AcbFloat{P}, mode = RoundNearest) -> ArbFloat{P}
+
+`re² + im²` correctly rounded to `P` bits in `mode`. See also `abs2_inexact!`.
+"""
+Base.abs2(x::AcbFloat{P}, r::RoundingMode = RoundNearest) where {P} = first(abs2_inexact!(ArbFloat{P}(), x, r))
+abs2!(z::ArbFloat{P}, x::AcbFloat{P}, r::RoundingMode = RoundNearest) where {P} = first(abs2_inexact!(z, x, r))
+
+function abs2_inexact!(z::ArbFloat{P}, x::AcbFloat{P}, r::RoundingMode = RoundNearest) where {P}
+    mode = _rnd(r)
+    GC.@preserve x begin
+        ar, ai = LibFlint.acf_real_ptr(x), LibFlint.acf_imag_ptr(x)
+        _modulus_special!(z, ar, ai) && return z, false
+        t1, t2 = ArbFloat{P}(), ArbFloat{P}()
+        _exact_squares!(t1, t2, ar, ai)
+        flag = LibFlint.arf_add(z, t1, t2, P, mode)
+        return z, flag != 0
+    end
+end
+
+"""
+    abs(z::AcbFloat{P}, mode = RoundNearest) -> ArbFloat{P}
+
+`sqrt(re² + im²)` correctly rounded to `P` bits in `mode` (overflow-free: the exponent is unbounded).
+See also `abs_inexact!`.
+"""
+Base.abs(x::AcbFloat{P}, r::RoundingMode = RoundNearest) where {P} = first(abs_inexact!(ArbFloat{P}(), x, r))
+abs!(z::ArbFloat{P}, x::AcbFloat{P}, r::RoundingMode = RoundNearest) where {P} = first(abs_inexact!(z, x, r))
+
+function abs_inexact!(z::ArbFloat{P}, x::AcbFloat{P}, r::RoundingMode = RoundNearest) where {P}
+    mode = _rnd(r)
+    W = 2P + 4
+    GC.@preserve x begin
+        ar, ai = LibFlint.acf_real_ptr(x), LibFlint.acf_imag_ptr(x)
+        _modulus_special!(z, ar, ai) && return z, false
+        t1, t2, s_lo = ArbFloat{P}(), ArbFloat{P}(), ArbFloat{P}()
+        _exact_squares!(t1, t2, ar, ai)
+        if LibFlint.arf_add(s_lo, t1, t2, W, ARF_RND_DOWN) == 0           # sum exact: one rounding
+            return z, LibFlint.arf_sqrt(z, s_lo, P, mode) != 0
+        end
+        s_hi, r_lo, probe = ArbFloat{P}(), ArbFloat{P}(), ArbFloat{P}()
+        LibFlint.arf_add(s_hi, t1, t2, W, ARF_RND_UP)
+        LibFlint.arf_sqrt(r_lo, s_lo, P, mode)
+        LibFlint.arf_sqrt(z, s_hi, P, mode)                              # z = round(sqrt(s_hi))
+        if LibFlint.arf_equal(r_lo, z) == 0
+            # a rounding boundary b lies at sqrt(s_lo) (answer: the upper result) or sqrt(s_hi)
+            if LibFlint.arf_sqrt(probe, s_lo, P + 1, ARF_RND_DOWN) != 0   # sqrt(s_lo) not exact in P+1 bits
+                LibFlint.arf_set(z, r_lo)
+            end
+        end
+        return z, true                                                    # s inexact => sqrt(s) is not a P-bit value
+    end
+end
 
 function sqrt_inexact!(z::AcbFloat{P}, x::AcbFloat{P}, r::RoundingMode = RoundNearest) where {P}
     flag = LibFlint.acf_sqrt(z, x, P, _rnd(r))

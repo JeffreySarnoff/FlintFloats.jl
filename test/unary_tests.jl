@@ -193,3 +193,72 @@ const MODES = (RoundNearest, RoundToZero, RoundFromZero, RoundDown, RoundUp)
         @test DFloat{2}(1.0) isa DFloat{2}
     end
 end
+
+@testset "AcbFloat modulus is correctly rounded" begin
+    rnd(P, x, mode) = Float64(BigFloat(x, mode; precision = P))
+    @testset "exact cases" begin
+        z = AcbFloat{64}(3, 4)
+        r, inexact = FlintFloats.abs_inexact!(ArbFloat{64}(), z)
+        @test Float64(r) == 5 && !inexact
+        r2, inexact2 = FlintFloats.abs2_inexact!(ArbFloat{64}(), z)
+        @test Float64(r2) == 25 && !inexact2
+        @test Float64(abs(AcbFloat{64}(0, 0))) == 0 && Float64(abs2(AcbFloat{64}(-2, 0))) == 4
+        @test Float64(abs(AcbFloat{64}(-3, -4))) == 5
+        @test abs(z) isa ArbFloat{64} && abs2(z) isa ArbFloat{64}
+        @test FlintFloats.abs!(ArbFloat{64}(), z) isa ArbFloat{64}
+    end
+    @testset "special values" begin
+        nan, inf = ArbFloat{64}(NaN), ArbFloat{64}(BigFloat(Inf))
+        one_ = ArbFloat{64}(1)
+        @test isinf(abs(AcbFloat{64}(inf, one_))) && isinf(abs(AcbFloat{64}(one_, -inf)))
+        @test isinf(abs(AcbFloat{64}(nan, inf)))                      # infinity wins over NaN, as hypot
+        @test isnan(abs(AcbFloat{64}(nan, one_))) && isnan(abs2(AcbFloat{64}(one_, nan)))
+        @test isinf(abs2(AcbFloat{64}(inf, one_)))
+    end
+    @testset "rounding boundaries (exact square plus a tiny part)" begin
+        # re = 1 is a P-bit boundary of sqrt; a tiny imaginary part makes the sum inexact but only just
+        P = 24
+        z = AcbFloat{P}(ArbFloat{P}(1), ArbFloat{P}(BigFloat(2)^-300))
+        up = Float64(abs(z, RoundUp)); dn = Float64(abs(z, RoundDown)); ne = Float64(abs(z))
+        @test dn == 1.0 && ne == 1.0 && up == nextfloat(1.0f0) |> Float64
+        # same with a huge exponent gap: cost does not depend on it
+        z2 = AcbFloat{P}(ArbFloat{P}(1), ArbFloat{P}(BigFloat(2)^-100000))
+        @test Float64(abs(z2, RoundUp)) == up && Float64(abs(z2, RoundDown)) == 1.0
+        # re = 1 + 2^-23 (24 bits): its square is NOT a boundary; check sign of the effect in both modes
+        zb = AcbFloat{P}(ArbFloat{P}(1 + 2.0^-23), ArbFloat{P}(BigFloat(2)^-300))
+        @test Float64(abs(zb, RoundDown)) == 1 + 2.0^-23
+        @test Float64(abs(zb, RoundUp)) == 1 + 2.0^-22
+        # nearest-mode tie boundary b = 1 + 2^-24 (25 bits): sqrt(s) just above or below it
+        P = 24
+        b2 = BigFloat(1 + 2.0^-24)^2                         # exact square of a 25-bit number
+        # re = 1, im = sqrt(b2 - 1) rounded to 24 bits: the sum lands near the tie; compare with the exact value
+        x = ArbFloat{P}(1)
+        y = ArbFloat{P}(BigFloat(sqrt(b2 - 1); precision = P))
+        w = AcbFloat{P}(x, y)
+        ref = setprecision(BigFloat, 4000) do
+            s = BigFloat(1)^2 + BigFloat(y)^2
+            (rnd(P, sqrt(s), RoundNearest), rnd(P, sqrt(s), RoundDown), rnd(P, sqrt(s), RoundUp))
+        end
+        @test (Float64(abs(w)), Float64(abs(w, RoundDown)), Float64(abs(w, RoundUp))) == ref
+    end
+    @testset "differential against exact references, every mode" begin
+        rng = MersenneTwister(21)
+        MODES = (RoundNearest, RoundToZero, RoundFromZero, RoundDown, RoundUp)
+        checked = 0; fails = Tuple[]
+        for P in (5, 11, 24, 53), mode in MODES, _ in 1:200
+            gap = rand(rng, (0, 0, 0, 5, 40, 200))                  # include wildly different magnitudes
+            a = AcbFloat{P}(rand(rng) * 2.0^rand(rng, -4:4) * rand(rng, (-1, 1)),
+                            rand(rng) * 2.0^(rand(rng, -4:4) - gap) * rand(rng, (-1, 1)))
+            x, y = big(Float64(real(a))), big(Float64(imag(a)))
+            want = setprecision(BigFloat, 6000) do
+                s = x^2 + y^2
+                (rnd(P, s, mode), rnd(P, sqrt(s), mode))
+            end
+            got = (Float64(abs2(a, mode)), Float64(abs(a, mode)))
+            checked += 1
+            got == want || push!(fails, (P, mode, gap, got, want))
+        end
+        @test checked == 4000
+        @test isempty(fails) || (println(first(fails, 3)); false)
+    end
+end
