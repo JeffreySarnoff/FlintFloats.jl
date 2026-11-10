@@ -22,11 +22,14 @@ include("storage.jl")
 include("typegrid.jl")
 include("conversions.jl")
 include("show.jl")
+include("compare.jl")
+include("promotion.jl")
+include("basefloat.jl")
 
 export FlintReal, FlintNumber, DFloat, DFloatBall, NFloat, NFloatType,
        ArbFloat, ArbBall, AcbFloat, AcbBall,
        pointtype, balltype, realtype, complextype,
-       midpoint, radius, isindeterminate, isexact, containszero, overlaps, with_precision
+       midpoint, radius, isindeterminate, isexact, containszero, overlaps, with_precision, sortkey
 
 # Not exported: `set!`, `neg!`, `abs!`, `sqrt!`, `add!`, `sub!`, `mul!`, `div!` and the `_inexact!`
 # forms (use `FlintFloats.mul!`; an export would clash with LinearAlgebra.mul!), and the traits

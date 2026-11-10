@@ -7,6 +7,10 @@ const MachineInteger = Union{Int8,Int16,Int32,Int64,UInt8,UInt16,UInt32,UInt64}
 const MachineFloat = Union{Float16,Float32,Float64}
 const MachineScalar = Union{MachineInteger,MachineFloat}
 
+# Arguments accepted by the default-precision constructors `ArbFloat(x)`, `AcbBall(re, im)` and so on.
+# Deliberately not `Any`: a catch-all method would be ambiguous with Base's `T(x::T)` and friends.
+const Literal = Union{Bool,MachineScalar,Int128,UInt128,BigInt,BigFloat,AbstractString}
+
 # ---- ArbFloat{P} ------------------------------------------------------------------------------
 
 ArbFloat{P}(x::Union{Bool,Int8,Int16,Int32,UInt8,UInt16,UInt32}) where {P} = ArbFloat{P}(Int(x))
@@ -172,3 +176,10 @@ for op in (:+, :-, :*, :/)
 end
 
 Base.convert(::Type{T}, x::MixedScalar) where {T<:FlintNumber} = T(x)
+
+# ---- default precision --------------------------------------------------------------------------
+
+ArbFloat(x::Literal) = ArbFloat{DEFAULT_PRECISION}(x)
+ArbBall(x::Literal) = ArbBall{DEFAULT_PRECISION}(x)
+AcbFloat(re::Literal, im::Literal = 0.0) = AcbFloat{DEFAULT_PRECISION}(re, im)
+AcbBall(re::Literal, im::Literal = 0.0) = AcbBall{DEFAULT_PRECISION}(re, im)

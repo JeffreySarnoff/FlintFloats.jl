@@ -1035,3 +1035,179 @@ family = "arbball"
 sig = "void(arb_ptr, ulong)"
 kind = "export"
 status = "none"
+
+[[op]]
+symbol = "d2_equal"
+family = "dfloat"
+sig = "int(d2_srcptr, d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_cmp"
+family = "dfloat"
+sig = "int(d2_srcptr, d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_equal"
+family = "dfloatball"
+sig = "int(d2b_srcptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_cmp"
+family = "dfloatball"
+sig = "int(int*, d2b_srcptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_overlaps"
+family = "dfloatball"
+sig = "int(d2b_srcptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_contains"
+family = "dfloatball"
+sig = "int(d2b_srcptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_get_arb"
+family = "dfloatball"
+sig = "void(arb_ptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_set_arb"
+family = "dfloatball"
+sig = "void(d2b_ptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "_nfloat_cmp"
+family = "nfloat"
+sig = "int(nfloat_srcptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_abs_bound_lt_2exp_si"
+family = "arbfloat"
+sig = "slong(arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_mul_2exp_si"
+family = "arbfloat"
+sig = "void(arf_ptr, arf_srcptr, slong)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acf_equal"
+family = "acbfloat"
+sig = "int(acf_srcptr, acf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_eq"
+family = "arbball"
+sig = "int(arb_srcptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_ne"
+family = "arbball"
+sig = "int(arb_srcptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_lt"
+family = "arbball"
+sig = "int(arb_srcptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_le"
+family = "arbball"
+sig = "int(arb_srcptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_gt"
+family = "arbball"
+sig = "int(arb_srcptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_ge"
+family = "arbball"
+sig = "int(arb_srcptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_eq"
+family = "acbball"
+sig = "int(acb_srcptr, acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_ne"
+family = "acbball"
+sig = "int(acb_srcptr, acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_equal"
+family = "acbball"
+sig = "int(acb_srcptr, acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_overlaps"
+family = "acbball"
+sig = "int(acb_srcptr, acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_contains"
+family = "acbball"
+sig = "int(acb_srcptr, acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_set_arb"
+family = "acbball"
+sig = "void(acb_ptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_add_error_arf"
+family = "arbball"
+sig = "void(arb_ptr, arf_srcptr)"
+kind = "export"
+status = "none"
+note = "Adds an upper bound of |err| to the radius."

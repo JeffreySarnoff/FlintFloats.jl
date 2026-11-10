@@ -14,7 +14,7 @@ end
 const CTYPE = Dict(
     "void" => "Cvoid", "int" => "Cint", "double" => "Cdouble",
     "slong" => "Int", "ulong" => "UInt", "arf_rnd_t" => "Cint",
-    "double*" => "Ptr{Cdouble}", "void*" => "Ptr{Cvoid}", "mpfr_ptr" => "Ref{BigFloat}",
+    "double*" => "Ptr{Cdouble}", "int*" => "Ptr{Cint}", "void*" => "Ptr{Cvoid}", "mpfr_ptr" => "Ref{BigFloat}",
 )
 
 function ctype(t::AbstractString; ret::Bool = false)

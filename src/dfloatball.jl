@@ -29,7 +29,10 @@ for N in 1:4
         LibFlint.$set_d(r, x)
         return r[]
     end
-    @eval Base.Float64(x::DFloatBall{$N}) = LibFlint.$get_d(Ref(x))
+    @eval function Base.Float64(x::DFloatBall{$N})
+        isexact(x) || throw(ArgumentError("an inexact DFloatBall is an enclosure; use Float64(DFloat{$($N)}(x.d)) to take its midpoint explicitly"))
+        return LibFlint.$get_d(Ref(x))
+    end
     @eval function _indeterminate(::Type{DFloatBall{$N}})
         r = Ref{DFloatBall{$N}}()
         LibFlint.$indet(r)

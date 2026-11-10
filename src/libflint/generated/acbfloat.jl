@@ -2,6 +2,7 @@
 @inline acf_add(a1, a2, a3, a4, a5) = ccall((:acf_add, libflint), Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}, Int, Cint,), a1, a2, a3, a4, a5)
 @inline acf_clear(a1) = ccall((:acf_clear, libflint), Cvoid, (Ptr{Cvoid},), a1)
 @inline acf_div(a1, a2, a3, a4, a5) = ccall((:acf_div, libflint), Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}, Int, Cint,), a1, a2, a3, a4, a5)
+@inline acf_equal(a1, a2) = ccall((:acf_equal, libflint), Cint, (Ptr{Cvoid}, Ptr{Cvoid},), a1, a2)
 @inline acf_imag_ptr(a1) = ccall((:acf_imag_ptr, libflint), Ptr{Cvoid}, (Ptr{Cvoid},), a1)
 @inline acf_init(a1) = ccall((:acf_init, libflint), Cvoid, (Ptr{Cvoid},), a1)
 @inline acf_mul(a1, a2, a3, a4, a5) = ccall((:acf_mul, libflint), Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}, Int, Cint,), a1, a2, a3, a4, a5)

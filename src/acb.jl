@@ -19,7 +19,6 @@ end
 
 _clear!(z::AcbBall) = (LibFlint.acb_clear(z); nothing)
 
-AcbBall(re, im = 0.0) = AcbBall{DEFAULT_PRECISION}(re, im)
 Base.precision(::Type{AcbBall{P}}) where {P} = P
 Base.precision(::AcbBall{P}) where {P} = P
 
@@ -68,6 +67,7 @@ Base.isfinite(z::AcbBall) = LibFlint.acb_is_finite(z) != 0
 Base.isnan(z::AcbBall) = isnan(real(z)) || isnan(imag(z))
 Base.isinf(::AcbBall) = false
 isexact(z::AcbBall) = LibFlint.acb_is_exact(z) != 0
+isindeterminate(z::AcbBall) = isindeterminate(real(z)) || isindeterminate(imag(z))
 
 Base.zero(::Type{AcbBall{P}}) where {P} = AcbBall{P}()
 Base.one(::Type{AcbBall{P}}) where {P} = AcbBall{P}(1.0, 0.0)

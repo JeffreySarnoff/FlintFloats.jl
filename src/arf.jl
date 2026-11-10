@@ -21,7 +21,6 @@ end
 
 _clear!(x::ArbFloat) = (LibFlint.arf_clear(x); nothing)
 
-ArbFloat(x) = ArbFloat{DEFAULT_PRECISION}(x)
 Base.precision(::Type{ArbFloat{P}}) where {P} = P
 Base.precision(::ArbFloat{P}) where {P} = P
 

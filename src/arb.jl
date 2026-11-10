@@ -19,7 +19,6 @@ end
 
 _clear!(x::ArbBall) = (LibFlint.arb_clear(x); nothing)
 
-ArbBall(x) = ArbBall{DEFAULT_PRECISION}(x)
 Base.precision(::Type{ArbBall{P}}) where {P} = P
 Base.precision(::ArbBall{P}) where {P} = P
 
@@ -44,6 +43,19 @@ function Base.copy(x::ArbBall{P}) where {P}
     return z
 end
 
+"""
+    ArbBall{P}(mid::ArbFloat, rad::ArbFloat)
+
+The ball `mid ± rad`. The midpoint is rounded to `P` bits (the ball grows to cover that), and the
+radius is rounded up to FLINT's 30-bit magnitude, so the result contains `mid ± rad`.
+"""
+function ArbBall{P}(mid::ArbFloat, rad::ArbFloat) where {P}
+    (isnan(rad) || signbit(rad)) && throw(ArgumentError("radius must be a nonnegative number"))
+    z = ArbBall{P}(mid)
+    LibFlint.arb_add_error_arf(z, rad)
+    return z
+end
+
 "Midpoint as an `ArbFloat{P}` (exact)."
 function midpoint(x::ArbBall{P}) where {P}
     m = ArbFloat{P}()
@@ -60,7 +72,11 @@ function radius(x::ArbBall{P}) where {P}
     return r
 end
 
-Base.Float64(x::ArbBall) = Float64(midpoint(x))
+"Only an exact ball converts implicitly; otherwise take `midpoint(x)` explicitly."
+function Base.Float64(x::ArbBall)
+    isexact(x) || throw(ArgumentError("an inexact ArbBall is an enclosure; use midpoint(x) to convert it to a point explicitly"))
+    return Float64(midpoint(x))
+end
 
 for (name, f) in ((:add, :arb_add), (:sub, :arb_sub), (:mul, :arb_mul), (:div, :arb_div))
     bang = Symbol(name, :!)
@@ -91,7 +107,8 @@ Base.isnan(x::ArbBall{P}) where {P} = isnan(midpoint(x))
 Base.isinf(::ArbBall) = false
 "`true` if the radius is zero."
 isexact(x::ArbBall) = LibFlint.arb_is_exact(x) != 0
-isindeterminate(x::ArbBall) = !isfinite(x) && isnan(x)
+"`true` for a ball that tells nothing: NaN midpoint or infinite radius (including `[0 ± ∞]`)."
+isindeterminate(x::ArbBall) = isnan(x) || isinf(radius(x))
 
 Base.zero(::Type{ArbBall{P}}) where {P} = ArbBall{P}()
 Base.one(::Type{ArbBall{P}}) where {P} = ArbBall{P}(1)

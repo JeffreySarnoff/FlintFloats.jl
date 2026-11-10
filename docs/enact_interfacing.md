@@ -291,7 +291,7 @@ Do not advertise a universal rounding mode: dfloat is approximate, nfloat guaran
 
 For point formats, compare represented values rather than raw components. For `ArbFloat`, test `arf_is_nan` before calling `arf_cmp`/`arf_equal`: FLINT's comparisons return 0 when an argument is NaN and `arf_equal` treats NaN as equal to itself, which is not Julia's `==`. Dfloat expansions may have multiple representations of one value. Establish normalization and special-value rules before implementing equality, ordering, and hashing.
 
-For balls (`DFloatBall`, `ArbBall`, `AcbBall`), use explicit certainty semantics. For `DFloatBall`, `==` maps to `dNb_equal` (true only for exact equal balls), `contains`/`overlaps` to `dNb_contains`/`dNb_overlaps`, and `<`/`>` to `dNb_cmp` with a successful result; every form of the whole real line canonicalises to `[0±∞]` for `isequal` and `hash`:
+For balls (`DFloatBall`, `ArbBall`, `AcbBall`), use explicit certainty semantics. For `DFloatBall`, `==` maps to `dNb_equal` (true only for exact equal balls), `!=` to disjointness (`!dNb_overlaps`), `contains`/`overlaps` to `dNb_contains`/`dNb_overlaps`, and `<`, `<=`, `>`, `>=` to exact endpoint comparison (`dNb_cmp` reports `GR_UNABLE` for touching balls, so it only cross-checks); every form of the whole real line canonicalises to `[0±∞]` for `isequal` and `hash`:
 
 - `==` means the operands are proved to be the same singleton value.
 - `!=` means the operands are proved unequal, using disjointness where appropriate. Implement this explicitly; it must not accidentally inherit `!(x == y)`.
@@ -331,6 +331,14 @@ Audit inherited `AbstractFloat` fallbacks. Implement `eps`, `nextfloat`, `prevfl
 Document signed-zero behavior, exponent range, infinities, NaNs, indeterminate enclosures, and exceptions separately for each family. `ArbFloat` has no negative zero, returns NaN for a nonzero value divided by zero, and has an unbounded exponent (no `floatmax`/`floatmin`; `eps`, `nextfloat` and `prevfloat` are defined at `P` bits). For real-domain failures, do not silently promote to complex arithmetic; users select `AcbBall` explicitly. Complex functions must preserve FLINT's enclosure and branch-cut conventions.
 
 Show balls with uncertainty. Distinguish a display intended for readability from a representation intended for reconstruction. Define round-trip guarantees separately for fixed values, midpoint text, and entire enclosures. Free C formatting buffers reliably even when Julia string construction throws.
+
+**M3 decisions.**
+
+- Points compare by exact value across precisions, families (`DFloat`, `NFloat`, `ArbFloat`, `AcbFloat`) and against Julia numbers (`Bool`, machine integers and floats, `Int128`, `BigInt`, `BigFloat`); precision is never part of equality or the hash. `hash` of a real point is the `BigFloat` hash of its exact value, so it equals the hash of the equal `Int`, `Float64` or `BigFloat`; a complex value with zero imaginary part hashes as its real part. A point zero is `+0`: it is `isequal` to `0.0` but not `-0.0`.
+- Ball `==`, `!=`, `<`, `<=`, `>`, `>=` are proofs (`arb_eq`/`arb_ne`/`arb_lt`/..., `acb_eq`/`acb_ne`) and return `false` when unproved; `isequal` is representation equivalence; an exact ball is `isequal` and hashes like its midpoint. Every indeterminate ball (NaN midpoint or infinite radius, and the whole real line of `DFloatBall`) is one value for `isequal` and `hash`, and is never `isequal` to a point or number. `ArbBall(Inf)` is an exact infinite ball; `DFloatBall(Inf)` is the whole real line.
+- Balls have no `isless`, `min`, `max`, `sort`; `sortkey` gives a deterministic presentation order. `isapprox` and neighbours (`eps`, `nextfloat`, ...) are rejected for balls.
+- Promotion is implemented for the cases in `src/promotion.jl` only; `convert` narrows a point only when exact (`InexactError`) and a ball with containment. Converting a ball to a point never happens implicitly (`ArgumentError`).
+- `AbstractFloat` audit (`src/basefloat.jl`): `eps`, `nextfloat`, `prevfloat`, `significand`, `exponent` for `ArbFloat` and `NFloat`; `eps(::Type)` only for `DFloat`; `floatmin`/`floatmax` rejected everywhere; `typemin`/`typemax`, rounding and elementary functions are undefined.
 
 ## 9. Add containers and bulk arithmetic
 

@@ -19,7 +19,6 @@ end
 
 _clear!(z::AcbFloat) = (LibFlint.acf_clear(z); nothing)
 
-AcbFloat(re, im = 0.0) = AcbFloat{DEFAULT_PRECISION}(re, im)
 Base.precision(::Type{AcbFloat{P}}) where {P} = P
 Base.precision(::AcbFloat{P}) where {P} = P
 

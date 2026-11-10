@@ -277,7 +277,7 @@ Where a three-valued answer matters, provide `proved_*` forms: `proved_equal`, `
 ```julia
 Float64(x), Float32(x), Int(x), BigInt(x), BigFloat(x; precision), Rational(x)   # explicit
 convert(::Type{T}, x), promote_rule (§2a.8)
-Float64(x::ArbBall)  # InexactError unless singleton; use Float64(midpoint(x)) or Float64(x, RoundUp)
+Float64(x::ArbBall)  # ArgumentError unless exact (isexact); use Float64(midpoint(x)) for the explicit lossy form
 ```
 
 | From → to | Rule |
@@ -294,12 +294,12 @@ Float64(x::ArbBall)  # InexactError unless singleton; use Float64(midpoint(x)) o
 | `ArbFloat{P}` → `ArbFloat{Q}` | grow exact; shrink correctly rounded (optional `RoundingMode`) |
 | `ArbFloat{P}` → `Float64`, `DFloat`, `NFloat`, `BigFloat` | rounded to nearest; `Float64(x, RoundUp)` directed; out-of-range exponents give `±Inf`/`0` as the target format dictates (`ArbFloat` exponents are unbounded) |
 | `ArbFloat{P}` → `ArbBall{P}`; `AcbFloat{P}` → `AcbBall{P}` | exact, radius 0 (`balltype`) |
-| `ArbBall{P}` → `ArbFloat{P}` | only via `midpoint(x)` (exact) or `lower`/`upper`; `ArbFloat{P}(x::ArbBall)` throws `InexactError` unless `isexact(x)` |
+| `ArbBall{P}` → `ArbFloat{P}` | only via `midpoint(x)` (exact) or `lower`/`upper`; `ArbFloat{P}(x::ArbBall)` throws `ArgumentError` (take `midpoint(x)` explicitly) |
 | `ArbFloat{P}` → `AcbFloat{P}` | exact, zero imaginary part (`complextype`) |
 | `DFloatBall{N}` → `ArbBall{P}` | exact midpoint; radius rounded up (`dNb_get_arb`) *(docs)*; whole real line becomes `[0 ± ∞]`. Needs `P ≥ 53N`, otherwise the midpoint is rounded and the radius grows |
 | `ArbBall{P}` → `DFloatBall{N}` | midpoint rounded to `N` doubles, remainder added to the radius, always enclosing *(docs)*; may lose information, so explicit only |
 | `DFloatBall{N}` → `DFloatBall{M}` | grow exact; shrink enclosing (remainder to radius) |
-| `DFloatBall{N}` → `Float64` | `InexactError` unless exact (`isexact`); `Float64(midpoint(x))` is the explicit lossy form |
+| `DFloatBall{N}` → `Float64` | `ArgumentError` unless exact (`isexact`); `Float64(DFloat{N}(x.d))` is the explicit lossy form |
 | Endpoints | `lower(x)`, `upper(x)` return `ArbFloat` bounds rounded **outward** with directed rounding: `ArbFloat{P}` for `ArbBall{P}`, `ArbFloat{64N}` for `DFloatBall{N}`; for `AcbBall` apply them to `real`/`imag` |
 | `Float64(x, RoundUp/RoundDown)` | directed conversion, for balls (outward) and points |
 
@@ -320,7 +320,7 @@ parse(T, s)   tryparse(T, s)
 
 ### 2a.8 Promotion and mixed operations
 
-Narrow by design (enact §8.2): all promotion goes through `promote_rule` for these cases only. General rule: **point with ball gives a ball; real with complex gives complex; a lower family converts exactly into arb at the larger precision.** `DFloat` and `NFloat` never promote to each other.
+Narrow by design (enact §8.2): all promotion goes through `promote_rule` for these cases only. General rule: **point with ball gives a ball; real with complex gives complex; a lower family joins the arb family at the larger precision (`DFloat{N}` counts as `53N` bits, `NFloat{L}` as `64L`; an `NFloat` converts exactly, a `DFloat` expansion that spans more than `53N` bits is rounded to nearest).** `DFloat` and `NFloat` never promote to each other, and `DFloatBall` joins only `DFloat`/`DFloatBall`. Implemented in `src/promotion.jl`; `BigFloat` never promotes silently.
 
 | Operands | Result type |
 | --- | --- |
@@ -504,8 +504,8 @@ This matches the rule for `ArbBall` in §2a.3 (indeterminate enclosure, not an e
 | `contains(x, y)` | `dNb_contains` | 1 only when certain; `W` contains everything |
 | `overlaps(x, y)` | `dNb_overlaps` | 0 only when certain; `x != y` is `!overlaps(x,y)` |
 | `contains_zero(x)` | `dNb_contains_zero` | 0 only when certain |
-| `x < y`, `x > y` | `dNb_cmp` with `res == −1/+1` and `GR_SUCCESS` | proved only; `GR_UNABLE` means false |
-| `x <= y`, `x >= y` | `dNb_cmp` (conservative) or endpoint comparison | `dNb_cmp` returns `UNABLE` when balls touch at an endpoint, so a direct endpoint test is needed to prove `<=` there; decide in M1 |
+| `x < y`, `x > y` | exact endpoints: `upper(x) < lower(y)` (`mid ± rad` formed exactly in `ArbFloat{2304}` scratch) | proved only; the whole real line proves nothing. Agrees with `dNb_cmp` whenever that succeeds (tested) |
+| `x <= y`, `x >= y` | exact endpoints: `upper(x) <= lower(y)` | proves the touching case that `dNb_cmp` reports as `GR_UNABLE` |
 
 **Flags.** `gr_ctx_init_dfloat(ctx, n, flags)` takes `DFLOAT_BALL=1`, `DFLOAT_STRONG=2` (canonical results), `DFLOAT_FAST=4` (cheaper error bound in ball products), `DFLOAT_COMPLEX=8`. Direct `dNb_*` calls have no flags: they track product rounding errors exactly when inputs are exact. v1 uses the direct calls (tight radii); `DFLOAT_FAST` behaviour would be a separate type or a per-call option if wanted. Use `dNb_canonicalise` before hashing and `isequal`; all forms of `W` canonicalise to `[0±∞]` and compare `isequal`.
 
@@ -711,7 +711,7 @@ The mapping lives in `_status` per family; public methods never inspect raw code
 | Precision as type parameter for balls (`ArbBall{P}`, `AcbBall{P}`) | **Adopted (requested).** Matches `DFloat{N}`/`NFloat{L}` and `ArbNumerics.jl`; precision is constant per type; promotion gives `max`. Costs: recompilation per new `P`, no scoped runtime default (`ArbBall(x)` uses compile-time `DEFAULT_PRECISION`), adaptive code must use `with_precision` barriers. Fallback if latency is unacceptable: hybrid `ArbBall{P}` with `P = 0` meaning "precision stored in the value" (second code path, extra promotion rules). | **M1 measurement:** first use of a new `P` costs 6–8 ms (`ArbBall{1001..1003}`, `NFloat{5,6}`), then microseconds; acceptable, hybrid fallback not needed yet. Still to measure: ten-precision refinement loop and precompilation size |
 | Complex dfloat and complex nfloat | Deferred: `DFloatComplex{N}`/`DFloatComplexBall{N}` (`dNc`, `dNcb`) and complex `NFloat` | Confirm deferral; M1 symbol audit of `d?c_*`, `d?cb_*`, `nfloat_complex_*` |
 | `DFloatBall` product error tracking vs `DFLOAT_FAST` | Tight (exact-input-exact) by default; `FAST` only if benchmarks justify | Radius width and timing on typical workloads |
-| `DFloatBall` `<=`/`>=` via `dNb_cmp` vs endpoint test | Endpoint test if `cmp`'s conservatism matters | Check cmp on touching balls in the pinned source |
+| `DFloatBall` order via `dNb_cmp` vs endpoint test | **Resolved (M3):** exact endpoint test for all four relations; `dNb_cmp` stays a test cross-check (it returns `GR_UNABLE` for touching balls) | `test/compare_tests.jl` |
 | Type names | **Settled:** points `DFloat`, `NFloat`, `ArbFloat`, `AcbFloat`; balls `DFloatBall`, `ArbBall`, `AcbBall`. Pairing functions `pointtype`, `balltype`, `realtype`, `complextype` | none |
 | Precision invariant (mantissa ≤ `P` bits for the arb types) | **Adopted** | Test with a bit-length assertion at every entry point |
 | Rounding interface for `ArbFloat`/`AcbFloat` | **Adopted:** trailing `RoundingMode`, strict modes only, `_inexact` variants for the flag | **M1 evidence:** `+ - * /` of `ArbFloat` bit-identical to MPFR for P in {5,24,53} in all five modes (9000 cases each family); `AcbFloat` `+ - * /` each part correctly rounded in all five modes (9000 cases) |
