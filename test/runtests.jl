@@ -2,5 +2,8 @@ using FlintFloats
 using Test
 
 @testset "FlintFloats.jl" begin
-    # Write your tests here.
+    include("abi_tests.jl")
+    include("construction_tests.jl")
+    include("arithmetic_tests.jl")
+    include("ownership_tests.jl")
 end

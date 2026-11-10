@@ -1,0 +1,19 @@
+# M1 scalar results
+# 2026-11-10  julia 1.13.3  FLINT_jll 301.690.0+0  FLINT 3.7.0-dev @82c40b299084  Intel(R) Core(TM) i9-14900K  threads=1
+== allocations / time per op (warmed) ==
+DFloat{2}      allocs=0 mem=0 B  min=5.5 ns
+DFloat{4}      allocs=0 mem=0 B  min=9.0 ns
+DFloatBall{2}  allocs=0 mem=0 B  min=3.5 ns
+NFloat{2}      allocs=0 mem=0 B  min=6.9 ns
+NFloat{16}     allocs=0 mem=0 B  min=20.6 ns
+ArbFloat{128}  allocating: 1 allocs 48 B 13.8 ns | add!: 0 allocs 8.4 ns
+ArbBall{128}   allocating: 1 allocs 64 B 15.6 ns | add!: 0 allocs 10.1 ns
+AcbFloat{128}  allocating: 1 allocs 80 B 20.8 ns | add!: 0 allocs 16.6 ns
+AcbBall{128}   allocating: 1 allocs 112 B 26.4 ns | add!: 0 allocs 20.0 ns
+== first-call latency for a fresh P ==
+ArbBall{1001} first use: 6.3 ms
+ArbBall{1002} first use: 7.2 ms
+ArbBall{1003} first use: 7.0 ms
+same P, second use: 9.2 us
+NFloat{5} first use: 6.3 ms
+NFloat{6} first use: 8.2 ms
