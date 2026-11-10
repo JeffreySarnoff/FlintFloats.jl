@@ -1,0 +1,6 @@
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+FlintFloats = "26cde3c2-a71e-4793-a8a7-00c12dc13036"
+
+[sources]
+FlintFloats = {path = ".."}

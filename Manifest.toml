@@ -1,0 +1,10 @@
+# This file is machine-generated - editing it directly is not advised
+
+julia_version = "1.13.3"
+manifest_format = "2.1"
+project_hash = "58d7069638dac999d61bc77d7bfd0d395e55bdd0"
+
+[[deps.FlintFloats]]
+path = "."
+uuid = "26cde3c2-a71e-4793-a8a7-00c12dc13036"
+version = "0.1.0"

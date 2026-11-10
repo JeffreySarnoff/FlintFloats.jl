@@ -1,0 +1,13 @@
+name = "FlintFloats"
+uuid = "26cde3c2-a71e-4793-a8a7-00c12dc13036"
+authors = ["Jeffrey Sarnoff <jeffrey.sarnoff@gmail.com> and contributors"]
+version = "0.1.0"
+
+[compat]
+julia = "1.10.10"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
