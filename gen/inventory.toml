@@ -270,10 +270,9 @@ note = "NaN equals NaN here; not Julia ==."
 symbol = "arf_is_nan"
 family = "arbfloat"
 sig = "int(arf_srcptr)"
-kind = "inline"
-use = []
+kind = "export"
 status = "none"
-note = "Header inline reading exp; translate in Julia from the verified layout (exp special values)."
+note = "Header inline as well; the exported symbol is bound."
 
 # ---------------------------------------------------------------- acf
 [[op]]
@@ -609,3 +608,430 @@ family = "nfloat"
 sig = "int(nfloat_ptr, slong, gr_ctx_ptr)"
 kind = "export"
 status = "gr"
+
+[[op]]
+symbol = "d2_neg"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_abs"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_sqrt"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_is_zero"
+family = "dfloat"
+sig = "int(d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_is_finite"
+family = "dfloat"
+sig = "int(d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_is_nan"
+family = "dfloat"
+sig = "int(d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_sgn"
+family = "dfloat"
+sig = "int(d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_set_arf"
+family = "dfloat"
+sig = "void(d2_ptr, arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_get_arf"
+family = "dfloat"
+sig = "void(arf_ptr, d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_set_str"
+family = "dfloat"
+sig = "int(d2_ptr, const char*)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_neg"
+family = "dfloatball"
+sig = "void(d2b_ptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_abs"
+family = "dfloatball"
+sig = "void(d2b_ptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_sqrt"
+family = "dfloatball"
+sig = "int(d2b_ptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_is_zero"
+family = "dfloatball"
+sig = "int(d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_is_finite"
+family = "dfloatball"
+sig = "int(d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_is_exact"
+family = "dfloatball"
+sig = "int(d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_contains_zero"
+family = "dfloatball"
+sig = "int(d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_set_arf"
+family = "dfloatball"
+sig = "void(d2b_ptr, arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_set_str"
+family = "dfloatball"
+sig = "int(d2b_ptr, const char*)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "nfloat_neg"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "nfloat_abs"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "nfloat_sqrt"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_neg"
+family = "arbfloat"
+sig = "void(arf_ptr, arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_abs"
+family = "arbfloat"
+sig = "void(arf_ptr, arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_is_zero"
+family = "arbfloat"
+sig = "int(arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_is_finite"
+family = "arbfloat"
+sig = "int(arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_is_pos_inf"
+family = "arbfloat"
+sig = "int(arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_is_neg_inf"
+family = "arbfloat"
+sig = "int(arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_sgn"
+family = "arbfloat"
+sig = "int(arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_is_int"
+family = "arbfloat"
+sig = "int(arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_set_mpfr"
+family = "arbfloat"
+sig = "void(arf_ptr, mpfr_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_get_mpfr"
+family = "arbfloat"
+sig = "int(mpfr_ptr, arf_srcptr, int)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_nan"
+family = "arbfloat"
+sig = "void(arf_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_pos_inf"
+family = "arbfloat"
+sig = "void(arf_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_neg_inf"
+family = "arbfloat"
+sig = "void(arf_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_zero"
+family = "arbfloat"
+sig = "void(arf_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_one"
+family = "arbfloat"
+sig = "void(arf_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acf_neg"
+family = "acbfloat"
+sig = "void(acf_ptr, acf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acf_swap"
+family = "acbfloat"
+sig = "void(acf_ptr, acf_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_neg"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_abs"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_sqrt"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, slong prec)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_is_zero"
+family = "arbball"
+sig = "int(arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_is_exact"
+family = "arbball"
+sig = "int(arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_is_finite"
+family = "arbball"
+sig = "int(arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_is_int"
+family = "arbball"
+sig = "int(arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_set_str"
+family = "arbball"
+sig = "int(arb_ptr, const char*, slong prec)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_get_str"
+family = "arbball"
+sig = "char*(arb_srcptr, slong, ulong)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_zero_pm_inf"
+family = "arbball"
+sig = "void(arb_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_neg"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_conj"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_abs"
+family = "acbball"
+sig = "void(arb_ptr, acb_srcptr, slong prec)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_sqrt"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, slong prec)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_is_zero"
+family = "acbball"
+sig = "int(acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_is_exact"
+family = "acbball"
+sig = "int(acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_is_finite"
+family = "acbball"
+sig = "int(acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_indeterminate"
+family = "acbball"
+sig = "void(acb_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acf_sqrt"
+family = "acbfloat"
+sig = "int(acf_ptr, acf_srcptr, slong prec, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+
+[[op]]
+symbol = "acb_set_arb_arb"
+family = "acbball"
+sig = "void(acb_ptr, arb_srcptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_set_ui"
+family = "arbfloat"
+sig = "void(arf_ptr, ulong)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_set_ui"
+family = "arbball"
+sig = "void(arb_ptr, ulong)"
+kind = "export"
+status = "none"

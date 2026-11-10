@@ -19,10 +19,18 @@ include("acf.jl")
 include("arb.jl")
 include("acb.jl")
 include("storage.jl")
+include("typegrid.jl")
+include("conversions.jl")
+include("show.jl")
 
-export FlintReal, DFloat, DFloatBall, NFloat, NFloatType,
+export FlintReal, FlintNumber, DFloat, DFloatBall, NFloat, NFloatType,
        ArbFloat, ArbBall, AcbFloat, AcbBall,
-       midpoint, radius, isindeterminate, overlaps
+       pointtype, balltype, realtype, complextype,
+       midpoint, radius, isindeterminate, isexact, containszero, overlaps, with_precision
+
+# Not exported: `set!`, `neg!`, `abs!`, `sqrt!`, `add!`, `sub!`, `mul!`, `div!` and the `_inexact!`
+# forms (use `FlintFloats.mul!`; an export would clash with LinearAlgebra.mul!), and the traits
+# `guarantee`, `storage`, `Point`, `Enclosure`, `Inline`, `Owned`.
 
 const DFLOAT_SUPPORTED = Ref(false)
 

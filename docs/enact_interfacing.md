@@ -283,6 +283,8 @@ C status values may be bit sets. Handle combined and unexpected bits explicitly,
 
 Do not advertise a universal rounding mode: dfloat is approximate, nfloat guarantees depend on operations and flags, ball operations enclose results, and `ArbFloat`/`AcbFloat` are correctly rounded in FLINT's strict modes. Map `RoundNearest`, `RoundToZero`, `RoundFromZero`, `RoundDown`, `RoundUp` to `ARF_RND_NEAR`, `ARF_RND_DOWN`, `ARF_RND_UP`, `ARF_RND_FLOOR`, `ARF_RND_CEIL`; pass the mode as an argument, never through global state; do not use the relaxed modes (`ARF_RND_FAST`, `ARF_RND_ACCURATE`) or `approx` kernels in the first release. Before publishing "correctly rounded" for an operation, confirm it in the pinned documentation and with a differential test (the pinned `acf` introduction and its `acf_div`/`acf_sqrt` entries disagree). Reject unsupported requested modes. Avoid automatic fallbacks through `BigFloat` that silently change guarantees, exponent range, or performance.
 
+**M2 decisions.** Conversions never use a generic `Real` fallback: each source type has an explicit method and rounds once, to nearest, at the target precision. `show` prints a constructor expression; point types rebuild the identical value, ball types a containing ball. Mixed arithmetic with machine numbers keeps the FLINT operand's type (explicit methods; `Bool` is left to Base to avoid ambiguity). The operation capability table is [capability_table.md](capability_table.md).
+
 ## 8. Specify Julia semantics before adding broad fallbacks
 
 ### 8.1 Equality, uncertainty, and ordering

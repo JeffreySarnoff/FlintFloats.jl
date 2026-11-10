@@ -36,3 +36,19 @@ const GR_UNABLE  = Cint(2)
 "Throw for a status the wrapper does not handle."
 @noinline _status_error(st, op, T) =
     error("FLINT $op for $T returned unexpected status $st")
+
+# mpfr_rnd_t values (MPFR_RNDN, RNDZ, RNDU, RNDD, RNDA), for conversions to and from BigFloat.
+_mpfr_rnd(::RoundingMode{:Nearest})  = Cint(0)
+_mpfr_rnd(::RoundingMode{:ToZero})   = Cint(1)
+_mpfr_rnd(::RoundingMode{:Up})       = Cint(2)
+_mpfr_rnd(::RoundingMode{:Down})     = Cint(3)
+_mpfr_rnd(::RoundingMode{:FromZero}) = Cint(4)
+_mpfr_rnd(r::RoundingMode) = throw(ArgumentError("rounding mode $r is not supported"))
+
+"""
+    with_precision(f, bits)
+
+Call `f(Val(bits))`. The function barrier for adaptive-precision code: write the body as a method on
+`Val{P}` and construct `ArbBall{P}` values inside it, so it compiles once per precision.
+"""
+with_precision(f, bits::Integer) = f(Val(Int(bits)))

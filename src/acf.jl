@@ -33,7 +33,6 @@ function AcbFloat{P}(re::Float64, im::Float64) where {P}
     end
     return z
 end
-AcbFloat{P}(re::Real, im::Real = 0.0) where {P} = AcbFloat{P}(Float64(re), Float64(im))
 
 function Base.copy(z::AcbFloat{P}) where {P}
     w = AcbFloat{P}()
@@ -68,3 +67,46 @@ Base.:+(x::AcbFloat{P}, y::AcbFloat{P}) where {P} = add!(AcbFloat{P}(), x, y)
 Base.:-(x::AcbFloat{P}, y::AcbFloat{P}) where {P} = sub!(AcbFloat{P}(), x, y)
 Base.:*(x::AcbFloat{P}, y::AcbFloat{P}) where {P} = mul!(AcbFloat{P}(), x, y)
 Base.:/(x::AcbFloat{P}, y::AcbFloat{P}) where {P} = div!(AcbFloat{P}(), x, y)
+
+# ---- classification, unary operations -------------------------------------------------------------
+
+Base.iszero(z::AcbFloat) = iszero(real(z)) && iszero(imag(z))
+Base.isnan(z::AcbFloat) = isnan(real(z)) || isnan(imag(z))
+Base.isinf(z::AcbFloat) = isinf(real(z)) || isinf(imag(z))
+Base.isfinite(z::AcbFloat) = isfinite(real(z)) && isfinite(imag(z))
+
+Base.zero(::Type{AcbFloat{P}}) where {P} = AcbFloat{P}()
+Base.one(::Type{AcbFloat{P}}) where {P} = AcbFloat{P}(1.0, 0.0)
+Base.zero(::Type{AcbFloat}) = zero(AcbFloat{DEFAULT_PRECISION})
+Base.one(::Type{AcbFloat}) = one(AcbFloat{DEFAULT_PRECISION})
+Base.zero(::AcbFloat{P}) where {P} = AcbFloat{P}()
+Base.one(::AcbFloat{P}) where {P} = AcbFloat{P}(1.0, 0.0)
+
+"Complex number from real and imaginary parts of the same precision (exact copy)."
+function AcbFloat{P}(re::ArbFloat{P}, im::ArbFloat{P}) where {P}
+    z = AcbFloat{P}()
+    GC.@preserve z begin
+        LibFlint.arf_set(LibFlint.acf_real_ptr(z), re)
+        LibFlint.arf_set(LibFlint.acf_imag_ptr(z), im)
+    end
+    return z
+end
+
+function neg!(z::AcbFloat{P}, x::AcbFloat{P}) where {P}
+    LibFlint.acf_neg(z, x)
+    return z
+end
+Base.:-(x::AcbFloat{P}) where {P} = neg!(AcbFloat{P}(), x)
+
+"Complex conjugate; exact (the imaginary part's sign flips)."
+Base.conj(x::AcbFloat{P}) where {P} = AcbFloat{P}(real(x), -imag(x))
+
+"Squared modulus `re² + im²`: three roundings, not correctly rounded."
+Base.abs2(x::AcbFloat) = (r = real(x); i = imag(x); r * r + i * i)
+
+function sqrt_inexact!(z::AcbFloat{P}, x::AcbFloat{P}, r::RoundingMode = RoundNearest) where {P}
+    flag = LibFlint.acf_sqrt(z, x, P, _rnd(r))
+    return z, flag != 0
+end
+sqrt!(z::AcbFloat{P}, x::AcbFloat{P}, r::RoundingMode = RoundNearest) where {P} = first(sqrt_inexact!(z, x, r))
+Base.sqrt(x::AcbFloat{P}) where {P} = sqrt!(AcbFloat{P}(), x)

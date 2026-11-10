@@ -62,7 +62,6 @@ function NFloat{L}(x::Float64) where {L}
     st == GR_SUCCESS || _status_error(st, :set_d, NFloat{L})
     return r[]
 end
-NFloat{L}(x::Real) where {L} = NFloat{L}(Float64(x))
 
 "`true` if `x` is zero (FLINT encodes zero as a special exponent)."
 Base.iszero(x::NFloat) = x.exp == NFLOAT_EXP_ZERO
@@ -90,4 +89,37 @@ function Base.Float64(x::NFloat{L}) where {L}
     st = LibFlint.nfloat_get_arf(t, Ref(x), _ctx(NFloat{L}))
     st == GR_SUCCESS || _status_error(st, :get_arf, NFloat{L})
     return Float64(t)
+end
+
+# ---- classification, unary operations, conversion ------------------------------------------------
+
+# Finite-only: nothing is NaN or infinite.
+Base.isnan(::NFloat) = false
+Base.isinf(::NFloat) = false
+Base.isfinite(::NFloat) = true
+Base.signbit(x::NFloat) = !iszero(x) && x.sign != 0
+
+Base.zero(::Type{NFloat{L}}) where {L} = NFloat{L}(0.0)
+Base.one(::Type{NFloat{L}}) where {L} = NFloat{L}(1.0)
+Base.zero(x::NFloat) = zero(typeof(x))
+Base.one(x::NFloat) = one(typeof(x))
+
+for (op, cf) in ((:-, :neg), (:abs, :abs))
+    c = Symbol("nfloat_", cf)
+    @eval function Base.$op(x::NFloat{L}) where {L}
+        r = Ref{NFloat{L}}()
+        st = LibFlint.$c(r, Ref(x), _ctx(NFloat{L}))
+        st == GR_SUCCESS || _status_error(st, $(QuoteNode(cf)), NFloat{L})
+        return r[]
+    end
+end
+
+function Base.sqrt(x::NFloat{L}) where {L}
+    # With no NaN in the context FLINT reports GR_UNABLE for a negative argument; name it a domain error.
+    signbit(x) && throw(DomainError(x, "sqrt of a negative NFloat"))
+    r = Ref{NFloat{L}}()
+    st = LibFlint.nfloat_sqrt(r, Ref(x), _ctx(NFloat{L}))
+    st == GR_SUCCESS && return r[]
+    st & GR_DOMAIN != 0 && throw(DomainError(x, "sqrt of a negative NFloat"))
+    _status_error(st, :sqrt, NFloat{L})
 end

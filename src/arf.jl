@@ -39,7 +39,6 @@ function ArbFloat{P}(x::Int) where {P}
     return z
 end
 
-ArbFloat{P}(x::Real) where {P} = ArbFloat{P}(Float64(x))
 
 function Base.copy(x::ArbFloat{P}) where {P}
     z = ArbFloat{P}()
@@ -69,3 +68,46 @@ Base.:+(x::ArbFloat{P}, y::ArbFloat{P}) where {P} = add!(ArbFloat{P}(), x, y)
 Base.:-(x::ArbFloat{P}, y::ArbFloat{P}) where {P} = sub!(ArbFloat{P}(), x, y)
 Base.:*(x::ArbFloat{P}, y::ArbFloat{P}) where {P} = mul!(ArbFloat{P}(), x, y)
 Base.:/(x::ArbFloat{P}, y::ArbFloat{P}) where {P} = div!(ArbFloat{P}(), x, y)
+
+# ---- classification, unary operations ------------------------------------------------------------
+
+Base.iszero(x::ArbFloat) = LibFlint.arf_is_zero(x) != 0
+Base.isnan(x::ArbFloat) = LibFlint.arf_is_nan(x) != 0
+Base.isfinite(x::ArbFloat) = LibFlint.arf_is_finite(x) != 0
+Base.isinf(x::ArbFloat) = LibFlint.arf_is_pos_inf(x) != 0 || LibFlint.arf_is_neg_inf(x) != 0
+Base.isinteger(x::ArbFloat) = LibFlint.arf_is_int(x) != 0
+"Negative values only: FLINT's `arf` has no negative zero, and NaN has no sign."
+Base.signbit(x::ArbFloat) = LibFlint.arf_sgn(x) < 0
+Base.sign(x::ArbFloat{P}) where {P} = isnan(x) ? x : ArbFloat{P}(Int(LibFlint.arf_sgn(x)))
+
+Base.zero(::Type{ArbFloat{P}}) where {P} = ArbFloat{P}()
+Base.one(::Type{ArbFloat{P}}) where {P} = ArbFloat{P}(1)
+Base.zero(::Type{ArbFloat}) = zero(ArbFloat{DEFAULT_PRECISION})
+Base.one(::Type{ArbFloat}) = one(ArbFloat{DEFAULT_PRECISION})
+Base.zero(::ArbFloat{P}) where {P} = ArbFloat{P}()
+Base.one(::ArbFloat{P}) where {P} = ArbFloat{P}(1)
+
+"Set `z` to the nearest-rounded copy of `x` (precision `P` of `z`), returning `z`."
+function set!(z::ArbFloat{P}, x::ArbFloat, r::RoundingMode = RoundNearest) where {P}
+    LibFlint.arf_set_round(z, x, P, _rnd(r))
+    return z
+end
+
+for (name, f) in ((:neg, :arf_neg), (:abs, :arf_abs))
+    bang = Symbol(name, :!)
+    # Exact for same precision, so no rounding argument; z may alias x.
+    @eval function $bang(z::ArbFloat{P}, x::ArbFloat{P}) where {P}
+        LibFlint.$f(z, x)
+        return z
+    end
+end
+Base.:-(x::ArbFloat{P}) where {P} = neg!(ArbFloat{P}(), x)
+Base.abs(x::ArbFloat{P}) where {P} = abs!(ArbFloat{P}(), x)
+
+function sqrt_inexact!(z::ArbFloat{P}, x::ArbFloat{P}, r::RoundingMode = RoundNearest) where {P}
+    signbit(x) && throw(DomainError(x, "sqrt of a negative ArbFloat; use AcbFloat for a complex result"))
+    flag = LibFlint.arf_sqrt(z, x, P, _rnd(r))
+    return z, flag != 0
+end
+sqrt!(z::ArbFloat{P}, x::ArbFloat{P}, r::RoundingMode = RoundNearest) where {P} = first(sqrt_inexact!(z, x, r))
+Base.sqrt(x::ArbFloat{P}) where {P} = sqrt!(ArbFloat{P}(), x)

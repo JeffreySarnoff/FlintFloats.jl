@@ -29,7 +29,6 @@ function AcbBall{P}(re::Float64, im::Float64) where {P}
     LibFlint.acb_set_round(z, z, P)       # precision invariant
     return z
 end
-AcbBall{P}(re::Real, im::Real = 0.0) where {P} = AcbBall{P}(Float64(re), Float64(im))
 
 function Base.copy(z::AcbBall{P}) where {P}
     w = AcbBall{P}()
@@ -61,3 +60,52 @@ Base.:+(x::AcbBall{P}, y::AcbBall{P}) where {P} = add!(AcbBall{P}(), x, y)
 Base.:-(x::AcbBall{P}, y::AcbBall{P}) where {P} = sub!(AcbBall{P}(), x, y)
 Base.:*(x::AcbBall{P}, y::AcbBall{P}) where {P} = mul!(AcbBall{P}(), x, y)
 Base.:/(x::AcbBall{P}, y::AcbBall{P}) where {P} = div!(AcbBall{P}(), x, y)
+
+# ---- classification, unary operations ------------------------------------------------------------
+
+Base.iszero(z::AcbBall) = LibFlint.acb_is_zero(z) != 0
+Base.isfinite(z::AcbBall) = LibFlint.acb_is_finite(z) != 0
+Base.isnan(z::AcbBall) = isnan(real(z)) || isnan(imag(z))
+Base.isinf(::AcbBall) = false
+isexact(z::AcbBall) = LibFlint.acb_is_exact(z) != 0
+
+Base.zero(::Type{AcbBall{P}}) where {P} = AcbBall{P}()
+Base.one(::Type{AcbBall{P}}) where {P} = AcbBall{P}(1.0, 0.0)
+Base.zero(::Type{AcbBall}) = zero(AcbBall{DEFAULT_PRECISION})
+Base.one(::Type{AcbBall}) = one(AcbBall{DEFAULT_PRECISION})
+Base.zero(::AcbBall{P}) where {P} = AcbBall{P}()
+Base.one(::AcbBall{P}) where {P} = AcbBall{P}(1.0, 0.0)
+
+"Complex ball from real and imaginary balls of the same precision."
+function AcbBall{P}(re::ArbBall{P}, im::ArbBall{P}) where {P}
+    z = AcbBall{P}()
+    LibFlint.acb_set_arb_arb(z, re, im)
+    return z
+end
+
+function neg!(z::AcbBall{P}, x::AcbBall{P}) where {P}
+    LibFlint.acb_neg(z, x)
+    return z
+end
+function sqrt!(z::AcbBall{P}, x::AcbBall{P}) where {P}
+    LibFlint.acb_sqrt(z, x, P)
+    return z
+end
+Base.:-(x::AcbBall{P}) where {P} = neg!(AcbBall{P}(), x)
+Base.sqrt(x::AcbBall{P}) where {P} = sqrt!(AcbBall{P}(), x)
+
+function Base.conj(x::AcbBall{P}) where {P}
+    z = AcbBall{P}()
+    LibFlint.acb_conj(z, x)
+    return z
+end
+
+"Modulus as an `ArbBall` enclosure."
+function Base.abs(x::AcbBall{P}) where {P}
+    r = ArbBall{P}()
+    LibFlint.acb_abs(r, x, P)
+    return r
+end
+
+"Squared modulus `re² + im²` as an enclosure."
+Base.abs2(x::AcbBall) = (r = real(x); i = imag(x); r * r + i * i)

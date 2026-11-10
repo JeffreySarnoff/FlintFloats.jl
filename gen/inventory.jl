@@ -14,11 +14,12 @@ end
 const CTYPE = Dict(
     "void" => "Cvoid", "int" => "Cint", "double" => "Cdouble",
     "slong" => "Int", "ulong" => "UInt", "arf_rnd_t" => "Cint",
-    "double*" => "Ptr{Cdouble}", "void*" => "Ptr{Cvoid}",
+    "double*" => "Ptr{Cdouble}", "void*" => "Ptr{Cvoid}", "mpfr_ptr" => "Ref{BigFloat}",
 )
 
-function ctype(t::AbstractString)
-    t = strip(t)
+function ctype(t::AbstractString; ret::Bool = false)
+    t = strip(replace(t, "const " => ""))
+    t == "char*" && return ret ? "Ptr{Cchar}" : "Cstring"
     t = first(split(t))                       # drop a trailing parameter label, e.g. "slong prec"
     haskey(CTYPE, t) && return CTYPE[t]
     (endswith(t, "_ptr") || endswith(t, "_srcptr")) && return "Ptr{Cvoid}"
@@ -28,7 +29,7 @@ end
 function parse_sig(sig::AbstractString)
     m = match(r"^(.+?)\((.*)\)$", sig)
     m === nothing && error("bad signature: $sig")
-    ret = ctype(m[1])
+    ret = ctype(m[1]; ret = true)
     argstr = strip(m[2])
     args = isempty(argstr) ? String[] : [ctype(a) for a in split(argstr, ",")]
     return ret, args

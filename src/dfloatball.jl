@@ -11,6 +11,7 @@ struct DFloatBall{N} <: FlintReal
     rad::Float64
     function DFloatBall{N}(d::NTuple{N,Float64}, rad::Float64) where {N}
         (N isa Int && 1 <= N <= 4) || throw(ArgumentError("DFloatBall{N} requires N in 1:4, got $(repr(N))"))
+        _require_dfloat()
         return new{N}(d, rad)
     end
 end
@@ -23,6 +24,7 @@ for N in 1:4
     get_d = Symbol("d", N, "b_get_d")
     indet = Symbol("d", N, "b_indeterminate")
     @eval function DFloatBall{$N}(x::Float64)
+        _require_dfloat()
         r = Ref{DFloatBall{$N}}()
         LibFlint.$set_d(r, x)
         return r[]
@@ -54,7 +56,59 @@ for N in 1:4
     end
 end
 
-DFloatBall{N}(x::Real) where {N} = DFloatBall{N}(Float64(x))
 
 Base.precision(::Type{DFloatBall{N}}) where {N} = 53 * N
 Base.precision(x::DFloatBall) = precision(typeof(x))
+
+# ---- classification, unary operations, parsing ---------------------------------------------------
+
+"`true` if the ball has radius zero."
+function isexact end
+"`true` if the ball contains zero."
+function containszero end
+
+for N in 1:4
+    for (name, cf) in ((:(Base.iszero), :is_zero), (:(Base.isfinite), :is_finite), (:isexact, :is_exact))
+        c = Symbol("d", N, "b_", cf)
+        @eval $name(x::DFloatBall{$N}) = LibFlint.$c(Ref(x)) != 0
+    end
+    cz = Symbol("d", N, "b_contains_zero")
+    @eval containszero(x::DFloatBall{$N}) = LibFlint.$cz(Ref(x)) != 0
+    for (op, cf) in ((:-, :neg), (:abs, :abs))
+        c = Symbol("d", N, "b_", cf)
+        @eval function Base.$op(x::DFloatBall{$N})
+            r = Ref{DFloatBall{$N}}()
+            LibFlint.$c(r, Ref(x))
+            return r[]
+        end
+    end
+    # sqrt: GR_DOMAIN entirely negative; GR_UNABLE contains negatives (output unspecified).
+    sq = Symbol("d", N, "b_sqrt")
+    @eval function Base.sqrt(x::DFloatBall{$N})
+        r = Ref{DFloatBall{$N}}()
+        st = LibFlint.$sq(r, Ref(x))
+        st == GR_SUCCESS && return r[]
+        st & GR_DOMAIN != 0 && throw(DomainError(x, "sqrt of an entirely negative DFloatBall"))
+        st & GR_UNABLE != 0 && return _indeterminate(DFloatBall{$N})
+        _status_error(st, :sqrt, DFloatBall{$N})
+    end
+    ss = Symbol("d", N, "b_set_str")
+    @eval function Base.parse(::Type{DFloatBall{$N}}, s::AbstractString)
+        _require_dfloat()
+        r = Ref{DFloatBall{$N}}()
+        LibFlint.$ss(r, String(s)) == 0 || throw(ArgumentError("invalid DFloatBall literal: $(repr(s))"))
+        return r[]
+    end
+end
+
+# A ball is never NaN and never a single infinity; the whole real line is `isindeterminate`.
+Base.isnan(::DFloatBall) = false
+Base.isinf(::DFloatBall) = false
+Base.zero(::Type{DFloatBall{N}}) where {N} = DFloatBall{N}(0.0)
+Base.one(::Type{DFloatBall{N}}) where {N} = DFloatBall{N}(1.0)
+Base.zero(x::DFloatBall) = zero(typeof(x))
+Base.one(x::DFloatBall) = one(typeof(x))
+DFloatBall{N}(x::Union{Float16,Float32,Bool,Int8,Int16,Int32,UInt8,UInt16,UInt32}) where {N} = DFloatBall{N}(Float64(x))
+DFloatBall{N}(x::AbstractString) where {N} = parse(DFloatBall{N}, x)
+
+Base.show(io::IO, x::DFloatBall{N}) where {N} = print(io, "DFloatBall{", N, "}(", x.d, ", ", x.rad, ")")

@@ -37,7 +37,6 @@ function ArbBall{P}(x::Int) where {P}
     return z
 end
 
-ArbBall{P}(x::Real) where {P} = ArbBall{P}(Float64(x))
 
 function Base.copy(x::ArbBall{P}) where {P}
     z = ArbBall{P}()
@@ -80,3 +79,45 @@ Base.:/(x::ArbBall{P}, y::ArbBall{P}) where {P} = div!(ArbBall{P}(), x, y)
 Base.contains(x::ArbBall{P}, y::ArbBall{P}) where {P} = LibFlint.arb_contains(x, y) != 0
 "`true` if the balls `x` and `y` share at least one point."
 overlaps(x::ArbBall{P}, y::ArbBall{P}) where {P} = LibFlint.arb_overlaps(x, y) != 0
+
+# ---- classification, unary operations ------------------------------------------------------------
+
+Base.iszero(x::ArbBall) = LibFlint.arb_is_zero(x) != 0
+Base.isfinite(x::ArbBall) = LibFlint.arb_is_finite(x) != 0
+Base.isinteger(x::ArbBall) = LibFlint.arb_is_int(x) != 0
+"`true` if the midpoint is NaN (the indeterminate ball)."
+Base.isnan(x::ArbBall{P}) where {P} = isnan(midpoint(x))
+"A ball is never infinite as a value; use `isfinite` to test the enclosure's bounds."
+Base.isinf(::ArbBall) = false
+"`true` if the radius is zero."
+isexact(x::ArbBall) = LibFlint.arb_is_exact(x) != 0
+isindeterminate(x::ArbBall) = !isfinite(x) && isnan(x)
+
+Base.zero(::Type{ArbBall{P}}) where {P} = ArbBall{P}()
+Base.one(::Type{ArbBall{P}}) where {P} = ArbBall{P}(1)
+Base.zero(::Type{ArbBall}) = zero(ArbBall{DEFAULT_PRECISION})
+Base.one(::Type{ArbBall}) = one(ArbBall{DEFAULT_PRECISION})
+Base.zero(::ArbBall{P}) where {P} = ArbBall{P}()
+Base.one(::ArbBall{P}) where {P} = ArbBall{P}(1)
+
+"Set `z` to a containing copy of `x` at the precision of `z`, returning `z`."
+function set!(z::ArbBall{P}, x::ArbBall) where {P}
+    LibFlint.arb_set_round(z, x, P)
+    return z
+end
+
+for (name, f) in ((:neg, :arb_neg), (:abs, :arb_abs))
+    bang = Symbol(name, :!)
+    @eval function $bang(z::ArbBall{P}, x::ArbBall{P}) where {P}
+        LibFlint.$f(z, x)
+        return z
+    end
+end
+function sqrt!(z::ArbBall{P}, x::ArbBall{P}) where {P}
+    LibFlint.arb_sqrt(z, x, P)
+    return z
+end
+Base.:-(x::ArbBall{P}) where {P} = neg!(ArbBall{P}(), x)
+Base.abs(x::ArbBall{P}) where {P} = abs!(ArbBall{P}(), x)
+"Square root of an enclosure; a ball reaching below zero gives FLINT's indeterminate result, not an error."
+Base.sqrt(x::ArbBall{P}) where {P} = sqrt!(ArbBall{P}(), x)
