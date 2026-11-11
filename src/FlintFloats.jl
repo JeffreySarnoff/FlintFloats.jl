@@ -8,6 +8,7 @@ module FlintFloats
 
 include("libflint/LibFlint.jl")
 using .LibFlint
+import LinearAlgebra: dot
 
 include("types.jl")
 include("precision.jl")

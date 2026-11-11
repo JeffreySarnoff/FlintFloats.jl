@@ -13,7 +13,7 @@ Companion to [plan_interfacing.md](plan_interfacing.md) and [enact_interfacing.m
 
 **Precision is a type parameter for every type** (see §6.3 and §8 for the trade-offs). `ArbFloat`/`AcbFloat` wrap FLINT's `arf`/`acf` (correctly rounded floating point, no error bounds); `ArbBall`/`AcbBall` wrap `arb`/`acb`. `mag` stays private. Complex dfloat (`dNc`, `dNcb`, would be `DFloatComplex`/`DFloatComplexBall`) and complex nfloat are deferred.
 
-Facts marked *(docs)* come from the FLINT 3.7.0-dev dfloat pages (index, `balls`, `d1b_struct`, `d1cb_struct`, `DFLOAT_BALL`, `using`, `d1b_add`, `d1b_is_exact`). Those pages say parts of their text were LLM-generated; confirm against `src/dfloat.h` before binding. Facts marked *(pinned docs)* come from the Markdown documentation shipped in the pinned source tree (`doc/src/arf`, `doc/src/acf`), read locally. Facts marked *(checked)* were read from the local build at `/tmp/flintfloats-jll-build/install` (FLINT 3.7.0-dev, source `82c40b29…`, ABI 25). Availability is recorded in [capability_table.md](capability_table.md); proposed surfaces below are not implementation claims. M0–M3 and M4a–M4c are implemented, including `NFloatWorkspace`, `PackedBallVector`, and explicit `BorrowedBall` references. The copied-read documentation and `eachborrow` follow-up is implemented. Flat in-place broadcast (§9.4.3, first step) is implemented. Bounded nested broadcast is implemented; borrowed sum is implemented; audited dot products are next, followed by M4d dot products.
+Facts marked *(docs)* come from the FLINT 3.7.0-dev dfloat pages (index, `balls`, `d1b_struct`, `d1cb_struct`, `DFLOAT_BALL`, `using`, `d1b_add`, `d1b_is_exact`). Those pages say parts of their text were LLM-generated; confirm against `src/dfloat.h` before binding. Facts marked *(pinned docs)* come from the Markdown documentation shipped in the pinned source tree (`doc/src/arf`, `doc/src/acf`), read locally. Facts marked *(checked)* were read from the local build at `/tmp/flintfloats-jll-build/install` (FLINT 3.7.0-dev, source `82c40b29…`, ABI 25). Availability is recorded in [capability_table.md](capability_table.md); proposed surfaces below are not implementation claims. M0–M3 and M4a–M4c are implemented, including `NFloatWorkspace`, `PackedBallVector`, and explicit `BorrowedBall` references. The copied-read documentation and `eachborrow` follow-up is implemented. Flat in-place broadcast (§9.4.3, first step) is implemented. Bounded nested broadcast is implemented; borrowed sum is implemented; audited dot products are implemented; selected mapped reductions are next.
 
 ## 1. What "uniform" means
 
@@ -445,7 +445,11 @@ possibly overlapping views before writing, including singleton expansion and shi
 sources. Snapshots preserve source/view types through existing Base rules and can allocate a native
 copy of the parent. Explicit vector `FlintFloats.add!`/`mul!` retain stricter overlap rejection.
 
-Other Ref implementations, nested/custom expressions, ordinary array inputs, mixed formats/result
+Bounded nested arithmetic also supports identity, unary negation, and binary `+`, `-`, `*`, `/`,
+with at most eight arithmetic nodes and depth 16. Each node uses independent owned scratch,
+preserving scalar evaluation order and working precision.
+
+Other Ref implementations, unsupported/custom expressions, ordinary array inputs, mixed formats/result
 types, and repeated-index destinations take the generic Base path before evaluation, without retry
 after exceptions. Allocating broadcast style/result selection is unchanged. Shape/lifetime checks
 and snapshots happen before fast-path mutation; evaluation errors may leave a valid partially
@@ -453,7 +457,7 @@ updated destination. Nonoverlapping warmed typed paths avoid per-element Julia o
 memory costs are separate. See [broadcast measurements](../benchmark/results/packed_broadcast.txt).
 
 `PackedVector`, `flintzeros`, `flintones`, `flintvec`, and `flintmatrix` remain unavailable design
-names. Native dot products need separate accumulation/error and complex-conjugation contracts (M4d).
+names. Implemented packed dot products have separate accumulation/error and complex-conjugation contracts (M4d; see §9).
 Matrix storage/kernels follow only where measured workloads justify them; ordinary Julia matrices
 of concrete inline values remain available.
 
@@ -795,15 +799,18 @@ The proposed shared mapping would live in `_status`; current family implementati
 
 ## 9. Next steps
 
-M0–M3 and M4a–M4c are implemented. Copied-read documentation, `eachborrow`, and flat in-place
-broadcast complete the first surrounding-interface steps in [enact_interfacing.md §9.4](enact_interfacing.md).
-The prior M4c full-suite baseline passed 13,709 tests; this update uses focused broadcast and directly
-affected packed-owner checks, plus documentation/doctests. The shared protocol in §4 remains unfactored.
+M0–M3, M4a–M4c, copied-read documentation/`eachborrow`, flat/nested packed broadcast, borrowed sum,
+and conjugating packed dot are implemented. Latest validation uses 346 dot and 205 sum checks, plus
+documentation/doctests and deterministic audit of 309 symbols; the full numeric suite is not rerun.
+The shared internal protocol remains unfactored.
 
-1. **§9.4.4:** borrowed sum with a fresh typed result and bounded scratch, preserving generic keyword/callback behavior.
-2. **M4d:** borrowed sum, then selected native dot methods with independent numerical/conjugation
-   contracts; mapped reductions and measured matrix work follow their own gates.
-3. **M5:** elementary/special functions, portable artifacts, and verified CI/release targets.
+1. Individually verified mapped reductions such as `sum(abs2, v)` (§9.4.4), preserving result
+   family/precision and generic callback/keyword behavior.
+2. Matrix/other-family optimization only on measured need and separate layout/numerical evidence.
+3. M5 elementary/special functions, portable artifacts, and verified CI/release targets.
 
-Use the development guide for acceptance criteria and [capability_table.md](capability_table.md)
-for the implemented operation set. Bounded nested broadcast is implemented with per-node scratch (≤8 arithmetic nodes, depth ≤16). Plain packed `sum(v)` is implemented with a fresh logical-order accumulator; keywords/mapped calls remain generic. Audited dot products are next.
+See [enact_interfacing.md](enact_interfacing.md) for acceptance gates and the
+[capability table](capability_table.md) for implemented combinations. Plain sum returns a fresh
+logical-order result. Dot conjugates the first complex operand and uses independent native/borrowed
+accumulation contracts; outputs can differ in radius from generic scalar loops. Ordinary indexing
+and iteration still copy values; no result-buffer borrowing or swapping is introduced.

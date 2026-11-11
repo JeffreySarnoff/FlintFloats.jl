@@ -1,17 +1,17 @@
 # FlintFloats.jl development checkpoint
 
 This handoff covers M0–M3, M4a–M4c, and reusable nfloat scratch. The last implementation
-commit before this update is `409f81e` (bounded nested broadcast); this checkpoint is updated with bounded nested packed broadcast in `src/packed_broadcast.jl`, plus focused tests/benchmarks. It does not replace the [public interface contract](float_interfacing.md),
+commit before this update is `4712769` (borrowed sum); this checkpoint is updated with conjugating dot in `src/packed_reduce.jl`, its audited bindings, dependency setup, tests, and benchmarks. It does not replace the [public interface contract](float_interfacing.md),
 [capability table](capability_table.md), or [development guide](enact_interfacing.md). Check the current
-tree before acting. The next implementation part is **audited M4d dot products (§9.4.4)**; borrowed sum is implemented.
+tree before acting. The next implementation part is **selected mapped reductions (§9.4.4)**; sum and audited conjugating dot products are implemented.
 
 ## Repository and binary state
 
-- **Completed milestones:** M0 (binary contract), M1 (representations), M2 (scalar arithmetic), and M3 (Julia numeric contracts). M4a (inline vector arithmetic), M4b (nfloat vectors), and reusable nfloat scratch are also implemented. M4c packed ball owners/borrowing and §9.4.1–2 documentation/`eachborrow` are also implemented; flat in-place broadcast is implemented; bounded nested broadcast is implemented; borrowed sum is implemented; audited dot products are next.
+- **Completed milestones:** M0 (binary contract), M1 (representations), M2 (scalar arithmetic), and M3 (Julia numeric contracts). M4a (inline vector arithmetic), M4b (nfloat vectors), and reusable nfloat scratch are also implemented. M4c packed ball owners/borrowing and §9.4.1–2 documentation/`eachborrow` are also implemented; flat in-place broadcast is implemented; bounded nested broadcast is implemented; borrowed sum is implemented; audited dot products are implemented; selected mapped reductions are next.
 - **Julia floor:** 1.13; local development uses 1.13.3.
 - **Pinned library:** FLINT `3.7.0-dev`, source commit `82c40b299084b92299c2d8dac464e39d6743fce4`, ABI 25. The nested `FlintFloat.jl/FLINT_jll` package has version `301.690.0+0`; the main project resolves it by path.
 - **Artifact constraint:** The bundled x86_64 Linux binary is tuned for the development host (i9-14900K, glibc 2.43). It is unsuitable as a portable CI or release artifact. The BinaryBuilder recipe exists but has not been validated on the target matrix.
-- **Commit context:** source and documentation changes described here are committed together. Earlier M3-only checkpoints are available in Git history.
+- **Commit context:** HEAD is `4712769` (borrowed sum), following `409f81e` (bounded nested broadcast) and `a140f35` (flat broadcast). The third continuation, packed dot, is implemented and verified but **uncommitted**, including bindings, LinearAlgebra dependency/manifests, tests, benchmarks, and documentation. All three requested development steps are complete. Inspect `git status` before resuming; earlier checkpoints are available in Git history.
 
 ## Implemented numeric interface
 
@@ -64,8 +64,8 @@ faster on tiny vectors or when large-format native multiplication dominates.
 `PackedBallVector(T, values)` copies in values. Length and allocation are fixed. One idempotent
 finalizer clears all initialized elements and frees the allocation; failed population cleans up
 immediately. Indexing copies an independent scalar; assignment rounds with containment to destination
-precision. Copy/deepcopy never duplicate owning pointer bytes. Ordinary Base array semantics work;
-optimized broadcast, native dot products, and matrices are not introduced.
+precision. Copy/deepcopy never duplicate owning pointer bytes. Ordinary Base array semantics work. The broadcast and reduction follow-ups below add optimized
+assignment broadcast and native/borrowed dot products; native matrix methods remain unavailable.
 
 `borrow(v, i)` on packed owners/views returns a nonnumeric `BorrowedBall` retaining its fixed parent.
 Read a copy using `r[]`/`copy(r)`, mutate with `r[] = x`, `FlintFloats.set!`, or same-format scalar
@@ -101,11 +101,23 @@ writing. Base's `broadcast_unalias` snapshots possibly overlapping views, includ
 using existing type-preserving unalias-copy rules. Snapshot native memory can be proportional to the
 whole parent; timings report that cost separately. Explicit bulk methods keep overlap rejection.
 
-Nested/custom expressions, other Ref kinds, ordinary array inputs, mixed formats/types, and repeated
+Unsupported/custom expressions, other Ref kinds, ordinary array inputs, mixed formats/types, and repeated
 indices on the destination use an explicit invocation of Base's generic method selected before mutation.
 No error retry or global broadcast style is added. Generic callback effects and allocating result types
 are retained. Fast-path evaluation errors may partially update a valid destination. Empty recognized
 calls skip C and scalar Ref reads after validation. Numerical kernels and C bindings are unchanged.
+
+## Bounded nested broadcast and reductions
+
+Bounded nested assignment broadcast supports identity, unary negation, and binary `+`, `-`, `*`, `/`
+with at most eight arithmetic nodes and depth 16. Each node occurrence owns separate scratch, so
+live sibling values and repeated subexpressions preserve scalar evaluation order and precision.
+All snapshots and scratch are prepared before mutation; unsupported trees select Base's fallback.
+
+`src/packed_reduce.jl` implements plain `sum` using one fresh owned accumulator and borrowed reads.
+Empty results are typed zero; singleton results are independent. Keyword and mapped sums remain
+generic. `LinearAlgebra.dot` conjugates the first complex operand and returns independent owned
+storage, with native/borrowed path details and enclosure evidence recorded below.
 
 ## Behavioral decisions that matter when extending the code
 
@@ -114,7 +126,7 @@ calls skip C and scalar Ref reads after validation. Numerical kernels and C bind
 - `NFloat` uses `NFLOAT_ALLOW_UNDERFLOW` only. It rejects Inf/NaN, throws on division by zero, and its division is truncated with error under one ulp. Do not add special-value handling or a correctness claim without a new source audit and tests.
 - `ArbFloat` follows FLINT rather than IEEE signed-zero behavior: no negative zero, and division by zero yields NaN. Strict rounding modes are passed explicitly to `ArbFloat` and `AcbFloat` operations.
 - `AcbFloat` `abs`/`abs2` use a custom exact-rounding path in `src/acf.jl`; do not replace it with a midpoint approximation. Sampled differential tests support the rounding claims but are not a proof over all values.
-- Owned `arf`/`acf`/`arb`/`acb` values have a single object and finalizer. Copying must initialize independent storage; destination operations may reuse storage. Borrowed array elements require a parent lifetime rule before they are introduced.
+- Owned `arf`/`acf`/`arb`/`acb` values have a single object and finalizer. Copying must initialize independent storage; destination operations may reuse storage. Packed borrowed elements retain their fixed-size parent and check that it remains open.
 - `DFloatBall` order uses exact endpoints; FLINT's `dNb_cmp` alone cannot prove some touching cases. Keep `GR_UNABLE`/indeterminate enclosure handling explicit.
 - Promotion is intentionally narrow. `DFloat` with `NFloat`, `DFloatBall` with the arb family, and mixes with `BigFloat` require explicit conversion. See `src/promotion.jl` before adding a mixed operator.
 
@@ -127,6 +139,8 @@ calls skip C and scalar Ref reads after validation. Numerical kernels and C bind
 | `src/{precision,storage,typegrid,conversions,show,compare,promotion,basefloat}.jl` | Shared numerical and Julia behavior |
 | `src/arrays.jl`, `src/reusable.jl` | Bulk validation/dispatch; workspace owner, growth/exclusive-use guard, shared nfloat kernels and commit |
 | `src/packed.jl` | Packed owners, parent-retaining references, semantic array copying, native add and borrowed scalar arithmetic |
+| `src/packed_broadcast.jl` | Flat/bounded nested assignment broadcast, alias snapshots, per-node scratch, Base fallback |
+| `src/packed_reduce.jl` | Fresh borrowed sum, conjugating native/borrowed dot, generic mixed-format fallback |
 | `src/libflint/generated/` | Generated C declarations; edit the inventory, not these files |
 | `gen/inventory.toml`, `gen/{audit,generate}.jl` | Symbol inventory, audit, deterministic generation |
 | `test/abi/` | Matching-header layout probe and recorded evidence |
@@ -136,7 +150,8 @@ calls skip C and scalar Ref reads after validation. Numerical kernels and C bind
 From the repository root:
 
 ```sh
-julia --project=. -e 'using Pkg; Pkg.test()'
+julia --project=. -t 4 -e 'include("test/packed_reduce_tests.jl"); include("test/packed_dot_tests.jl")'
+julia --project=. -t 4 -e 'include("test/packed_broadcast_tests.jl"); include("test/packed_nested_broadcast_tests.jl")'
 julia --project=gen gen/audit.jl
 julia --project=gen gen/generate.jl
 julia --project=benchmark benchmark/m1_scalar.jl
@@ -146,7 +161,14 @@ julia --project=benchmark benchmark/reusable.jl
 julia --project=benchmark benchmark/m4c_packed.jl
 julia --project=benchmark benchmark/packed_iteration.jl
 julia --project=benchmark benchmark/packed_broadcast.jl
+julia --project=benchmark benchmark/packed_nested_broadcast.jl
+julia --project=benchmark benchmark/packed_sum.jl
+julia --project=benchmark benchmark/packed_dot.jl
 ```
+
+After a change, rerun only tests covering what changed. Nested broadcast tests reuse flat-test
+helpers and must follow that file. No source tests were rerun for this documentation-only refresh;
+the verification section records the completed implementation checks.
 
 The ABI probe (`./test/abi/run.sh`) expects an external FLINT build tree under `/tmp/flintfloats-jll-build` and a configured OpenBLAS32 library directory. Inspect the script before relying on it in a clean environment. `docs/make.jl` builds the documentation in its own Julia project.
 
@@ -154,35 +176,36 @@ For a new FLINT operation, update `gen/inventory.toml`, audit the symbol, regene
 
 ## Verification at this checkpoint
 
-Latest sum follow-up: **205 focused reduction checks pass** on four Julia threads, including keyword/
-mapped compatibility, independent empty/singleton results, exact interval containment and cancellation.
-Documentation/doctests and allocation/radius benchmarks cover this step; no full-suite rerun.
+Latest dot follow-up: **346 dot checks** and **205 sum checks** pass with four Julia threads;
+documentation/doctests pass. Tests cover exact uncertain endpoint oracles, nonreal singleton
+conjugation, signed/gathered spans, precision, cancellation, nonfinites, mixed interfaces, heap-backed
+result lifetime after parent cleanup, concurrent readers, and method ambiguities. The previous nested
+step passed 781 flat plus 215 nested checks. No whole-suite rerun was performed; 13,709 is the historical
+M4c full-suite baseline, not a fresh count for this source.
 
-The prior full-suite baseline passed **13,709 tests** on Julia 1.13.3 with **four Julia threads**, using
-`JULIA_DEPOT_PATH=/tmp/flint-checkpoint-depot:/home/jas/.julia`. Documentation and doctests pass.
-Workspace tests cover growth, active prefixes, alias/type rejection, zero warmed native allocations,
-overflow and input exceptions followed by reuse, and deterministic concurrent/reentrant-use rejection.
-The inventory now contains **307** audited symbols; M4c adds eight arb/acb vector init/clear/set/add exports. Regeneration must remain deterministic. Packed tests add rational endpoint oracles, GC/heap-backed ownership, fixed-size/reference semantics, copy independence, views/aliases, cleanup, and independent concurrent slots. Matching-header ABI evidence now includes nfloat exponent
-limits. Numerical error tests use independent exact dyadics and retain their sampled scope.
+All **309** inventoried symbols resolve and bindings regenerate twice without drift. New entries are
+`arb_dot` and unconjugated `acb_dot`. Public real dot uses native signed strides. Finite complex spans
+of length ≥4 use four real-part native dots with two real accumulators and an independent complex
+result. Small/gathered/nonfinite/unsupported-part-stride cases use borrowed conjugate/product/sum
+storage. Mixed formats delegate to generic LinearAlgebra. `acb_dot` is used only by the private
+conjugated-copy benchmark alternative. Standard-library dependency/import and manifests are updated.
 
-This follow-up passes 950 packed ownership and 781 flat broadcast checks (four threads), plus documentation/
-doctests. The new suite checks Base compatibility, exact rational endpoint containment, alias snapshots,
-callbacks/exceptions, generic result types/styles, precision, empty calls, allocation behavior, and
-method ambiguities. No full-suite rerun or binding update is needed. See
-`benchmark/results/packed_broadcast.txt` for complete checked-versus-Base operations and separate alias
-snapshot costs, with Julia allocation counts distinct from native memory.
+`benchmark/results/packed_dot.txt` reports complete generic/public calls and private candidates,
+including finite validation, conjugated-copy allocation/cleanup, Julia allocation counts, radius
+quality, and severe cancellation. Part-stride native dots were faster on these workloads and avoid
+an O(n) copy; enclosure widths are not guaranteed to match generic or conjugated-copy accumulation.
+Read-only parents stay alive across C calls; every output is independent and empty calls skip pointers.
+No process-global thread settings or relaxed arithmetic modes are changed.
 
 ## Next work and open limits
 
-1. **§9.4.4:** borrowed sum with fresh typed empty/singleton results, then audited dot products; preserve generic keyword/callback behavior.
-2. **M4d:** selected native dot products, with exact/certified references, empty sums, complex
-   conjugation conventions, and independent accumulation guarantees. Evaluate matrix storage only
-   after measured workloads justify it.
-3. **M5:** elementary/special functions with per-operation source/rounding/domain evidence, portable
-   artifacts, and CI on supported binaries. Keep elementary functions after M4.
+1. **Selected mapped reductions (§9.4.4):** implement individual destination-capable mappings such as
+   `sum(abs2, v)` with independent numerical/type evidence. Keep arbitrary callback/keyword semantics.
+2. **Measured matrix work only if needed:** native dot support does not establish matrix layout or
+   justify a speculative storage type. Other-family bulk/dot expansion requires its own evidence.
+3. **M5:** elementary/special functions, portable artifacts, and verified CI/release targets.
 
-Remaining gaps include native dot/matrix methods, optimized packed broadcast, packed point owners, elementary functions,
-complex dfloat/nfloat public types, `Rational`/`Complex{Float64}` interop, and portable artifacts.
-`NFloat` `sqrt` still has exact-case tests only. Huge `ArbFloat` exponents can hash like Inf (allowed).
-The proposed shared `_result`/`_with`/`_status` protocol remains unfactored. The host artifact cannot
-run on generic CI. `docs/planinterfacing.md` is a historical superseded draft.
+Remaining gaps include native matrix methods, specialized mapped reductions, packed point owners,
+complex dfloat/nfloat public types, Rational/Complex{Float64} interop, portable artifacts, and elementary
+functions. NFloat sqrt still has exact-case tests only. The proposed shared scalar protocol remains
+unfactored. The host-tuned artifact is unsuitable for generic CI. Historical drafts remain superseded.

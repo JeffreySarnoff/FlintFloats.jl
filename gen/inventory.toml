@@ -1303,3 +1303,21 @@ sig = "void(acb_ptr, acb_srcptr, acb_srcptr, slong, slong)"
 kind = "export"
 status = "none"
 note = "Rigorous acb_add per element at supplied precision. Exact destination/input alias permitted; partial overlap rejected. Source acb/vec.c AORS_OP."
+
+# M4d: pinned arb/acb index.md and dot.c. Both enclose the unconjugated product sum;
+# subtract is 0/1, initial may be NULL, strides count structs and may be negative.
+[[op]]
+symbol = "arb_dot"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, int, arb_srcptr, slong, arb_srcptr, slong, slong, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous initial + (-1)^subtract sum(x*y), signed struct strides. Output may alias initial but not input entries. Native fixed-point accumulation; no scalar-loop representation equality claim. Julia uses independent result storage; empty spans skip C."
+
+[[op]]
+symbol = "acb_dot"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, int, acb_srcptr, slong, acb_srcptr, slong, slong, slong)"
+kind = "export"
+status = "none"
+note = "Unconjugated rigorous complex product sum; not directly Julia dot. Used only for a benchmarked conjugated-copy candidate. Initial/output alias allowed; input/output overlap forbidden; signed struct strides."

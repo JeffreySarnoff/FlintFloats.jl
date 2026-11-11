@@ -9,6 +9,7 @@
 @inline arb_clear(a1) = ccall((:arb_clear, libflint), Cvoid, (Ptr{Cvoid},), a1)
 @inline arb_contains(a1, a2) = ccall((:arb_contains, libflint), Cint, (Ptr{Cvoid}, Ptr{Cvoid},), a1, a2)
 @inline arb_div(a1, a2, a3, a4) = ccall((:arb_div, libflint), Cvoid, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}, Int,), a1, a2, a3, a4)
+@inline arb_dot(a1, a2, a3, a4, a5, a6, a7, a8, a9) = ccall((:arb_dot, libflint), Cvoid, (Ptr{Cvoid}, Ptr{Cvoid}, Cint, Ptr{Cvoid}, Int, Ptr{Cvoid}, Int, Int, Int,), a1, a2, a3, a4, a5, a6, a7, a8, a9)
 @inline arb_eq(a1, a2) = ccall((:arb_eq, libflint), Cint, (Ptr{Cvoid}, Ptr{Cvoid},), a1, a2)
 @inline arb_equal(a1, a2) = ccall((:arb_equal, libflint), Cint, (Ptr{Cvoid}, Ptr{Cvoid},), a1, a2)
 @inline arb_ge(a1, a2) = ccall((:arb_ge, libflint), Cint, (Ptr{Cvoid}, Ptr{Cvoid},), a1, a2)

@@ -6,7 +6,7 @@ The objective is a Julia interface to FLINT's **dfloat (plain and ball), nfloat,
 
 Descriptions of the existing repository are distinguished from requirements for future implementation. Proposed Julia constructors and operations below are interface specifications, not claims that those methods already exist.
 
-**Resume point (M0–M3, M4a–M4c, and reusable scratch complete):** [checkpoint.md](checkpoint.md) and [checkpoint_gpt.md](checkpoint_gpt.md) now cover inline bulk arithmetic, `NFloatWorkspace`, packed ball owners, and explicit borrowing, in addition to the scalar foundations. The prior M4c full-suite baseline passed **13,709 tests**; this flat-broadcast follow-up passes **950 packed ownership checks and 781 broadcast checks** on Julia 1.13.3 with four threads, plus documentation/doctests. **M4a–M4c are implemented (§9.3). Copied-indexing documentation, `eachborrow`, and flat in-place broadcast are implemented (§9.4.1–3). Bounded nested broadcast is also implemented (§9.4.3); borrowed sum is also implemented; continue with audited M4d dot products (§9.4.4).** Keep elementary functions in M5. The capability table and current source determine what is implemented; the checkpoints are handoff snapshots of this update.
+**Resume point (M0–M3, M4a–M4c, and reusable scratch complete):** [checkpoint.md](checkpoint.md) and [checkpoint_gpt.md](checkpoint_gpt.md) now cover inline bulk arithmetic, `NFloatWorkspace`, packed ball owners, and explicit borrowing, in addition to the scalar foundations. The prior M4c full-suite baseline passed **13,709 tests**; the latest reduction follow-up passes **346 dot checks and 205 sum checks** on Julia 1.13.3 with four threads, plus documentation/doctests. **M4a–M4c are implemented (§9.3). Copied-indexing documentation, `eachborrow`, and flat in-place broadcast are implemented (§9.4.1–3). Bounded nested broadcast is also implemented (§9.4.3); sum and audited M4d dot products are implemented (§9.4.4); next consider individually verified mapped reductions.** Keep elementary functions in M5. The capability table and current source determine what is implemented; the checkpoints are handoff snapshots of this update.
 
 ## 1. Starting point and development priorities
 
@@ -14,7 +14,7 @@ Descriptions of the existing repository are distinguished from requirements for 
 
 | Area | Current state | Consequence for development |
 | --- | --- | --- |
-| Main Julia package | Seven scalar types, M0–M3, M4a–M4c bulk operations, packed ball owners/borrowing, and reusable nfloat scratch are implemented | Continue with M4d dot products, then M5 expansion/release. |
+| Main Julia package | Seven scalar types, M0–M3, M4a–M4c bulk operations, packed ball owners/borrowing, and reusable nfloat scratch are implemented | Continue with selected mapped reductions, measured matrix work, then M5 expansion/release. |
 | Julia compatibility | Main project requires Julia 1.13; precision is in the type | Use `with_precision(f, bits)` as a `Val` function barrier; there is no scoped runtime precision default. |
 | Local binary package | [`FlintFloat.jl/FLINT_jll`](../FlintFloat.jl/FLINT_jll/README.md) contains a working loader, native artifact, headers, source archive, and build tools | Use this package for host development rather than waiting for a published dfloat-capable wrapper. |
 | Pinned FLINT source | `82c40b299084b92299c2d8dac464e39d6743fce4`, reporting `3.7.0-dev` | Consult this revision's declarations and implementation when writing bindings. |
@@ -363,15 +363,15 @@ Prioritize vector add/multiply, dot products, and measured matrix workloads. A f
 
 ### 9.3 Next implementation: M4 in reviewable parts
 
-**M4a–M4c are complete. Documentation, borrowed iteration, and flat in-place broadcast are implemented; next implement audited M4d dot products (§9.4.4).** Ordinary Julia arrays already store concrete inline types; dot accumulation and measured matrix follow-up retain their separate numerical contracts. M4a is implemented in `src/arrays.jl`: qualified `FlintFloats.add!`/`mul!` accept matching-format `DFloat`/`DFloatBall` vectors, with ordinary/strided destinations, checked scalar fallbacks, and a native contiguous ball-add path at length ≥ 4. Exact aliasing uses `===`; other possible destination/input overlap is rejected. Gather/repeated-index destinations are rejected because they do not guarantee independent slots. M4b extends the same interface to `NFloat{L}`, with native aligned contiguous input paths and checked scalar fallbacks. It uses initialized private scratch and commits only after successful arithmetic, preserving the destination on numerical or input-read failure. M4c adds `PackedBallVector`, copied indexing, explicit `borrow` references, native ball-add, and borrowed scalar multiply. M4d remains pending. The checkpoints summarize this state.
+**M4a–M4c are complete. Documentation, borrowed iteration, and flat in-place broadcast are implemented; sum and dot products are implemented; next consider selected mapped reductions (§9.4.4).** Ordinary Julia arrays already store concrete inline types; dot accumulation and measured matrix follow-up retain their separate numerical contracts. M4a is implemented in `src/arrays.jl`: qualified `FlintFloats.add!`/`mul!` accept matching-format `DFloat`/`DFloatBall` vectors, with ordinary/strided destinations, checked scalar fallbacks, and a native contiguous ball-add path at length ≥ 4. Exact aliasing uses `===`; other possible destination/input overlap is rejected. Gather/repeated-index destinations are rejected because they do not guarantee independent slots. M4b extends the same interface to `NFloat{L}`, with native aligned contiguous input paths and checked scalar fallbacks. It uses initialized private scratch and commits only after successful arithmetic, preserving the destination on numerical or input-read failure. M4c adds `PackedBallVector`, copied indexing, explicit `borrow` references, native ball-add, and borrowed scalar multiply. M4d sum and dot products are implemented; mapped reductions and measured matrix work remain. The checkpoints summarize this state.
 
 | Part | Deliverable | Acceptance evidence |
 | --- | --- | --- |
 | **M4a — array contract and first inline kernel (complete)** | Define destination-first elementwise add/multiply contracts over same-format vectors. Begin with a checked scalar implementation and one audited contiguous vector-add path for `DFloatBall{N}`; use `DFloat{N}` instead if the ball kernel's guarantee cannot yet be established. | Correct empty/singleton/ordinary vectors, concrete element types, length/axes checks, initialized outputs, dfloat capability gate, permitted aliasing, and a benchmark against the corresponding scalar loop. |
 | **M4b — nfloat vectors (complete)** | Extend the same interface to `Vector{NFloat{L}}`; bind selected `_nfloat_vec_add`/`_nfloat_vec_mul` kernels after verifying stride, status, flags, and context behavior. Hoist context lookup out of loops. | Multiple supported limb counts, finite-only/domain/underflow/overflow behavior, input preservation, failure policy, overlap and strided fallback tests, and measured copy/context costs. |
 | **M4c — packed ball owners and borrowing (complete)** | Add fixed-size `ArbBall{P}` and `AcbBall{P}` vector owners, semantic indexing/assignment/copying, explicit borrowed references, then selected native vector arithmetic. | One matching vector clear per allocation, safe partial-construction cleanup, independent copied elements, parent retention under GC, bounds checks, precision/containment, and destination alias tests. |
-| **Packed-interface follow-up (§9.4; documentation/iterator/flat broadcast complete)** | Next optimize bounded nested in-place broadcast expressions without changing scalar or ordinary iteration semantics. | Independent copies, stable parent-retaining references, Base broadcast compatibility/alias handling, bounded scratch and specialization, and focused numerical/allocation evidence. |
-| **M4d — reductions, dot products, and measured follow-up (planned)** | Borrowed accumulation for `sum`, then audited native dot kernels and selected mapped reductions with their own numerical contracts. | Fresh typed empty/singleton results, independent exact/certified references, cancellation, complex conjugation, strides, radius quality, and complete-operation benchmarks. Matrix work follows measured need. |
+| **Packed-interface follow-up (§9.4; complete)** | Optimized flat and bounded nested in-place broadcast expressions without changing scalar or ordinary iteration semantics. | Independent copies, stable parent-retaining references, Base broadcast compatibility/alias handling, bounded scratch and specialization, and focused numerical/allocation evidence. |
+| **M4d — reductions, dot products, and measured follow-up (sum/dot complete)** | Borrowed accumulation for `sum` and audited native/borrowed dot kernels are implemented. Selected mapped reductions follow with their own numerical contracts. | Fresh typed empty/singleton results, independent exact/certified references, cancellation, complex conjugation, strides, radius quality, and complete-operation benchmarks. Matrix work follows measured need. |
 
 Before the first native call, settle and document these shared contracts:
 
@@ -437,7 +437,7 @@ are the clearest benefits. Zero warmed Julia allocations do not imply zero nativ
 **Status: documentation, explicit borrowed iteration, and flat in-place broadcast (§9.4.1–3) are implemented.**
 `PackedBallVector`, `borrow`, copied indexing/iteration, qualified destination arithmetic, and exported
 `eachborrow` exist. Flat same-format identity/add/multiply broadcast has a destination fast path.
-Bounded nested arithmetic is implemented; borrowed sum is implemented; M4d dot products remain next.
+Bounded nested arithmetic is implemented; borrowed sum is implemented; M4d dot products are also implemented; selected mapped reductions remain the next optional extension.
 These additions keep the interface small: value reads stay ordinary Julia reads; explicit references
 serve custom mutation; ordinary broadcast/reduction expressions gain internal storage reuse.
 
@@ -618,7 +618,7 @@ arithmetic time. Scratch Julia allocations scale with tree size, not vector leng
 
 #### 9.4.4 Optimize reductions with their own numerical contract (M4d)
 
-Reduction implementation is in `src/packed_reduce.jl`. **`sum(v)` is implemented**, with dot products next. Begin with sum for matching
+Reduction implementation is in `src/packed_reduce.jl`. **`sum(v)` and dot products are implemented**. The sum path supports for matching
 packed real/complex ball owners and supported views. Use one fresh owned accumulator at element
 precision and borrowed inputs; do not call ordinary copied indexing per term. An empty sum is a fresh
 typed zero; a singleton result must also be independent of its input. Return an owned scalar, never
@@ -643,7 +643,7 @@ operations, radius quality, and constant one-result-owner Julia allocation as ve
 No new C bindings or public `sum!` are introduced. The previous full-suite result remains historical;
 this change uses focused reduction tests and documentation checks only.
 
-Next add audited **`LinearAlgebra.dot(x, y)`** specializations for same-concrete-format packed spans.
+Implemented audited **`LinearAlgebra.dot(x, y)`** specializations for same-concrete-format packed spans.
 Declare the standard-library dependency and import only `dot`, keeping the package's qualified
 `mul!` convention intact. Other combinations retain the generic interface until separately supported.
 Real dot encloses the ordinary sum of products; complex dot conjugates the **first** operand.
@@ -661,6 +661,31 @@ Preserve all parents during native calls. Empty dot returns a fresh typed zero w
 arithmetic; nonempty output storage is independent of inputs. Native accumulation may produce different
 radii from a rounded scalar loop; require rigorous containment and record radius quality rather than
 requiring bitwise equality across different algorithms. Avoid `approx` kernels.
+
+Dot implementation/evidence: `src/packed_reduce.jl` imports only `LinearAlgebra.dot` (stdlib dependency
+and manifest updated). Both native declarations are symbol-audited: `arb_dot` and unconjugated
+`acb_dot` take signed struct strides, nullable initial terms, and subtract=0/1; output may alias its
+initial term but never input entries. This follows the pinned arb/acb index documentation and dot
+implementations. Public output is always a fresh scalar, and empty calls skip pointer arithmetic.
+
+Real strided spans use `arb_dot`. Finite complex spans of at least four elements use four real-part
+`arb_dot` calls with checked doubled part strides, implementing `re = dot(xr,yr)+dot(xi,yi)` and
+`im = dot(xr,yi)-dot(xi,yr)`. Two private real accumulators plus the complex result bound Julia scratch
+independently of length. Small/gathered/unsupported-stride or nonfinite complex spans use borrowed
+conjugate/product/accumulator temporaries. Mixed element formats delegate to the generic LinearAlgebra
+array interface. Input parents remain preserved across native calls. No approximate kernel is used.
+
+`test/packed_dot_tests.jl` covers nonreal singleton conjugation, signed/gathered spans, exact uncertain
+rational endpoint oracles, mixed precision, cancellation, nonfinite inputs, independent results,
+heap-backed result lifetime after parent cleanup, concurrent readers, and method ambiguities. The sum
+suite is checked alongside it because both share the reduction module. `benchmark/packed_dot.jl` and
+[results](../benchmark/results/packed_dot.txt) compare generic/public calls, borrowed accumulation,
+part-stride native accumulation, and a conjugated-copy `acb_dot` alternative including allocation and
+cleanup. Candidate wrappers derive precision types from inputs to avoid dynamic Type dispatch in
+measurements. The chosen native part path avoids an O(n) conjugation copy and was faster on recorded
+workloads. Radius quality differs by algorithm: tables include ordinary uncertain inputs and severe
+cross-component cancellation; none claims correctly rounded point results or identical enclosures.
+The binding inventory now audits 309 symbols and regenerates twice without drift.
 
 Only after sum/dot evidence, consider selected mappings such as `sum(abs2, v)`. Specify mapping result
 family/precision (complex `abs2` is real), reuse destination-capable scalar primitives, and prove the
@@ -685,7 +710,7 @@ any conjugated-input copy. Optimize additional inline families only in separate 
 | Borrowed iteration (complete) | Private iterator and exported `eachborrow` in `src/packed.jl`; iteration tests and a benchmark driver. | Stable saved references, parent lifetime, inference, and allocation/throughput parity with manual borrowing. |
 | Flat broadcast (complete) | `src/packed_broadcast.jl`, module include, focused broadcast tests/benchmarks; reuse checked kernels after compatible alias preparation. | Ordinary Base result/axes/style behavior and overlap semantics, with measured benefit or a retained generic path. |
 | Nested broadcast (complete) | Bounded typed evaluator and private per-node scratch in that same file. | Tree/precision preservation, repeated destination-leaf safety, bounded specialization and no per-element owners. |
-| Sum, then dot (M4d) | `src/packed_reduce.jl`, module include, focused reduction tests/benchmarks; add `LinearAlgebra` and inventory/generation changes only when dot bindings are ready. | Independent containment/conjugation evidence and complete-operation/radius measurements. |
+| Sum, then dot (M4d; complete) | `src/packed_reduce.jl`, module include, focused reduction tests/benchmarks; add `LinearAlgebra` and inventory/generation changes only when dot bindings are ready. | Independent containment/conjugation evidence and complete-operation/radius measurements. |
 | Selected mapped reductions | Add only individually supported mappings after the preceding gates. | Correct mapped result type, generic-callback compatibility, and measured allocation/accuracy benefit. |
 
 Review the implementation against these rejected shortcuts before accepting a fast path:
@@ -760,7 +785,7 @@ Use Julia threads only over independent writable destinations. Verify context be
 | **M4 — bulk arithmetic** | Concrete fixed-format arrays; packed ball vectors; explicit borrowing and `eachborrow`; selected broadcast/reduction/dot paths under §9.4. | Copied indexing retained; container/lifetime, Base compatibility, aliasing, empty/strided inputs, expression precision, reduction containment/conjugation, and measured performance are verified per path. |
 | **M5 — function expansion and release** | Selected elementary/special functions; portable artifacts; clean CI/docs setup; capability and benchmark reports. | Every advertised function and target passes its required evidence; users can install without a compiler or development-host assumptions. |
 
-**Status:** M0–M3 and M4a–M4c are implemented. Documentation, `eachborrow`, and flat in-place broadcast are implemented. Bounded nested broadcast is implemented; borrowed sum is implemented; next is audited M4d dot products. M5 remains pending. M0 completion covers the compatible development host, not portable distribution.
+**Status:** M0–M3 and M4a–M4c are implemented. Documentation, `eachborrow`, and flat in-place broadcast are implemented. Bounded nested broadcast is implemented; borrowed sum and dot products are implemented; next are individually verified mapped reductions, with matrix work only on measured need. M5 remains pending. M0 completion covers the compatible development host, not portable distribution.
 
 All seven types participate in M1 and M2. A family-specific issue may delay its completion without forcing unrelated work to stop, but the first complete release includes all seven. Do not expand the function inventory faster than it can be verified.
 

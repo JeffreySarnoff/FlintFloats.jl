@@ -9,6 +9,7 @@
 @inline acb_conj(a1, a2) = ccall((:acb_conj, libflint), Cvoid, (Ptr{Cvoid}, Ptr{Cvoid},), a1, a2)
 @inline acb_contains(a1, a2) = ccall((:acb_contains, libflint), Cint, (Ptr{Cvoid}, Ptr{Cvoid},), a1, a2)
 @inline acb_div(a1, a2, a3, a4) = ccall((:acb_div, libflint), Cvoid, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}, Int,), a1, a2, a3, a4)
+@inline acb_dot(a1, a2, a3, a4, a5, a6, a7, a8, a9) = ccall((:acb_dot, libflint), Cvoid, (Ptr{Cvoid}, Ptr{Cvoid}, Cint, Ptr{Cvoid}, Int, Ptr{Cvoid}, Int, Int, Int,), a1, a2, a3, a4, a5, a6, a7, a8, a9)
 @inline acb_eq(a1, a2) = ccall((:acb_eq, libflint), Cint, (Ptr{Cvoid}, Ptr{Cvoid},), a1, a2)
 @inline acb_equal(a1, a2) = ccall((:acb_equal, libflint), Cint, (Ptr{Cvoid}, Ptr{Cvoid},), a1, a2)
 @inline acb_get_imag(a1, a2) = ccall((:acb_get_imag, libflint), Cvoid, (Ptr{Cvoid}, Ptr{Cvoid},), a1, a2)

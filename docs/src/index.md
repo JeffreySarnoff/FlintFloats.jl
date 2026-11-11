@@ -185,6 +185,30 @@ julia> sum(PackedBallVector(T, 0)) == T(0)
 true
 ```
 
+## Conjugating packed dot products
+
+Use `LinearAlgebra.dot(x, y)` for packed ball vectors and views. Complex dot conjugates its first
+operand; empty inputs return a fresh typed zero. Real strided spans use native dot, while finite
+complex spans of length at least four use strided real/imaginary native dots with bounded private
+scratch. Small, gathered, unsupported-stride, and nonfinite complex inputs use borrowed accumulation.
+Mixed formats retain LinearAlgebra's generic interface. Results are independent of input storage.
+
+```jldoctest
+julia> using FlintFloats, LinearAlgebra
+
+julia> T = AcbBall{128}; x = PackedBallVector(T, [T(1.0, 2.0)]); y = PackedBallVector(T, [T(3.0, 4.0)]);
+
+julia> dot(x, y) == T(11.0, -2.0)
+true
+```
+
+Native and scalar accumulation can return different enclosure widths; both must contain the exact
+product sum. Complex part accumulation avoids materializing a full conjugated input; benchmark reports
+include that alternative and radius quality under cancellation. Dot does not rewrite unconjugated
+`sum(x .* y)`, and it does not mutate inputs. Keep parents open and avoid concurrent writes/finalization
+while reading; independent concurrent dot results are supported. Selected mapped reductions remain
+future optimization work; generic mapped sums continue to work with copied scalar values.
+
 ```@index
 ```
 
