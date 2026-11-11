@@ -19,6 +19,13 @@ jobs:
         with:
           version: '1.13'
           arch: x64
+      - name: Validate GitHub workflow expressions
+        run: |
+          actionlint_archive="$RUNNER_TEMP/actionlint.tar.gz"
+          curl --fail --silent --show-error --location --retry 3 --output "$actionlint_archive" https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $actionlint_archive" | sha256sum -c -
+          tar -xzf "$actionlint_archive" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" -shellcheck= .github/workflows/CI.yml
       - run: julia --startup-file=no scripts/check_sources.jl
       - run: julia --startup-file=no test/ci_host_tests.jl
       - run: julia --startup-file=no gen/generate.jl
@@ -30,7 +37,6 @@ jobs:
     env:
       JULIA_NUM_THREADS: '4'
       JULIA_PKG_PRECOMPILE_AUTO: '0'
-      DEPS_PREFIX: ${{ runner.temp }}/flint-abi-headers
     steps:
       - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@v3
@@ -42,6 +48,8 @@ jobs:
       - name: Instantiate and install bundled artifact
         run: julia --project=. -e 'using Pkg; Pkg.instantiate(;allow_autoprecomp=false); Pkg.build("FLINT_jll")'
       - name: Audit exported symbols
+        env:
+          DEPS_PREFIX: ${{ runner.temp }}/flint-abi-headers
         run: |
           julia --project=gen -e 'using Pkg; Pkg.instantiate()'
           julia --project=gen gen/audit.jl

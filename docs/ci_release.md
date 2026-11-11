@@ -6,7 +6,7 @@ host-tuned development bundle. Other architectures, operating systems, and musl 
 
 ## CI and local checks
 
-Hosted push/pull-request jobs use Julia 1.13 x64 on Ubuntu. Source checks verify pinned identities,
+Hosted push/pull-request jobs use Julia 1.13 x64 on Ubuntu. Source checks first validate GitHub expressions with SHA-pinned actionlint 1.7.12, then verify pinned identities,
 archive checksums, target-gate rejection, and deterministic generation. Native jobs install the
 bundled portable artifact, run the numerical/ownership/Julia contracts, audit symbols, compare a
 fresh artifact-header C ABI probe, and build docs/doctests. No dedicated tuned-host runner is needed.

@@ -46,6 +46,8 @@ Optional matrices, other platforms, further functions, and interoperability are 
 - Performance: recorded numbers name their workload, numerical contract, Julia/native allocation
   limits and artifact identity. They are not universal performance promises.
 
-Remote CI still needs to execute against the review branch, including the actual Pkg.test isolation
+Draft PR #5 is open. The initial remote workflow failed expression validation before jobs started;
+the job-scope runner-context error is corrected and SHA-pinned actionlint now checks expressions.
+Corrected remote CI still needs to execute against the review branch, including the actual Pkg.test isolation
 used by the workflow. Public release publication is a separate outstanding external action. These
 remain incomplete until their results exist; this audit does not mark the overall goal achieved.

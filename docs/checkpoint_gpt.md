@@ -146,6 +146,17 @@ validation steps. The current `scripts/check_abi.jl` uses installed artifact hea
 GMP/MPFR headers from `scripts/prepare_abi_headers.jl`; the legacy `test/abi/run.sh` instead expects
 an external native build tree.
 
+## Remote review and workflow validation
+
+User-authorized review branch `codex/enact-interfacing-complete` is pushed and
+[draft PR #5](https://github.com/JeffreySarnoff/FlintFloats.jl/pull/5) is open and mergeable.
+The first workflow attempt (42961944810) failed validation before any jobs ran: `runner.temp`
+was used in a job-level environment, where that context is unavailable. The ABI step now declares
+that environment locally. Official actionlint 1.7.12 (SHA-verified archive) reproduced the exact
+error and validates the correction. Hosted source CI now checks workflow expressions with that
+pinned linter. Numerical sources are unchanged; no numerical rerun accompanied this workflow fix.
+The corrected remote CI attempt must still complete before claiming the CI gate passed.
+
 ## Next and open limits
 
 Local numerical, ownership, portable artifact, and clean-project installation gates are implemented
