@@ -5,7 +5,7 @@
 Goal: Julia interface to FLINT floating-point types via `FLINT_jll`, maximally fast, source clean and clear.
 Prior art studied: Nemo.jl (ring-oriented, GC-managed wrappers), Arblib.jl (thin generated `ccall` layer + ergonomic layer).
 
-Status: repo is an empty PkgTemplates skeleton. `FLINT_jll` not yet a dependency. Everything below is design, not yet code.
+Historical starting-point status (superseded): repo was an empty PkgTemplates skeleton. `FLINT_jll` not yet a dependency. Everything below is design, not yet code.
 
 ## 1. Scope
 

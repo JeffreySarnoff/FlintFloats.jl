@@ -2,7 +2,7 @@
 
 ## Decisions and scope
 
-Build a Julia interface to FLINT's floating-point families using `FLINT_jll`, as described in `README.md`. Optimize for inexpensive scalar calls, contiguous bulk arithmetic, and source that makes ownership and numerical guarantees easy to inspect. This is an implementation plan: `src/FlintFloats.jl` is still a skeleton, and no FLINT dependency or bindings have been implemented.
+Build a Julia interface to FLINT's floating-point families using `FLINT_jll`, as described in `README.md`. Optimize for inexpensive scalar calls, contiguous bulk arithmetic, and source that makes ownership and numerical guarantees easy to inspect. This plan now accompanies implemented M0–M3 and M4a/M4b: the pinned dependency/bindings, seven scalar types, Julia contracts, inline bulk arithmetic, and reusable nfloat scratch are in place. M4c packed ball owners/borrowing is next. See the current [checkpoint](checkpoint_gpt.md), [guide](enact_interfacing.md), and [capability table](capability_table.md) for status and evidence.
 
 The Julia floor is **1.13**. Julia 1.13 gives `Base.ScopedValues` and package extensions without shims; precision itself is a type parameter (below), so scoped values are not used for numeric precision. `Project.toml` and CI are updated with this plan.
 
@@ -48,11 +48,11 @@ src/
   FlintFloats.jl          includes and exports
   libflint/
     LibFlint.jl           private module and library import
-    layouts.jl            verified C representations
     generated/            concrete, reviewable foreign calls by family
   precision.jl            validated precision parameters, DEFAULT_PRECISION, with_precision
   storage.jl              owned and borrowed storage, lifetime helpers
   dfloat.jl               fixed expansion values and arithmetic
+  dfloatball.jl           inline enclosures and arithmetic
   nfloat.jl               fixed word values, contexts and arithmetic
   arf.jl                 correctly rounded real floats (ArbFloat), rounding modes
   acf.jl                 complex floats (AcbFloat)
@@ -60,7 +60,8 @@ src/
   acb.jl                 complex balls and their arithmetic
   typegrid.jl            pointtype, balltype, realtype, complextype; traits
   conversions.jl         explicit conversions and promotion rules
-  arrays.jl              contiguous owners, views and bulk kernels
+  arrays.jl              inline vector validation and dfloat dispatch
+  reusable.jl            NFloatWorkspace, shared nfloat kernels and commit-on-success
   show.jl                formatting and parsing policy
 gen/                     binding inventory and regeneration tools
 test/                    interface, ABI, numerical and ownership checks
@@ -123,11 +124,11 @@ For balls, define these rules before coding:
 
 `precision(T)` is a constant for every concrete type: `53N` for `DFloat{N}` and `DFloatBall{N}` (nominal; the ball's radius tracks actual accuracy), `64L` for `NFloat{L}`, `P` for `ArbBall{P}`/`AcbBall{P}`. Operation accuracy remains separately documented. Precision changes require conversion to another concrete type (`withprec(x, bits)`). Bound specialization work: benchmark common precisions first and keep compilation cost visible.
 
-Manage nfloat contexts privately. Initialize at runtime, clear exactly once, and key reuse by precision **and all behavior flags**. Establish from matching source whether a context is immutable during operations; until verified, use task-owned contexts/workspaces rather than a shared mutable global cache. Hoist context acquisition and validation outside vector loops. Scoped defaults must restore after exceptions and behave predictably in child tasks.
+Manage nfloat contexts privately. Initialize at runtime, clear exactly once, and key reuse by precision **and all behavior flags**. Establish from matching source whether a context is immutable during operations; until verified, use task-owned contexts/workspaces rather than a shared mutable global cache. Hoist context acquisition and validation outside vector loops. There is no scoped runtime precision default; type-precision barriers are independent across tasks. Mutable scratch is separate from shared contexts: `NFloatWorkspace` rejects concurrent/reentrant reuse and must not overlap operands.
 
 Do not promise one universal rounding mode. Ball operations compute enclosures; dfloat arithmetic is approximate; nfloat guarantees vary by operation and flags; `ArbFloat`/`AcbFloat` are correctly rounded in FLINT's strict modes, selected by a trailing `RoundingMode` argument (`RoundNearest` default, `RoundToZero`, `RoundFromZero`, `RoundDown`, `RoundUp`), never by global state, with FLINT's inexact flag available through `_inexact` variants. FLINT's relaxed modes (`ARF_RND_FAST`, `ARF_RND_ACCURATE`) and `approx` kernels are not used in the first release. Maintain an operation/rounding capability table from the selected artifact. Unsupported requested modes produce explicit errors, never a silent ignored option.
 
-Translate C status bits at the checked interface, after the call. For `dNb` operations `GR_DOMAIN` (input disjoint from the domain) becomes `DomainError`, and `GR_UNABLE` leaves FLINT's output **unspecified**, so the wrapper writes the whole real line itself, element by element for vector kernels. Keep domain failures distinct from unavailable algorithms. For operations following established enclosure semantics, retain FLINT's documented indeterminate/unbounded result; for an unsupported operation, throw a descriptive error. Publish this policy per operation before release. Do not discard status codes or automatically fall back through `BigFloat` and lose the family’s guarantees.
+Translate C status bits at the checked interface, after the call. For `dNb` operations `GR_DOMAIN` (input disjoint from the domain) becomes `DomainError`, and `GR_UNABLE` leaves FLINT's output **unspecified**, so the scalar wrapper writes the whole real line itself. Do not generalize scalar status conventions to vector kernels: audited `_dNb_vec_add` returns `void`; nfloat vector add/multiply return aggregate statuses and publish scratch only on success. Keep domain failures distinct from unavailable algorithms. For operations following established enclosure semantics, retain FLINT's documented indeterminate/unbounded result; for an unsupported operation, throw a descriptive error. Publish this policy per operation before release. Do not discard status codes or automatically fall back through `BigFloat` and lose the family’s guarantees.
 
 Document allowed aliasing for each destination operation. Test destination=input and overlapping spans separately; use a temporary when FLINT disallows an overlap. Do not mark bulk loops `@simd` or `@inbounds` until independence and indexing invariants are established.
 
@@ -170,10 +171,10 @@ Use Julia threads over independent destinations only. Verify context and library
 - **Numerical correctness:** compare point operations using the operation's documented rounding/error guarantee. Use independently computed high-precision references and proved error bounds for approximate formats. Exact bit equality with MPFR is appropriate only for operations actually specified as correctly rounded: that is the oracle for `ArbFloat` (every listed operation, each rounding mode) and, per part, for `AcbFloat`. Also test the `ArbFloat` departures from IEEE (no negative zero, `x/0` is NaN, unbounded exponent) and the precision invariant (mantissa at most `P` bits at every entry point).
 - **Enclosures:** check containment against exact rational cases and independently certified references; include uncertain domains, branch cuts, nonfinite values, zero-crossing divisors and cancellation. A high-precision approximation alone is not a rigorous containment oracle. Exercise both real and complex balls ([acb reference](https://flintlib.org/doc/acb/index.html)).
 - **Ownership:** test independent copies, parent retention by views, construction failure, aliasing, and repeated GC while borrowed references remain live. Use bounded stress tests; RSS alone cannot establish that clear is correct. Run longer native memory diagnostics separately when available.
-- **Julia contracts:** test inference, conversion/promotion termination, equality/hash laws, ordinary array behavior, uncertainty predicates, precision restoration after exceptions, and concurrent tasks with different defaults.
+- **Julia contracts:** test inference, conversion/promotion termination, equality/hash laws, ordinary array behavior, uncertainty predicates, independent type-precision barriers, and workspace failure recovery/exclusive access.
 - **Allocations/performance:** use warmed, function-scoped checks for representative stable workloads. Keep noisy runtime comparisons on a controlled benchmark runner rather than making every shared CI job a speed test.
 
-CI tests Julia 1.13, the current stable release, and prerelease Julia. Documentation builds use 1.13. Retain a target only when Julia and the selected FLINT artifact support it; record unsupported configurations rather than assuming all layouts are portable.
+CI scaffolding lists Julia 1.13, the current stable release, and prerelease Julia; the host-tuned artifact does not establish runnable generic-runner support. Documentation builds use 1.13. Retain a target only when Julia and the selected FLINT artifact support it; record unsupported configurations rather than assuming all layouts are portable.
 
 ## 8. Review of the earlier approach
 
@@ -201,7 +202,7 @@ Study [Nemo's owners and init/clear pattern](https://github.com/Nemocas/Nemo.jl/
 2. **Representation prototypes:** implement one dfloat add, one dfloat-ball add, one nfloat add/context, and one owning add with cleanup for each of ArbFloat, AcbFloat, ArbBall and AcbBall. Compare inline results, destination reuse and direct calls. Exit: verified layouts/lifetimes, inferred concrete returns and measured allocation/copying behavior. Adjust representation here, before broad generation.
 3. **Vertical slice across the seven types (`DFloat`, `DFloatBall`, `NFloat`, `ArbFloat`, `ArbBall`, `AcbFloat`, `AcbBall`):** constructors, conversion, display, basic arithmetic and predicates; ball precision rules and complex behavior included. Exit: numerical and ownership checks pass through the public interface. A missing dfloat artifact blocks that family's completion, not the others.
 4. **Julia integration:** complete the documented Base subset, equality/hashing and mixed-operation rules; implement type-level precision (`with_precision`, `DEFAULT_PRECISION`). Exit: uncertainty semantics and unsupported generic operations are documented and tested.
-5. **Bulk arithmetic:** packed ball vectors, borrowed views and verified FLINT vector/dot kernels, followed by matrices where justified. Exit: validated aliasing/lifetimes and measured throughput improvements over scalar loops.
+5. **Bulk arithmetic:** inline vectors and native ball-add/nfloat-add/multiply paths are implemented (M4a/M4b). Reusable `NFloatWorkspace` scratch is also implemented: reserve once, pass as a fourth argument to vector `FlintFloats.add!`/`mul!`, grow only as needed, and commit the active prefix only after success. M4c next adds packed ball vectors/borrowing; M4d adds dot kernels, followed by matrices where justified. Exit: validated aliasing/lifetimes and measured throughput improvements over scalar loops.
 6. **Release hardening:** expand elementary functions and required special functions, run platform and memory checks, publish the guarantee/capability tables and benchmark results. Exit: all seven types work against released supported artifacts, with no unsupported performance or rounding claims.
 
 Do not gate the entire design on a claim of being faster than existing packages. The deliverable is a clear, safe interface to the selected FLINT formats; each optimization earns its complexity with measurements. Keep remaining decisions concrete: verified wrapper versions, supported targets, exported function inventory, context sharing guarantees and the measured choice of fixed-format result storage.

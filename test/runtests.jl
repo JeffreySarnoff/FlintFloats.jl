@@ -13,4 +13,5 @@ using Test
     include("ownership_tests.jl")
     include("array_tests.jl")
     include("nfloat_array_tests.jl")
+    include("reusable_tests.jl")
 end

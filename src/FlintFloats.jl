@@ -26,9 +26,10 @@ include("compare.jl")
 include("promotion.jl")
 include("basefloat.jl")
 include("arrays.jl")
+include("reusable.jl")
 
 export FlintReal, FlintNumber, DFloat, DFloatBall, NFloat, NFloatType,
-       ArbFloat, ArbBall, AcbFloat, AcbBall,
+       ArbFloat, ArbBall, AcbFloat, AcbBall, NFloatWorkspace,
        pointtype, balltype, realtype, complextype,
        midpoint, radius, isindeterminate, isexact, containszero, overlaps, with_precision, sortkey
 

@@ -13,16 +13,16 @@ Companion to [plan_interfacing.md](plan_interfacing.md) and [enact_interfacing.m
 
 **Precision is a type parameter for every type** (see §6.3 and §8 for the trade-offs). `ArbFloat`/`AcbFloat` wrap FLINT's `arf`/`acf` (correctly rounded floating point, no error bounds); `ArbBall`/`AcbBall` wrap `arb`/`acb`. `mag` stays private. Complex dfloat (`dNc`, `dNcb`, would be `DFloatComplex`/`DFloatComplexBall`) and complex nfloat are deferred.
 
-Facts marked *(docs)* come from the FLINT 3.7.0-dev dfloat pages (index, `balls`, `d1b_struct`, `d1cb_struct`, `DFLOAT_BALL`, `using`, `d1b_add`, `d1b_is_exact`). Those pages say parts of their text were LLM-generated; confirm against `src/dfloat.h` before binding. Facts marked *(pinned docs)* come from the Markdown documentation shipped in the pinned source tree (`doc/src/arf`, `doc/src/acf`), read locally. Facts marked *(checked)* were read from the local build at `/tmp/flintfloats-jll-build/install` (FLINT 3.7.0-dev, source `82c40b29…`, ABI 25). Everything else is design, not yet code.
+Facts marked *(docs)* come from the FLINT 3.7.0-dev dfloat pages (index, `balls`, `d1b_struct`, `d1cb_struct`, `DFLOAT_BALL`, `using`, `d1b_add`, `d1b_is_exact`). Those pages say parts of their text were LLM-generated; confirm against `src/dfloat.h` before binding. Facts marked *(pinned docs)* come from the Markdown documentation shipped in the pinned source tree (`doc/src/arf`, `doc/src/acf`), read locally. Facts marked *(checked)* were read from the local build at `/tmp/flintfloats-jll-build/install` (FLINT 3.7.0-dev, source `82c40b29…`, ABI 25). Availability is recorded in [capability_table.md](capability_table.md); proposed surfaces below are not implementation claims. M0–M3 and M4a/M4b are implemented, including exported `NFloatWorkspace{L}` in `src/reusable.jl`. The next work is M4c packed ball owners/borrowing, then M4d dot products.
 
 ## 1. What "uniform" means
 
 Uniform = a caller writes the same code for any family and gets correct, family-appropriate results, **without** a common storage model. Precisely:
 
 1. Same constructors, same operators, same `precision`, `zero/one`, predicates, conversion and display.
-2. One destination-passing convention that works for inline and heap-owned values.
+2. Destination-first operations for mutable scalar owners and vector buffers; ordinary arithmetic for immutable scalars.
 3. Differences in guarantee (point vs enclosure) are visible through **traits**, not hidden and not forced into one semantics.
-4. Adding a family means implementing a small internal protocol (§4), not touching public methods.
+4. The proposed shared internal protocol (§4) is a future factoring target; current family implementations carry those responsibilities.
 
 Non-goals: one rounding mode, one storage representation, one precision model, or `AcbBall` pretending to be `Real`.
 
@@ -208,6 +208,12 @@ Unsupported function or family combination: `MethodError`. No `BigFloat` fallbac
 
 ### 2a.4 Destination-passing (`!`) API
 
+Scalar destination methods exist for the four mutable owned types and are qualified as
+`FlintFloats.add!`, `mul!`, etc.; they are not exported. Immutable scalar `DFloat`, `DFloatBall`,
+and `NFloat` use ordinary arithmetic. Vector `add!`/`mul!` are implemented as described in §2a.9.
+The following broader list includes proposed fused/utility methods; consult the capability table
+before using an operation such as `addmul!`, `inv!`, `zero!`, or `ldexp!`.
+
 ```julia
 add!(z, x, y)   sub!(z, x, y)   mul!(z, x, y)   div!(z, x, y)
 addmul!(z, x, y)   submul!(z, x, y)             # z ← z ± x*y
@@ -217,13 +223,13 @@ zero!(z)   one!(z)   ldexp!(z, x, n)
 
 All have the form `z = f!(z, args...)` and return the result. `ArbFloat`/`AcbFloat` methods accept a trailing `RoundingMode` (`add!(z, x, y, RoundUp)`), and an `_inexact` variant returns FLINT's inexact flag as well: `z, inexact = add_inexact!(z, x, y[, r])` (`inexact::Bool`, false exactly when the result is the exact value). Contract:
 
-1. **Always use the return value.** For the owned types (`ArbFloat`, `AcbFloat`, `ArbBall`, `AcbBall`) the destination is overwritten in place and returned; for `DFloat`/`DFloatBall`/`NFloat` (inline) the destination is ignored (only its type and, for the family check, its format matter) and a fresh value is returned.
-2. `z` and the inputs must have the same family. `z`'s type precision (owned types) is used for the work, unless `prec=` is passed: `add!(z, x, y; prec=p)` (runtime override of the work only).
-3. **Aliasing** `z === x` or `z === y` is allowed for every operation. Partially overlapping array spans are not (§5).
-4. On a thrown error the destination ball is left valid but with an unspecified value; if the caller needs it preserved, compute into scratch.
+1. Owned scalar and vector destination methods overwrite and return the supplied destination. Immutable scalar destination methods are not implemented; use `x + y` or `x * y`.
+2. The destination type determines the working precision. No public `prec=` override is implemented. Bulk operands must have the same concrete element type and matching axes.
+3. Vector operations permit exact destination/input aliasing via `===`; other possible overlap is rejected before mutation (§2a.9). Scalar aliasing follows the documented operation contract.
+4. Scalar destination failure behavior is operation-specific. Nfloat vector operations always compute into private scratch and preserve the destination on arithmetic or input-read failure. Dfloat scalar-loop vector fallbacks can partially update the destination on custom input exceptions.
 5. `set!(z, x)` converts `x` into `z`'s format with enclosure-preserving conversion for balls.
 
-Typical pattern:
+Proposed fused pattern (`addmul!` and a native `dot` surface remain unimplemented):
 
 ```julia
 function dot(xs::AbstractVector{T}, ys::AbstractVector{T}) where {T<:FlintNumber}
@@ -354,27 +360,50 @@ Mixed with `Rational`/`BigFloat` are explicit constructions only (no blanket `Re
 
 ### 2a.9 Collections
 
+**Implemented:** ordinary `Vector{DFloat{N}}`, `Vector{DFloatBall{N}}`, and `Vector{NFloat{L}}`
+store concrete inline values. Qualified `FlintFloats.add!(dest, x, y)` and `mul!` perform elementwise
+arithmetic, require matching axes and concrete formats, and return the destination. Destinations
+must be ordinary vectors or strided views with independent slots; repeated-index/gather destinations
+are rejected. Exact aliasing via `dest === x`/`dest === y` is allowed; other possible destination/input
+overlap is rejected. Inputs may overlap each other. Empty operations validate and return without a
+native arithmetic call. Mixed-format promotion is not provided for bulk operations.
+
+Contiguous aligned `DFloatBall` addition at length ≥ 4 uses `_dNb_vec_add`; dfloat-family
+multiplication uses scalar loops. Contiguous aligned nfloat inputs use `_nfloat_vec_add`/`_nfloat_vec_mul`;
+strided/reversed/gather inputs have scalar fallbacks. These dispatch paths are explicit vector
+methods, not optimized replacements for `sum`, `dot`, or broadcasting. The audited dfloat-ball
+vector-add entry returns `void`, not combined statuses; failure semantics require a separate audit
+before adding other kernels. Nfloat kernels return OR-combined statuses; numerical/input-read
+failure leaves the destination unchanged because scratch is committed only on success.
+
+**Reusable nfloat scratch:** exported `NFloatWorkspace(NFloat{L}, capacity=0)` owns initialized storage
+for `FlintFloats.add!(dest, x, y, work)` and `mul!`. `sizehint!(work, capacity)` reserves without
+shrinking; operations also grow automatically. Existing slots are reused, only new slots are
+initialized, and only the active prefix is processed and copied. The workspace's format is fixed;
+it must not overlap any operand. An atomic guard rejects concurrent/reentrant use, including
+reservation, and releases on errors. Use independent workspaces concurrently. After an error the
+scratch contents are unspecified, the destination is preserved, and the workspace can be reused.
+The three-argument calls allocate initialized scratch without a workspace object.
+
 ```julia
-flintzeros(T, dims...)    flintones(T, dims...)    flintvec(T, itr)    flintmatrix(T, m, n)
-PackedVector{T}(undef, n)       # T = ArbFloat{P}, AcbFloat{P}, ArbBall{P} or AcbBall{P}
+T = NFloat{2}
+x, y, dest = fill(T(1), 100), fill(T(2), 100), Vector{T}(undef, 100)
+work = NFloatWorkspace(T, 100)
+FlintFloats.add!(dest, x, y, work)
+FlintFloats.mul!(dest, dest, y, work)
 ```
 
-Inline ball vectors (`Vector{DFloatBall{N}}`) behave like the point column below (contiguous, no per-element cost) and call the `_dNb_vec_*` kernels where the inventory has them. Their `sqrt`/`rsqrt`/`log` kernels return the bitwise OR of element statuses with unspecified values at failed elements *(docs, summary)*; the wrapper must set failing elements to the whole real line, as in the scalar case.
+Tested warmed reused native and strided paths allocate no Julia heap memory within capacity;
+growth allocates, and successful operations still copy to the destination. The exclusive-use guard
+can outweigh allocation savings for tiny vectors. See [measurements](../benchmark/results/reusable.txt).
+No result-buffer borrowing or swapping API is provided.
 
-| Aspect | `Vector{DFloat/DFloatBall/NFloat}` | `PackedVector` of an owned type (`ArbFloat`, `AcbFloat`, `ArbBall`, `AcbBall`) |
-| --- | --- | --- |
-| Storage | inline contiguous | single FLINT allocation, one finalizer |
-| `getindex` | the element | independent copy |
-| `setindex!` | store value | copy into slot, converted to `P` (enclosure-preserving) |
-| `eltype` | `T` | `T` |
-| Resizing | normal `Vector` | **fixed-size** in v1 (`push!` throws) |
-| `similar(v)`, `copy`, `fill!`, `view` | standard | supported; strided `view` handled by scalar loop |
-| Broadcast | standard; fuses via `Base` | standard; implemented with `!` kernels, in place when destination given |
-| Bulk kernels | `sum`, `dot`, `+`, `-`, `.*` call FLINT vector functions when inventory has them, else a documented scalar loop | same |
-
-`sum(v)` and `dot(x,y)` of a ball vector: guaranteed enclosure of the exact result, but the accumulation order/rounding may differ from a scalar loop; document per method. `norm`, `cumsum`, `mapreduce` have generic Base fallbacks, with ball `==`/`<` caveats applying to e.g. `maximum` (needs a `proved_less`-aware definition; `maximum(::PackedVector{<:ArbBall})` returns an enclosure of the maximum, a ball whose lower bound is the largest lower bound and upper bound the largest upper bound).
-
-Matrices are out of scope for v1 beyond `Matrix{T}` for inline types; ball matrices follow after benchmarks (plan §5).
+**Planned:** fixed-size packed `ArbBall{P}`/`AcbBall{P}` owners, independent copied indexing,
+semantic assignment, and explicit parent-retaining borrowed references (M4c). Their public names
+are not settled; `PackedVector`, `flintzeros`, `flintones`, `flintvec`, and `flintmatrix` are design
+proposals, not available constructors. Native dot products require separate accumulation/error and
+complex-conjugation contracts (M4d). Matrix storage and kernels follow only where measured workloads
+justify them; ordinary Julia matrices of concrete inline values remain available.
 
 ### 2a.10 Introspection and capability queries
 
@@ -566,26 +595,17 @@ This makes `ArbFloat` the one family where **bit-for-bit agreement with MPFR (`B
 
 ## 3. One destination convention
 
-Problem: `add!(z,x,y)` cannot mutate an immutable `DFloat`. Options considered:
+Implemented mutable scalar and vector destination operations return the supplied destination.
+Immutable scalars use ordinary arithmetic; an exclamation-mark method cannot replace the caller's
+immutable object. A generic scalar loop therefore uses `acc = acc + x*y`; owned-scalar code can
+reuse documented destination methods explicitly. Fused methods such as `addmul!` remain proposals.
 
-| Option | Verdict |
-| --- | --- |
-| Separate APIs (`+` for inline, `add!` for owned) | Not uniform; generic code must branch. |
-| Mutable wrapper for every type | Forces finalizers/heap onto inline types; kills their main advantage. |
-| **`z = add!(z, x, y)`** (Nemo's convention): returns the result; mutates `z` in place if `storage(T) isa Owned`, otherwise returns a fresh value | **Chosen.** One call shape; inline types compile to plain arithmetic, owned types reuse storage. |
+Vector `FlintFloats.add!`/`mul!` accept ordinary and strided destination buffers under §2a.9's rules.
+The optional nfloat workspace is a scratch owner, not a numeric value or a returned result buffer;
+both allocating and reusable forms keep status handling and commit-on-success inside the same
+kernel implementation in `src/reusable.jl`.
 
-Rule, stated once in the docs: *the return value is the result; the destination argument is a hint that may be overwritten.* Never read `z` after the call except through the return value. Hot loops:
-
-```julia
-acc = zero(x)
-for v in xs
-    acc = addmul!(acc, v, w)     # ArbBall: zero allocations, in place; DFloat/NFloat: value arithmetic
-end
-```
-
-Aliasing (`add!(z, z, y)`) is permitted for all families (FLINT allows it for dfloat *(per docs)* and for arb). Partially overlapping array spans are not (enact §9.2).
-
-## 4. Internal protocol (how uniformity is implemented)
+## 4. Proposed internal protocol
 
 Each family implements a small set of private functions; public methods are written once against them.
 
@@ -617,7 +637,10 @@ Per-family notes *(checked unless marked)*:
 - **ArbFloat/AcbFloat.** `arf_add`, `arf_mul`, `arf_div`, `arf_sqrt`, `arf_exp`, `arf_set_round`, `acf_add`, `acf_mul`, `acf_div`, `acf_sqrt` and the `acf` elementary functions are exported *(checked)*. Signature shape `int f(res, x, y, slong prec, arf_rnd_t rnd)`: precision is the constant `P`, the mode comes from the trailing `RoundingMode`, the returned inexact flag is discarded except in `_inexact` variants. Many small `arf` helpers are `static inline` in `arf.h`; audit with `dlsym` and reimplement or avoid those.
 - **mag.** Private: used for ball radii and bounds only.
 
-## 5. Containers
+## 5. Container design proposals
+
+Current inline vector and workspace behavior is specified in §2a.9. The packed owners and factories
+below are proposed future interfaces, not implemented APIs. M4c begins with packed ball owners.
 
 - Inline families: ordinary `Vector{DFloat{N}}`, `Vector{DFloatBall{N}}`, `Vector{NFloat{L}}`. Contiguous, no GC cost per element. Pass spans straight to FLINT vector kernels after a stride/alignment check.
 - Owned types (`ArbFloat{P}`, `AcbFloat{P}`, `ArbBall{P}`, `AcbBall{P}`): `PackedVector{T}` backed by one FLINT array with one finalizer (`_arf_vec_init`-style allocation for `ArbFloat`, `_arb_vec_init` for balls; confirm the exact names in the inventory). Indexing copies out an independent value; `setindex!` copies *into* the slot. Borrowed element views come later (enact §9.2).
@@ -697,7 +720,7 @@ No single storage type, no universal rounding mode, no implicit `Real` promotion
 | Unable (ball contains zero in a divisor, algorithm unavailable) | indeterminate enclosure for balls, descriptive error otherwise |
 | Unsupported option or function | `MethodError` or `ArgumentError`, never silent fallback |
 
-The mapping lives in `_status` per family; public methods never inspect raw codes.
+The proposed shared mapping would live in `_status`; current family implementations interpret statuses locally. Nfloat vector methods share the checked kernel and commit logic in `src/reusable.jl`.
 
 ## 8. Decisions needed before coding
 
@@ -720,6 +743,15 @@ The mapping lives in `_status` per family; public methods never inspect raw code
 
 ## 9. Next steps
 
-1. ~~M0 layout/symbol probe, extended to cover~~ **Done:** `test/abi/`, `gen/audit.jl`. Original scope: cover `nfloat` header+limbs, `arb_struct`, the context struct and the single-object `ArbBall` layout.
-2. ~~Implement the protocol (§4) and the `+`, `add!` path for all seven types;~~ **Done for M1 (`+ - * /`, no shared protocol yet; factor it in M2):** benchmark against direct `@ccall` (raw floor) and `BigFloat`. Include compile latency for new `ArbBall{P}`/`AcbBall{P}` precisions.
-3. Use that benchmark to settle the §8 decisions, then expand the surface in §2.2.
+M0–M3 and M4a/M4b are implemented. Reusable nfloat scratch is integrated into vector arithmetic,
+with 12,759 passing tests on Julia 1.13.3/four threads, documentation/doctests, and recorded benchmarks.
+The shared protocol in §4 remains unfactored; it is not a prerequisite for the next part.
+
+1. **M4c:** fixed-size packed real/complex ball owners, semantic indexing/assignment/copying, explicit
+   parent-retaining borrowing, then selected native vector arithmetic with lifetime/aliasing evidence.
+2. **M4d:** selected native dot methods with independent numerical and conjugation contracts;
+   measured matrix work only after vector evidence.
+3. **M5:** elementary/special functions, portable artifacts, and verified CI/release targets.
+
+Use [enact_interfacing.md §9](enact_interfacing.md) for acceptance criteria and
+[capability_table.md](capability_table.md) for the implemented operation set.
