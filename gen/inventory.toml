@@ -1220,3 +1220,20 @@ sig = "void(d2b_ptr, d2b_srcptr, d2b_srcptr, slong)"
 kind = "export"
 status = "none"
 note = "Rigorous elementwise add; len structs, not doubles. SIMD blocks load all inputs before storing; exceptional blocks fall back before storing. Exact res==x/res==y allowed; partial overlap unsupported. Nonfinite/overflow lanes become whole-line balls as in scalar add. Source: template.inc DBV(vec_add), DB(_vaddsub4), DB(_add_impl); upstream t-vec.c and t-vec_aliasing.c."
+
+# M4b: nfloat.h and src/nfloat/nfloat.c. Both return OR-combined GR_* statuses.
+[[op]]
+symbol = "_nfloat_vec_add"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, nfloat_srcptr, slong, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+note = "Elementwise finite-only add, ALLOW_UNDERFLOW context; L+2 word stride. L=1..4 specialized, larger L call scalar add. Context read-only. Failed outputs not published: Julia uses separate initialized scratch and commits only on GR_SUCCESS. No partial-overlap native calls."
+
+[[op]]
+symbol = "_nfloat_vec_mul"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, nfloat_srcptr, slong, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+note = "Elementwise finite-only multiply; L=1,2 specialized, larger L use scalar mul (or sqr when x==y). Error guarantee is operation-specific, not correctly rounded. Context read-only. Underflow flushes zero; overflow nonzero status; scratch isolates failed lanes and destination aliases."

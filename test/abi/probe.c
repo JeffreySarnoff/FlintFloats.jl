@@ -48,6 +48,7 @@ int main(void)
     SZ("gr_ctx", gr_ctx_struct);
     printf("NFLOAT_HEADER_LIMBS %d\n", (int) NFLOAT_HEADER_LIMBS);
     printf("NFLOAT_MIN_LIMBS %d\nNFLOAT_MAX_LIMBS %d\n", (int) NFLOAT_MIN_LIMBS, (int) NFLOAT_MAX_LIMBS);
+    printf("NFLOAT_MIN_EXP %ld\nNFLOAT_MAX_EXP %ld\n", (long) NFLOAT_MIN_EXP, (long) NFLOAT_MAX_EXP);
     printf("sizeof.nfloat_ctx_t %zu\n", sizeof(_nfloat_ctx_struct));
     printf("offsetof.nfloat_ctx.nlimbs %zu\noffsetof.nfloat_ctx.flags %zu\noffsetof.nfloat_ctx.rnd %zu\noffsetof.nfloat_ctx.func_prec %zu\n",
            offsetof(_nfloat_ctx_struct, nlimbs), offsetof(_nfloat_ctx_struct, flags),

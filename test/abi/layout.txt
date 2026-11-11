@@ -53,6 +53,8 @@ align.gr_ctx 8
 NFLOAT_HEADER_LIMBS 2
 NFLOAT_MIN_LIMBS 1
 NFLOAT_MAX_LIMBS 66
+NFLOAT_MIN_EXP -2305843009213693952
+NFLOAT_MAX_EXP 2305843009213693951
 sizeof.nfloat_ctx_t 24
 offsetof.nfloat_ctx.nlimbs 0
 offsetof.nfloat_ctx.flags 8
