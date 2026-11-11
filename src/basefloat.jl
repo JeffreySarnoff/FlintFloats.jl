@@ -8,7 +8,7 @@
 #   floatmin, floatmax    unbounded or format-dependent exponent range
 #   DFloat per-value neighbours and exponent    expansions have several representations
 #   balls: eps, nextfloat, prevfloat, significand, exponent, isapprox    no unique neighbouring scalar
-# Not defined (MethodError): typemin, typemax, round, floor, ceil, trunc, elementary functions.
+# Not defined (MethodError): typemin, typemax, round, floor, ceil, trunc. Selected elementary functions live in elementary.jl.
 
 _unsupported(f, T, why) = throw(ArgumentError("$f is not defined for $T: $why"))
 

@@ -245,6 +245,10 @@ julia> iszero(real(log(AcbBall{128}(-1, 0))))
 true
 ```
 
+The same functions support all seven scalar families. Dfloat and nfloat points use approximate
+native kernels; dfloat balls give rigorous enclosures. Nfloat log requires a positive input;
+finite-only overflow throws and underflow flushes to zero.
+
 Point functions also support `ArbFloat{P}` and `AcbFloat{P}`, with strict explicit rounding.
 
 ```jldoctest

@@ -1486,3 +1486,125 @@ sig = "int(acf_ptr, acf_srcptr, slong, arf_rnd_t)"
 kind = "export"
 status = "inexact"
 note = "Strict modes only: correctly rounded each component; flag bits 0/1 indicate inexact real/imaginary parts. Pinned headers and acf/elem_acb.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."
+
+# M5 inline elementary kernels: dfloat.h static bounds and nfloat elem/rounding source.
+
+[[op]]
+symbol = "d2_exp"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr)"
+kind = "export"
+status = "none"
+note = "Approximate normalized expansion; pinned dfloat.h DFLOAT_EXP/LOG/TRIG/ATAN_EPS_N static bounds, not correctly rounded. Nonfinites follow native results."
+
+[[op]]
+symbol = "d2_log"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr)"
+kind = "export"
+status = "none"
+note = "Approximate normalized expansion; pinned dfloat.h DFLOAT_EXP/LOG/TRIG/ATAN_EPS_N static bounds, not correctly rounded. Nonfinites follow native results."
+
+[[op]]
+symbol = "d2_sin"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr)"
+kind = "export"
+status = "none"
+note = "Approximate normalized expansion; pinned dfloat.h DFLOAT_EXP/LOG/TRIG/ATAN_EPS_N static bounds, not correctly rounded. Nonfinites follow native results."
+
+[[op]]
+symbol = "d2_cos"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr)"
+kind = "export"
+status = "none"
+note = "Approximate normalized expansion; pinned dfloat.h DFLOAT_EXP/LOG/TRIG/ATAN_EPS_N static bounds, not correctly rounded. Nonfinites follow native results."
+
+[[op]]
+symbol = "d2_atan"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr)"
+kind = "export"
+status = "none"
+note = "Approximate normalized expansion; pinned dfloat.h DFLOAT_EXP/LOG/TRIG/ATAN_EPS_N static bounds, not correctly rounded. Nonfinites follow native results."
+
+[[op]]
+symbol = "d2b_exp"
+family = "dfloatball"
+sig = "void(d2b_ptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+note = "Rigorous enclosure; log returns GR_DOMAIN for entirely nonpositive inputs and GR_UNABLE for other nonpositive-reaching balls; failed output must not be read."
+
+[[op]]
+symbol = "d2b_log"
+family = "dfloatball"
+sig = "int(d2b_ptr, d2b_srcptr)"
+kind = "export"
+status = "gr"
+note = "Rigorous enclosure; log returns GR_DOMAIN for entirely nonpositive inputs and GR_UNABLE for other nonpositive-reaching balls; failed output must not be read."
+
+[[op]]
+symbol = "d2b_sin"
+family = "dfloatball"
+sig = "void(d2b_ptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+note = "Rigorous enclosure; log returns GR_DOMAIN for entirely nonpositive inputs and GR_UNABLE for other nonpositive-reaching balls; failed output must not be read."
+
+[[op]]
+symbol = "d2b_cos"
+family = "dfloatball"
+sig = "void(d2b_ptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+note = "Rigorous enclosure; log returns GR_DOMAIN for entirely nonpositive inputs and GR_UNABLE for other nonpositive-reaching balls; failed output must not be read."
+
+[[op]]
+symbol = "d2b_atan"
+family = "dfloatball"
+sig = "void(d2b_ptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+note = "Rigorous enclosure; log returns GR_DOMAIN for entirely nonpositive inputs and GR_UNABLE for other nonpositive-reaching balls; failed output must not be read."
+
+[[op]]
+symbol = "nfloat_exp"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+note = "Approximate elementary result at function precision; not correctly rounded. Finite-only context, underflow flushes zero; nonzero status must be checked before reading output. Context read only in exp/log/sin_cos/atan/elem sources."
+
+[[op]]
+symbol = "nfloat_log"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+note = "Approximate elementary result at function precision; not correctly rounded. Finite-only context, underflow flushes zero; nonzero status must be checked before reading output. Context read only in exp/log/sin_cos/atan/elem sources."
+
+[[op]]
+symbol = "nfloat_sin"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+note = "Approximate elementary result at function precision; not correctly rounded. Finite-only context, underflow flushes zero; nonzero status must be checked before reading output. Context read only in exp/log/sin_cos/atan/elem sources."
+
+[[op]]
+symbol = "nfloat_cos"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+note = "Approximate elementary result at function precision; not correctly rounded. Finite-only context, underflow flushes zero; nonzero status must be checked before reading output. Context read only in exp/log/sin_cos/atan/elem sources."
+
+[[op]]
+symbol = "nfloat_atan"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+note = "Approximate elementary result at function precision; not correctly rounded. Finite-only context, underflow flushes zero; nonzero status must be checked before reading output. Context read only in exp/log/sin_cos/atan/elem sources."

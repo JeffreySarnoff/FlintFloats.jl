@@ -72,3 +72,38 @@ signs, aliases, exact/inexact flags, rejected modes, log domains, nonfinites, an
 These sampled checks support the native guarantee; they are not a proof over every possible input.
 [Point measurements](../benchmark/results/elementary_points.txt) record allocation/reuse costs and
 fresh-precision first-use timings.
+
+## Inline families
+
+All five selected functions also accept `DFloat{N}`, `DFloatBall{N}` (N=1:4), and `NFloat{L}`.
+They return inline values and do not add destination methods for immutable scalars.
+
+Dfloat points use the native approximate kernels. The matching `dfloat.h` records static
+`DFLOAT_EXP_EPS_N`, `DFLOAT_LOG_EPS_N`, `DFLOAT_TRIG_EPS_N`, and `DFLOAT_ATAN_EPS_N` bounds with
+argument ranges and slow fallbacks. Exp/log/atan bounds are relative; sine/cosine bounds are
+absolute and scale with argument magnitude. These are not correctly rounded functions. Native
+nonfinites/overflow propagate; negative real log is checked as DomainError and log(0) is -Inf.
+Dfloat balls add the static errors and input-radius propagation to produce rigorous enclosures.
+Entirely nonpositive log throws DomainError; zero-crossing log returns the whole real line. Its
+native failed output is never read. Void-returning ball functions can produce finite range bounds
+even for indeterminate input (for example sine of the whole real line encloses [-1,1]).
+
+Nfloat kernels use the existing immutable shared finite-only contexts. The pinned `rounding.md`
+describes elementary accuracy as approximately one ulp in default mode; no correctly-rounded or
+universal eight-ulp guarantee is made. Log requires a positive input, including rejection of zero
+because this format cannot represent -Inf. Exp underflow flushes to zero; overflow/unsupported
+native evaluation throws through the existing status policy before reading the result buffer.
+The audited `exp.c`, `log.c`, `sin_cos.c`, `atan.c`, and `elem.c` read context settings and use local
+scratch. No function-precision/context setting is mutated, including during concurrent reads.
+
+The inventory adds 40 dfloat declarations (five functions, plain/ball, four N) and five nfloat
+declarations, bringing the audit to 374 symbols. The dfloat declarations are `void(ptr, srcptr)`
+except ball log, which returns GR status; all nfloat declarations return GR status and take a
+context pointer. Headers and `src/dfloat/template.inc` establish the ball-log failure convention.
+
+`test/elementary_inline_tests.jl` checks independent MPFR references with the actual dfloat static
+bounds, uncertain-ball endpoint containment, representative nfloat lengths through 66 limbs,
+negative domains, nonfinites, overflow/underflow, reuse after errors, and concurrent context reads.
+Nfloat accuracy tolerances in the tests are empirical regression limits, not new API guarantees.
+[Inline measurements](../benchmark/results/elementary_inline.txt) record complete calls and Julia
+allocations for tiny/large inline formats and first-use compilation. Native allocations are excluded.

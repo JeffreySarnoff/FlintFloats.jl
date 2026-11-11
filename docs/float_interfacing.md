@@ -799,18 +799,13 @@ The proposed shared mapping would live in `_status`; current family implementati
 
 ## 9. Next steps
 
-M0–M3, M4a–M4c, copied-read documentation/`eachborrow`, flat/nested packed broadcast, borrowed sum,
-and conjugating packed dot are implemented. Latest validation uses 346 dot and 205 sum checks, plus
-documentation/doctests and deterministic audit of 309 symbols; the full numeric suite is not rerun.
-The shared internal protocol remains unfactored.
+Scoped M0–M4 work, including copied packed reads, borrowing, bounded assignment broadcast, sum,
+conjugating dot, and `sum(abs2, v)`, is implemented. The selected M5 `exp`, `log`, `sin`, `cos`,
+and `atan` functions now support all seven families with individual guarantees documented in
+[elementary.md](elementary.md). The [checkpoints](checkpoint_gpt.md) record focused evidence;
+[capability_table.md](capability_table.md) identifies implemented operations.
 
-1. Individually verified mapped reductions such as `sum(abs2, v)` (§9.4.4), preserving result
-   family/precision and generic callback/keyword behavior.
-2. Matrix/other-family optimization only on measured need and separate layout/numerical evidence.
-3. M5 elementary/special functions, portable artifacts, and verified CI/release targets.
-
-See [enact_interfacing.md](enact_interfacing.md) for acceptance gates and the
-[capability table](capability_table.md) for implemented combinations. Plain sum returns a fresh
-logical-order result. Dot conjugates the first complex operand and uses independent native/borrowed
-accumulation contracts; outputs can differ in radius from generic scalar loops. Ordinary indexing
-and iteration still copy values; no result-buffer borrowing or swapping is introduced.
+Next complete compatible CI/docs setup, audited portable artifacts, and clean-target installation,
+ABI/numerical checks and release provenance. Matrices, other mappings, special functions, and optional
+interoperability require individually justified scope and evidence. Existing host-tuned artifacts
+remain unsuitable for generic hosted CI or portable release.

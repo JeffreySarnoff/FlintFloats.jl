@@ -30,3 +30,40 @@ for (T,prefix) in ((ArbFloat,:arf),(AcbFloat,:acf)), name in (:exp,:log,:sin,:co
         @doc "Compute `$($name)(x)` correctly rounded in the requested strict mode (each part for complex points). The default is RoundNearest. See `docs/elementary.md` for domain and range limits." Base.$name(x::$T{P},r::RoundingMode=RoundNearest) where {P} = $bang($T{P}(),x,r)
     end
 end
+
+# Inline values return by value. Ref buffers are read only after checked status success.
+for N in 1:4, name in (:exp,:log,:sin,:cos,:atan)
+    c=Symbol(:d,N,:_,name)
+    cb=Symbol(:d,N,:b_,name)
+    @eval begin
+        function Base.$name(x::DFloat{$N})
+            $(name===:log) && signbit(x) && throw(DomainError(x,"log of a negative DFloat"))
+            result=Ref{DFloat{$N}}()
+            LibFlint.$c(result,Ref(x))
+            result[]
+        end
+        function Base.$name(x::DFloatBall{$N})
+            result=Ref{DFloatBall{$N}}()
+            if $(name===:log)
+                status=LibFlint.$cb(result,Ref(x))
+                status & GR_DOMAIN != 0 && throw(DomainError(x,"log of an entirely nonpositive DFloatBall"))
+                status & GR_UNABLE != 0 && return _indeterminate(DFloatBall{$N})
+                status==GR_SUCCESS || _status_error(status,$(QuoteNode(name)),DFloatBall{$N})
+            else
+                LibFlint.$cb(result,Ref(x))
+            end
+            result[]
+        end
+    end
+end
+for name in (:exp,:log,:sin,:cos,:atan)
+    c=Symbol(:nfloat_,name)
+    @eval function Base.$name(x::NFloat{L}) where {L}
+        $(name===:log) && (iszero(x) || signbit(x)) &&
+            throw(DomainError(x,"log requires a positive NFloat (finite-only format)"))
+        result=Ref{NFloat{L}}()
+        status=LibFlint.$c(result,Ref(x),_ctx(NFloat{L}))
+        status==GR_SUCCESS || _status_error(status,$(QuoteNode(name)),NFloat{L})
+        result[]
+    end
+end

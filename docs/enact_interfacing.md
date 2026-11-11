@@ -6,7 +6,14 @@ The objective is a Julia interface to FLINT's **dfloat (plain and ball), nfloat,
 
 Descriptions of the existing repository are distinguished from requirements for future implementation. Proposed Julia constructors and operations below are interface specifications, not claims that those methods already exist.
 
-**Resume point (M0–M3, M4a–M4c, and reusable scratch complete):** [checkpoint.md](checkpoint.md) and [checkpoint_gpt.md](checkpoint_gpt.md) now cover inline bulk arithmetic, `NFloatWorkspace`, packed ball owners, and explicit borrowing, in addition to the scalar foundations. The prior M4c full-suite baseline passed **13,709 tests**; the latest reduction follow-up passes **346 dot checks and 205 sum checks** on Julia 1.13.3 with four threads, plus documentation/doctests. **M4a–M4c are implemented (§9.3). Copied-indexing documentation, `eachborrow`, and flat in-place broadcast are implemented (§9.4.1–3). Bounded nested broadcast is also implemented (§9.4.3); sum and audited M4d dot products are implemented (§9.4.4); `sum(abs2, v)` is implemented; nfloat square-root differential evidence is complete; M5 ball elementary functions are implemented; strict arb/acf point functions are also implemented; next add audited inline-family functions.** Keep elementary functions in M5. The capability table and current source determine what is implemented; the checkpoints are handoff snapshots of this update.
+**Resume point:** M0–M3, M4a–M4c, reusable scratch, and the packed-interface follow-ups are
+implemented: copied indexing, `eachborrow`, bounded assignment broadcast, sum, conjugating dot,
+and `sum(abs2, v)`. The five selected M5 elementary functions now support all seven scalar families;
+[their contracts and audits](elementary.md) distinguish strict point rounding, approximation, and
+rigorous enclosures. Latest focused validation: 712 inline elementary + 2,227 adjacent Base-float
+checks, documentation/doctests, 374-symbol audit, and unchanged regeneration. The 13,709 M4c
+full-suite result remains historical. [Both](checkpoint.md) [checkpoints](checkpoint_gpt.md) record
+completed checks and current limits. Next complete compatible CI and portable release gates.
 
 ## 1. Starting point and development priorities
 
@@ -14,7 +21,7 @@ Descriptions of the existing repository are distinguished from requirements for 
 
 | Area | Current state | Consequence for development |
 | --- | --- | --- |
-| Main Julia package | Seven scalar types, M0–M3, M4a–M4c bulk operations, packed ball owners/borrowing, and reusable nfloat scratch are implemented | Continue with selected mapped reductions, measured matrix work, then M5 expansion/release. |
+| Main Julia package | Seven scalar types, M0–M3, M4a–M4c bulk operations, packed ball owners/borrowing, and reusable nfloat scratch are implemented | Complete compatible CI and portable release gates; extend mappings/matrices only on measured need. |
 | Julia compatibility | Main project requires Julia 1.13; precision is in the type | Use `with_precision(f, bits)` as a `Val` function barrier; there is no scoped runtime precision default. |
 | Local binary package | [`FlintFloat.jl/FLINT_jll`](../FlintFloat.jl/FLINT_jll/README.md) contains a working loader, native artifact, headers, source archive, and build tools | Use this package for host development rather than waiting for a published dfloat-capable wrapper. |
 | Pinned FLINT source | `82c40b299084b92299c2d8dac464e39d6743fce4`, reporting `3.7.0-dev` | Consult this revision's declarations and implementation when writing bindings. |
@@ -363,7 +370,7 @@ Prioritize vector add/multiply, dot products, and measured matrix workloads. A f
 
 ### 9.3 Next implementation: M4 in reviewable parts
 
-**M4a–M4c are complete. Documentation, borrowed iteration, and flat in-place broadcast are implemented; sum and dot products are implemented; `sum(abs2, v)` is implemented (§9.4.4); nfloat square-root evidence is complete; M5 ball elementary functions are implemented; strict arb/acf point functions are also implemented; next add audited inline-family functions.** Ordinary Julia arrays already store concrete inline types; dot accumulation and measured matrix follow-up retain their separate numerical contracts. M4a is implemented in `src/arrays.jl`: qualified `FlintFloats.add!`/`mul!` accept matching-format `DFloat`/`DFloatBall` vectors, with ordinary/strided destinations, checked scalar fallbacks, and a native contiguous ball-add path at length ≥ 4. Exact aliasing uses `===`; other possible destination/input overlap is rejected. Gather/repeated-index destinations are rejected because they do not guarantee independent slots. M4b extends the same interface to `NFloat{L}`, with native aligned contiguous input paths and checked scalar fallbacks. It uses initialized private scratch and commits only after successful arithmetic, preserving the destination on numerical or input-read failure. M4c adds `PackedBallVector`, copied indexing, explicit `borrow` references, native ball-add, and borrowed scalar multiply. M4d sum and dot products are implemented; mapped reductions and measured matrix work remain. The checkpoints summarize this state.
+**M4a–M4c are complete. Documentation, borrowed iteration, and flat in-place broadcast are implemented; sum and dot products are implemented; `sum(abs2, v)` is implemented (§9.4.4); nfloat square-root evidence is complete; M5 ball elementary functions are implemented; strict arb/acf point functions are also implemented; all seven families now implement the five selected functions; next complete compatible CI and release gates.** Ordinary Julia arrays already store concrete inline types; dot accumulation and measured matrix follow-up retain their separate numerical contracts. M4a is implemented in `src/arrays.jl`: qualified `FlintFloats.add!`/`mul!` accept matching-format `DFloat`/`DFloatBall` vectors, with ordinary/strided destinations, checked scalar fallbacks, and a native contiguous ball-add path at length ≥ 4. Exact aliasing uses `===`; other possible destination/input overlap is rejected. Gather/repeated-index destinations are rejected because they do not guarantee independent slots. M4b extends the same interface to `NFloat{L}`, with native aligned contiguous input paths and checked scalar fallbacks. It uses initialized private scratch and commits only after successful arithmetic, preserving the destination on numerical or input-read failure. M4c adds `PackedBallVector`, copied indexing, explicit `borrow` references, native ball-add, and borrowed scalar multiply. M4d sum and dot products are implemented; mapped reductions and measured matrix work remain. The checkpoints summarize this state.
 
 | Part | Deliverable | Acceptance evidence |
 | --- | --- | --- |
@@ -754,8 +761,12 @@ Strict point functions for `ArbFloat` and `AcbFloat` are also implemented in all
 modes, with aggregate inexact flags and native alias/branch/range behavior. The 3,166 focused point
 checks use MPFR and certified rational-series endpoint rounding; ball checks pass after extracting
 the shared reference helper. Ten more audited declarations bring the inventory to 329.
-Next add inline-family functions only with their own guarantee, status/domain, and independent
-error evidence. Selected functions are sufficient for this milestone; further special
+Inline dfloat/ball and nfloat functions are implemented with separately documented approximation,
+enclosure, domain, and status contracts. The 712 focused inline checks cover static bounds,
+uncertain inputs, formats through 66 nfloat limbs, failure recovery, and concurrent reads. The
+adjacent Base-float test now expects explicit exp support. The inventory audits 374 symbols.
+[Measurements](../benchmark/results/elementary_inline.txt) report complete inline-call costs.
+Next complete compatible CI and portable artifact/release gates. Selected functions are sufficient for this milestone; further special
 functions require individually justified scope. Portable artifacts and verified target CI remain
 release gates after numerical implementation.
 
@@ -809,7 +820,11 @@ Use Julia threads only over independent writable destinations. Verify context be
 | **M4 — bulk arithmetic** | Concrete fixed-format arrays; packed ball vectors; explicit borrowing and `eachborrow`; selected broadcast/reduction/dot paths under §9.4. | Copied indexing retained; container/lifetime, Base compatibility, aliasing, empty/strided inputs, expression precision, reduction containment/conjugation, and measured performance are verified per path. |
 | **M5 — function expansion and release** | Selected elementary/special functions; portable artifacts; clean CI/docs setup; capability and benchmark reports. | Every advertised function and target passes its required evidence; users can install without a compiler or development-host assumptions. |
 
-**Status:** M0–M3 and M4a–M4c are implemented. Documentation, `eachborrow`, and flat in-place broadcast are implemented. Bounded nested broadcast is implemented; borrowed sum and dot products are implemented; `sum(abs2, v)` is implemented; nfloat square-root evidence is complete; M5 ball elementary functions are implemented; point-family expansion follows, with matrix work only on measured need. M5 is in progress: five real/complex ball elementary functions are implemented; point-family and release work remain. M0 completion covers the compatible development host, not portable distribution.
+**Status:** M0–M3 and scoped M4 bulk/packed work are implemented, including `sum(abs2, v)`.
+Nfloat square-root evidence is complete. M5's five selected elementary functions are implemented
+for all seven families. Compatible CI, portable artifacts, and clean-target release validation remain
+unfinished. Native matrices and further mappings require measured need; optional interoperability
+and shared-helper refactoring do not block the scoped numerical milestones.
 
 All seven types participate in M1 and M2. A family-specific issue may delay its completion without forcing unrelated work to stop, but the first complete release includes all seven. Do not expand the function inventory faster than it can be verified.
 

@@ -105,7 +105,7 @@ const FF = FlintFloats
         @test x^2 == 9 && x^3 == 27 && (x^2) isa ArbFloat{64}               # power by squaring through *
         @test_throws MethodError round(x)
         @test_throws MethodError floor(x)
-        @test_throws MethodError exp(x)
+        @test exp(x) isa typeof(x) # Selected elementary functions now have explicit implementations.
         @test zero(x) == 0 && one(x) == 1 && oneunit(x) == 1
         @test float(x) === x                                                # already a float type
         @test hash(x) == hash(3)
