@@ -2,7 +2,7 @@
 
 julia_version = "1.13.3"
 manifest_format = "2.1"
-project_hash = "8503d68856a9abf857b26912685936cd52c6db88"
+project_hash = "abf2970a76c0a05529597e5a0db81b006cfd465d"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
@@ -29,6 +29,12 @@ deps = ["FLINT_jll", "LinearAlgebra"]
 path = "."
 uuid = "26cde3c2-a71e-4793-a8a7-00c12dc13036"
 version = "0.1.0"
+
+    [deps.FlintFloats.extensions]
+    FlintFloatsSerializationExt = "Serialization"
+
+    [deps.FlintFloats.weakdeps]
+    Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 
 [[deps.GMP_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]

@@ -232,6 +232,13 @@ For multi-resource construction, retain already initialized owners so failures c
 
 `copy(x)` creates independently initialized storage and uses a FLINT value-copy operation. Ordinary Julia assignment retains the same owner. Explicit mutation therefore affects aliases, and must be documented. Raw memory copying, serialization, and `deepcopy` must not duplicate live owning pointers. Implement a semantic `deepcopy` path before claiming it is supported; reject unsupported persistence instead of serializing pointer bytes.
 
+The scalar semantic deepcopy path is implemented in `src/storage.jl`: it uses native copy and the
+caller's identity dictionary to preserve alias graphs without sharing storage with the source.
+`ext/FlintFloatsSerializationExt.jl` activates only with the Serialization stdlib and rejects writing
+or typed reconstruction of native owners and borrowed references. Inline values retain ordinary
+serialization. Focused checks cover heap-backed mantissas, source cleanup, graph aliases, extension
+activation, nested rejection, and inline round trips (81 checks plus 17 existing ownership checks).
+
 Free returned FLINT strings with `flint_free`. Keep each allocation paired with the allocator required by the function's ownership contract. Do not change shared FLINT allocators or global thread/cleanup settings from ordinary numeric operations.
 
 ### 6.3 Pointer conversion and borrowing

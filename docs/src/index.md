@@ -165,6 +165,26 @@ julia> all(i -> v[i] == T(3i), eachindex(v))
 true
 ```
 
+## Copying owned scalars
+
+`copy` and `deepcopy` allocate independently initialized native storage. Deepcopy also preserves
+repeated references inside the copied object graph, so two aliases remain aliases to the new owner.
+Ordinary assignment still aliases the original owner.
+
+```jldoctest
+julia> using FlintFloats
+
+julia> x = ArbFloat{256}(3); pair = deepcopy([x, x]);
+
+julia> pair[1] === pair[2] && pair[1] !== x
+true
+```
+
+The optional stdlib Serialization extension rejects native scalar owners, packed owners, and borrowed
+references, including when nested inside other objects. Raw owning pointer words are not persistent
+numeric data. Store explicit numeric text/data and reconstruct through constructors. Inline formats
+retain their stdlib serialization behavior.
+
 ## Packed sum
 
 Plain `sum(v)` accumulates through borrowed reads into one fresh owned scalar at element precision.

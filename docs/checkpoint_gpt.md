@@ -1,8 +1,8 @@
 # FlintFloats.jl development checkpoint
 
 State after M0–M3, M4 bulk/packed follow-ups, and the five selected M5 elementary functions from
-[enact_interfacing.md](enact_interfacing.md). This snapshot accompanies the clean-install/portable-recipe update;
-its base commit is `8a52604` (CI/docs infrastructure). Inspect `git log` and `git status`
+[enact_interfacing.md](enact_interfacing.md). This snapshot accompanies the scalar-copy/persistence correction;
+its base commit is `ccd1da0` (clean installation and portable recipe fixes). Inspect `git log` and `git status`
 for the current commit and any subsequent changes.
 
 ## Implemented
@@ -44,6 +44,16 @@ Precision is never a mutable runtime default; `with_precision(f,bits)` passes `V
   See [elementary.md](elementary.md) for domains, flags, native range limits, and source audits.
   Qualified destination and aggregate `_inexact!` methods reuse arb/acf storage. Inline values return
   by value. Failed status-returning outputs are never read.
+
+## Latest ownership continuation
+
+A release audit of §6.2 found scalar deepcopy was still generic field copying. It now creates
+semantic native copies and preserves alias graphs via the caller's IdDict. The optional Serialization
+stdlib extension rejects writing/typed reconstruction of native scalar/packed owners and borrowed
+references; inline formats retain ordinary stdlib round trips. Tests cover heap-backed mantissas,
+independence after source mutation/finalization, repeated references, extension activation, and nested
+persistence rejection. **81 new + 17 existing ownership checks pass**; docs/doctests pass.
+The extension is a weak dependency, not a mandatory runtime backend. No new C bindings.
 
 ## Latest infrastructure continuation
 
@@ -94,6 +104,7 @@ measurements invoke fresh method specializations at runtime to include compilati
 | --- | --- |
 | `src/{dfloat,dfloatball,nfloat,arf,acf,arb,acb}.jl` | scalar formats and arithmetic |
 | `src/elementary.jl` | selected elementary operations and per-family status/rounding handling |
+| `src/storage.jl`, `ext/FlintFloatsSerializationExt.jl` | semantic scalar deepcopy and optional persistence rejection |
 | `src/{arrays,reusable}.jl` | vector contracts and reusable nfloat scratch |
 | `src/{packed,packed_broadcast,packed_reduce}.jl` | packed lifetime, borrowing, broadcast and reductions |
 | `gen/inventory.toml`, `gen/{audit,generate}.jl` | foreign declarations, source contracts, deterministic generation |
