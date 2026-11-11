@@ -1,19 +1,19 @@
 # Checkpoint
 
-## Latest continuation: nfloat square-root evidence
+## Latest continuation: M5 elementary ball functions
 
-Previous step committed as `25d36c3` (packed `sum(abs2, v)`). This step closes the documented
-nfloat square-root verification gap. The pinned `rounding.md` and `src/nfloat/sqrt.c` specify exact
-truncation toward zero in the default context. `test/nfloat_sqrt_tests.jl` checks every supported
-limb count (1:66), odd/even and extreme native exponents, normalized mantissa boundaries, seeded
-random mantissas, MPFR comparisons, negative domains, zero, inference, and concurrent context reads.
-The independent oracle uses integer `isqrt` and exact dyadic scaling, not FLINT root arithmetic.
-The inventory status is corrected to `gr`; no new bindings or runtime rounding modes are added.
-Validation: **13,314 focused root checks pass** with four Julia threads; documentation/doctests
-and the 309-symbol audit pass; generation leaves bindings unchanged. The prior mapped step passed
-259 mapped + 205 sum + 346 dot checks and documentation/doctests; no full-suite rerun.
-Next: audited M5 elementary functions, beginning with real/complex ball enclosures. Matrix work
-remains conditional on measured need; portable artifacts and CI remain release work.
+Previous step: `d3d0dcb` verifies nfloat square-root truncation (13,314 focused checks across all
+supported limbs). This step adds `exp`, `log`, `sin`, `cos`, and `atan` for real/complex balls,
+with allocating and qualified destination forms in `src/elementary.jl`. Domain/branch contracts,
+source guarantees, and aliasing are recorded in [elementary.md](elementary.md).
+Validation: 291 focused ball elementary checks pass using MPFR directed bounds and exact rational
+complex series with proved tails; 319-symbol audit, deterministic regeneration, and documentation/
+doctests pass. Reused destinations allocate zero warmed Julia bytes in the recorded workloads.
+Ten new symbols increase the inventory to 319. Complete-operation allocation/runtime/radius
+measurements are in `benchmark/results/elementary_balls.txt`. No whole-suite rerun.
+Next: individually audited point-family elementary functions, then compatible CI and portable
+artifact/release gates. Matrices and extra mappings remain conditional on measured need.
+
 
 
 
@@ -95,7 +95,7 @@ Implemented (per [capability_table.md](capability_table.md), which is the author
   New dot results survive parent cleanup. Native/loop radius differences are measured explicitly.
 
 Not implemented: native matrix methods and further specialized mapped reductions,
-elementary functions, a shared internal protocol across families, portable artifacts, verified generic
+further elementary functions, a shared internal protocol across families, portable artifacts, verified generic
 CI, and `DFloat`/`NFloat` complex types.
 
 ## 2. Layout
@@ -181,7 +181,8 @@ method, add a differential test, add a row to `capability_table.md`, all in one 
 
 ## 5. Known gaps and open items
 
-- Elementary functions are not started (scheduled for M5; FLINT exports them for every family).
+- M5 elementary expansion is in progress: five real/complex ball functions are implemented.
+  Other families require their own source and numerical evidence.
   Needs per-function: inventory row, pinned guarantee, domain behaviour, differential test, table row.
 - `NFloat` `sqrt` now has exact integer-root and MPFR differential evidence across all supported limbs.
 - `hash` of an `ArbFloat` whose exponent is outside MPFR's range collides with `Inf` (allowed, documented).

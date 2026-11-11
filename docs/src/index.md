@@ -225,6 +225,26 @@ include that alternative and radius quality under cancellation. Dot does not rew
 while reading; independent concurrent dot results are supported. The selected mapped reduction `sum(abs2, v)` also reuses scratch; other mapped sums continue
 to work with copied scalar values.
 
+## Elementary ball functions
+
+`exp`, `log`, `sin`, `cos`, and `atan` return rigorous enclosures for real and complex balls.
+Qualified destination forms such as `FlintFloats.exp!(dest, x)` reuse matching-format storage.
+Real-domain failures retain indeterminate ball semantics; select complex balls explicitly when needed.
+Complex `log` and `atan` retain FLINT's principal branches and branch cuts.
+
+```jldoctest
+julia> using FlintFloats
+
+julia> exp(ArbBall{128}(0)) == ArbBall{128}(1)
+true
+
+julia> isindeterminate(log(ArbBall{128}(-1)))
+true
+
+julia> iszero(real(log(AcbBall{128}(-1, 0))))
+true
+```
+
 ```@index
 ```
 

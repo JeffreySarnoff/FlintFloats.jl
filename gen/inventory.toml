@@ -1322,3 +1322,85 @@ sig = "void(acb_ptr, acb_srcptr, int, acb_srcptr, slong, acb_srcptr, slong, slon
 kind = "export"
 status = "none"
 note = "Unconjugated rigorous complex product sum; not directly Julia dot. Used only for a benchmarked conjugated-copy candidate. Initial/output alias allowed; input/output overlap forbidden; signed struct strides."
+
+# M5 selected elementary enclosures: pinned arb/acb headers and index documentation.
+
+[[op]]
+symbol = "arb_exp"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous real enclosure; log of a ball containing nonpositive values is indeterminate. Midpoint rounded at prec; aliasing permitted."
+
+[[op]]
+symbol = "arb_log"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous real enclosure; log of a ball containing nonpositive values is indeterminate. Midpoint rounded at prec; aliasing permitted."
+
+[[op]]
+symbol = "arb_sin"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous real enclosure; log of a ball containing nonpositive values is indeterminate. Midpoint rounded at prec; aliasing permitted."
+
+[[op]]
+symbol = "arb_cos"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous real enclosure; log of a ball containing nonpositive values is indeterminate. Midpoint rounded at prec; aliasing permitted."
+
+[[op]]
+symbol = "arb_atan"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous real enclosure; log of a ball containing nonpositive values is indeterminate. Midpoint rounded at prec; aliasing permitted."
+
+[[op]]
+symbol = "acb_exp"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous complex enclosure; principal log cut (-infinity,0], atan cuts +/-i*[1,infinity). Crossing cuts encloses both sides; singularities may be indeterminate. Output/input aliasing permitted."
+
+[[op]]
+symbol = "acb_log"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous complex enclosure; principal log cut (-infinity,0], atan cuts +/-i*[1,infinity). Crossing cuts encloses both sides; singularities may be indeterminate. Output/input aliasing permitted."
+
+[[op]]
+symbol = "acb_sin"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous complex enclosure; principal log cut (-infinity,0], atan cuts +/-i*[1,infinity). Crossing cuts encloses both sides; singularities may be indeterminate. Output/input aliasing permitted."
+
+[[op]]
+symbol = "acb_cos"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous complex enclosure; principal log cut (-infinity,0], atan cuts +/-i*[1,infinity). Crossing cuts encloses both sides; singularities may be indeterminate. Output/input aliasing permitted."
+
+[[op]]
+symbol = "acb_atan"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous complex enclosure; principal log cut (-infinity,0], atan cuts +/-i*[1,infinity). Crossing cuts encloses both sides; singularities may be indeterminate. Output/input aliasing permitted."
