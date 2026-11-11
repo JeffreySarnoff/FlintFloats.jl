@@ -1404,3 +1404,85 @@ sig = "void(acb_ptr, acb_srcptr, slong)"
 kind = "export"
 status = "none"
 note = "Rigorous complex enclosure; principal log cut (-infinity,0], atan cuts +/-i*[1,infinity). Crossing cuts encloses both sides; singularities may be indeterminate. Output/input aliasing permitted."
+
+# M5 strict point elementary functions: pinned arf/acf headers, elem sources and docs.
+
+[[op]]
+symbol = "arf_exp"
+family = "arbfloat"
+sig = "int(arf_ptr, arf_srcptr, slong, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Strict modes only: correctly rounded real result; flag zero iff exact. Pinned headers and arf/elem.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."
+
+[[op]]
+symbol = "arf_log"
+family = "arbfloat"
+sig = "int(arf_ptr, arf_srcptr, slong, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Strict modes only: correctly rounded real result; flag zero iff exact. Pinned headers and arf/elem.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."
+
+[[op]]
+symbol = "arf_sin"
+family = "arbfloat"
+sig = "int(arf_ptr, arf_srcptr, slong, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Strict modes only: correctly rounded real result; flag zero iff exact. Pinned headers and arf/elem.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."
+
+[[op]]
+symbol = "arf_cos"
+family = "arbfloat"
+sig = "int(arf_ptr, arf_srcptr, slong, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Strict modes only: correctly rounded real result; flag zero iff exact. Pinned headers and arf/elem.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."
+
+[[op]]
+symbol = "arf_atan"
+family = "arbfloat"
+sig = "int(arf_ptr, arf_srcptr, slong, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Strict modes only: correctly rounded real result; flag zero iff exact. Pinned headers and arf/elem.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."
+
+[[op]]
+symbol = "acf_exp"
+family = "acbfloat"
+sig = "int(acf_ptr, acf_srcptr, slong, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Strict modes only: correctly rounded each component; flag bits 0/1 indicate inexact real/imaginary parts. Pinned headers and acf/elem.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."
+
+[[op]]
+symbol = "acf_log"
+family = "acbfloat"
+sig = "int(acf_ptr, acf_srcptr, slong, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Strict modes only: correctly rounded each component; flag bits 0/1 indicate inexact real/imaginary parts. Pinned headers and acf/elem.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."
+
+[[op]]
+symbol = "acf_sin"
+family = "acbfloat"
+sig = "int(acf_ptr, acf_srcptr, slong, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Strict modes only: correctly rounded each component; flag bits 0/1 indicate inexact real/imaginary parts. Pinned headers and acf/elem.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."
+
+[[op]]
+symbol = "acf_cos"
+family = "acbfloat"
+sig = "int(acf_ptr, acf_srcptr, slong, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Strict modes only: correctly rounded each component; flag bits 0/1 indicate inexact real/imaginary parts. Pinned headers and acf/elem.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."
+
+[[op]]
+symbol = "acf_atan"
+family = "acbfloat"
+sig = "int(acf_ptr, acf_srcptr, slong, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Strict modes only: correctly rounded each component; flag bits 0/1 indicate inexact real/imaginary parts. Pinned headers and acf/elem_acb.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."

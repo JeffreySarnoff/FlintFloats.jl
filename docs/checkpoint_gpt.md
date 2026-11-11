@@ -1,18 +1,19 @@
 # FlintFloats.jl development checkpoint
 
-## Latest continuation: M5 elementary ball functions
+## Latest continuation: strict point elementary functions
 
-Previous step: `d3d0dcb` verifies nfloat square-root truncation (13,314 focused checks across all
-supported limbs). This step adds `exp`, `log`, `sin`, `cos`, and `atan` for real/complex balls,
-with allocating and qualified destination forms in `src/elementary.jl`. Domain/branch contracts,
-source guarantees, and aliasing are recorded in [elementary.md](elementary.md).
-Validation: 291 focused ball elementary checks pass using MPFR directed bounds and exact rational
-complex series with proved tails; 319-symbol audit, deterministic regeneration, and documentation/
-doctests pass. Reused destinations allocate zero warmed Julia bytes in the recorded workloads.
-Ten new symbols increase the inventory to 319. Complete-operation allocation/runtime/radius
-measurements are in `benchmark/results/elementary_balls.txt`. No whole-suite rerun.
-Next: individually audited point-family elementary functions, then compatible CI and portable
-artifact/release gates. Matrices and extra mappings remain conditional on measured need.
+Previous step: `e7c6aa5` adds five real/complex ball elementary functions. This step adds the same
+`exp`, `log`, `sin`, `cos`, and `atan` functions for `ArbFloat` and `AcbFloat`, correctly rounded
+in five strict explicit modes, with destination and aggregate `_inexact!` forms. Real negative log
+throws DomainError; native branches, singularities, and huge-argument limits remain explicit.
+Source audits and numerical contracts are in [elementary.md](elementary.md).
+Validation: **3,166 point + 291 ball checks pass** with four Julia threads. Real references use
+MPFR; complex references certify both exact rational-series interval endpoints round identically.
+All 329 symbols resolve; regeneration is unchanged; documentation/doctests pass.
+Benchmarks: `benchmark/results/elementary_points.txt` includes allocating/reused calls and fresh-
+precision first use. No whole-suite rerun. Next: audited inline dfloat/ball and nfloat functions,
+then compatible CI and portable artifact/release gates. Optional matrix work still needs evidence.
+
 
 
 

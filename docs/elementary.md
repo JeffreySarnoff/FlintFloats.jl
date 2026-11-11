@@ -41,3 +41,34 @@ from the pinned native kernels.
 with initialized destination reuse at 64, 256, and 1024 bits, reporting Julia allocations and radii.
 Julia allocation counters do not include native scratch. First-use timings and other-family expansion
 remain separate follow-up work. No additional special functions are advertised at this checkpoint.
+
+## Strict point functions
+
+The same five functions are implemented for `ArbFloat{P}` and `AcbFloat{P}`, with a trailing optional
+rounding mode (default `RoundNearest`). `RoundToZero`, `RoundFromZero`, `RoundDown`, and `RoundUp`
+are also supported. Each result (each complex component) is correctly rounded in these strict modes.
+Qualified destination and `_inexact!` forms follow the existing scalar API; the latter return an
+aggregate Boolean indicating whether any component is inexact. Unsupported rounding modes are
+rejected before destination mutation. No relaxed native rounding mode is exposed.
+
+Real negative logarithms throw `DomainError`; zero gives native negative infinity. Select complex
+points explicitly for a principal logarithm of a negative real. Point nonfinites retain native
+behavior. Very large exponentials/trigonometric arguments can yield native NaN at the pinned source's
+polynomial-cost limits, despite the unbounded exponent representation. This is not an MPFR exponent-
+range fallback. Complex functions retain principal branches and native singularity behavior.
+
+The matching `arf.h`/`acf.h` declare `int(prefix_ptr, prefix_srcptr, slong, arf_rnd_t)`.
+`arf` strict return values indicate inexactness; `acf` uses per-component bits. The pinned
+`arf` elementary documentation and `src/acf/elem.c`/`elem_acb.c` describe strict rounding with
+certified retries, special cases on axes, aliasing, and range limits. Ten new declarations bring the
+audited inventory to 329 symbols.
+
+`test/elementary_point_tests.jl` checks real results bit-for-bit against MPFR in all five modes
+at 5, 24, 53, 128, and 512 bits. Complex references use exact rational series with proved tails:
+both endpoints must round to the same component before comparison. Rational numerators and
+denominators are converted to MPFR exactly before the rounded division; converting them separately
+at target precision would compromise the oracle. Complex tests cover 5 through 256 bits, both
+signs, aliases, exact/inexact flags, rejected modes, log domains, nonfinites, and near-axis values.
+These sampled checks support the native guarantee; they are not a proof over every possible input.
+[Point measurements](../benchmark/results/elementary_points.txt) record allocation/reuse costs and
+fresh-precision first-use timings.
