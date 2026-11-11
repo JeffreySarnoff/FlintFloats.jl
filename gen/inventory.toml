@@ -1211,3 +1211,12 @@ sig = "void(arb_ptr, arf_srcptr)"
 kind = "export"
 status = "none"
 note = "Adds an upper bound of |err| to the radius."
+
+# M4a: pinned dfloat.h declarations and src/dfloat/template.inc, DBV(vec_add).
+[[op]]
+symbol = "_d2b_vec_add"
+family = "dfloatball"
+sig = "void(d2b_ptr, d2b_srcptr, d2b_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous elementwise add; len structs, not doubles. SIMD blocks load all inputs before storing; exceptional blocks fall back before storing. Exact res==x/res==y allowed; partial overlap unsupported. Nonfinite/overflow lanes become whole-line balls as in scalar add. Source: template.inc DBV(vec_add), DB(_vaddsub4), DB(_add_impl); upstream t-vec.c and t-vec_aliasing.c."

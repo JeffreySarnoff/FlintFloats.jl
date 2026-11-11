@@ -1,0 +1,28 @@
+M4a DFloatBall vector add; minimum warmed times, 100 samples, 0.1 s budget per case
+Julia=1.13.3 CPU=Intel(R) Core(TM) i9-14900K Julia threads=1
+kernel=Linux arch=x86_64 libc=glibc 2.43
+FLINT_jll=301.690.0+0 lib=/home/jas/.julia/artifacts/b375a8872bc46fbeeae1a15e10297b29900d2451/lib/libflint.so
+source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25; host-tuned artifact
+FLINT/BLAS threading: vector add does not invoke threaded kernels; no global settings changed
+Inputs: midpoint i/8, radius 2^-30; matching rigorous scalar/native guarantees
+N length scalar_ns native_checked_ns speedup native_allocs native_bytes allocating_ns allocating_bytes
+1 1 15.5 16.2 0.96 0 0 17.4 80
+1 4 28.2 14.2 1.98 0 0 13.7 128
+1 16 79.0 19.7 4.01 0 0 19.1 320
+1 256 1119.1 165.0 6.78 0 0 200.0 4168
+1 4096 17374.0 2489.9 6.98 0 0 2528.9 65608
+2 1 15.9 16.7 0.95 0 0 16.4 80
+2 4 25.5 16.5 1.54 0 0 16.3 160
+2 16 68.4 35.3 1.94 0 0 34.1 480
+2 256 970.7 409.5 2.37 0 0 467.3 6216
+2 4096 14804.0 7044.5 2.1 0 0 6838.4 98376
+3 1 21.4 22.1 0.97 0 0 18.9 96
+3 4 40.0 20.7 1.93 0 0 19.2 192
+3 16 112.9 49.3 2.29 0 0 48.7 576
+3 256 1606.6 653.5 2.46 0 0 680.8 8264
+3 4096 26259.0 10526.0 2.49 0 0 10354.0 131144
+4 1 23.9 23.5 1.02 0 0 21.6 96
+4 4 52.2 25.5 2.05 0 0 24.1 224
+4 16 167.7 82.6 2.03 0 0 81.7 704
+4 256 2468.7 1228.7 2.01 0 0 1256.2 10312
+4 4096 41194.0 19631.0 2.1 0 0 19639.0 163912

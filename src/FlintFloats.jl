@@ -25,6 +25,7 @@ include("show.jl")
 include("compare.jl")
 include("promotion.jl")
 include("basefloat.jl")
+include("arrays.jl")
 
 export FlintReal, FlintNumber, DFloat, DFloatBall, NFloat, NFloatType,
        ArbFloat, ArbBall, AcbFloat, AcbBall,

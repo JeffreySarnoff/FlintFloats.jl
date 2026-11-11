@@ -11,4 +11,5 @@ using Test
     include("basefloat_tests.jl")
     include("arithmetic_tests.jl")
     include("ownership_tests.jl")
+    include("array_tests.jl")
 end

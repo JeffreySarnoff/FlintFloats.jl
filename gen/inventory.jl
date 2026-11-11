@@ -40,9 +40,9 @@ function expand(op)
     names = op["kind"] == "export" ? [op["symbol"]] : get(op, "use", String[])
     out = Tuple{String,String}[]               # (symbol, family)
     for n in names
-        if op["family"] in DFLOAT_FAMILIES && occursin(r"^d2", n)
+        if op["family"] in DFLOAT_FAMILIES && occursin(r"^_?d2", n)
             for N in 1:4
-                push!(out, (replace(n, r"^d2" => "d$N"), op["family"]))
+                push!(out, (replace(n, r"d2" => "d$N"; count = 1), op["family"]))
             end
         else
             push!(out, (n, op["family"]))
