@@ -6,3 +6,6 @@ FlintFloats = "26cde3c2-a71e-4793-a8a7-00c12dc13036"
 [sources]
 FLINT_jll = {path = "../FlintFloat.jl/FLINT_jll"}
 FlintFloats = {path = ".."}
+
+[compat]
+Documenter = "1.20.0"
