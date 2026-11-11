@@ -1,0 +1,21 @@
+Hosted CI acceptance
+Repository: JeffreySarnoff/FlintFloats.jl
+PR: https://github.com/JeffreySarnoff/FlintFloats.jl/pull/5
+Run: https://github.com/JeffreySarnoff/FlintFloats.jl/actions/runs/42962433938
+Tested head: ce2831edab55867c4ac5dd8564f38fccd65f0abd
+Conclusion: success (source and portable native jobs)
+Native job: 130331865016; source job: 130331865282
+
+Selected authoritative native-job log lines:
+2026-11-11T04:56:28.8831597Z julia version 1.13.3
+2026-11-11T04:56:29.2926933Z Supported bundled target: x86_64 Linux, AMD EPYC 7763 64-Core Processor, glibc 2.43.0
+2026-11-11T04:56:42.7817761Z all present
+2026-11-11T04:56:44.4637898Z Supported bundled target: x86_64 Linux, AMD EPYC 7763 64-Core Processor, glibc 2.43.0
+2026-11-11T04:56:45.6548687Z Fresh artifact-header ABI probe matches recorded layout
+2026-11-11T04:59:30.5807535Z Test Summary:  |  Pass  Total     Time
+2026-11-11T04:59:30.5809907Z FlintFloats.jl | 34151  34151  2m35.4s
+2026-11-11T04:59:30.6911813Z      Testing FlintFloats tests passed 
+2026-11-11T05:00:53.6444747Z [ Info: Doctest: running doctests.
+2026-11-11T05:01:07.7515368Z [ Info: HTMLWriter: rendering HTML pages.
+
+A subsequent documentation-only checkpoint commit does not change these tested numerical, packaging, generation, or workflow inputs. No merge or release publication has yet occurred.

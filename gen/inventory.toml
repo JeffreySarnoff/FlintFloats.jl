@@ -1,0 +1,1612 @@
+# Binding inventory for FlintFloats (enact_interfacing.md §5.1).
+# Authority: pinned source 82c40b299084b92299c2d8dac464e39d6743fce4 (FLINT 3.7.0-dev), ABI 25.
+# Each [[op]] row: C symbol, family, role, status. `kind` is "export" (callable symbol) or
+# "inline" (header-only: replaced by the exported `use` symbols; not bound).
+# `status` is "none" (returns void/int not a gr status), "gr" (GR_* bits), "inexact" (arf flag).
+# Rounding/guarantee text is from doc/src/<family>/*.md in the pinned tree.
+
+[meta]
+flint_version = "3.7.0-dev"
+source_revision = "82c40b299084b92299c2d8dac464e39d6743fce4"
+abi = 25
+
+# ---------------------------------------------------------------- dfloat
+[[op]]
+symbol = "dfloat_is_supported"
+family = "dfloat"
+sig = "int()"
+kind = "export"
+status = "none"
+note = "Gate for DFloat and DFloatBall; call in __init__."
+
+[[op]]
+symbol = "d2_set_d"
+family = "dfloat"
+sig = "void(d2_ptr, double)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_get_d"
+family = "dfloat"
+sig = "double(d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_add"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr, d2_srcptr)"
+kind = "export"
+status = "none"
+note = "Approximate; accuracy documented per operation. Aliasing z==x allowed."
+
+[[op]]
+symbol = "d2_sub"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr, d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_mul"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr, d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_div"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr, d2_srcptr)"
+kind = "export"
+status = "none"
+
+# ---------------------------------------------------------------- dfloat ball
+[[op]]
+symbol = "d2b_set_d"
+family = "dfloatball"
+sig = "void(d2b_ptr, double)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_add"
+family = "dfloatball"
+sig = "void(d2b_ptr, d2b_srcptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+note = "Enclosure. Nonfinite input yields whole real line [0 +- inf]; no NaN."
+
+[[op]]
+symbol = "d2b_sub"
+family = "dfloatball"
+sig = "void(d2b_ptr, d2b_srcptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_mul"
+family = "dfloatball"
+sig = "void(d2b_ptr, d2b_srcptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_div"
+family = "dfloatball"
+sig = "int(d2b_ptr, d2b_srcptr, d2b_srcptr)"
+kind = "export"
+status = "gr"
+note = "GR_DOMAIN: divisor is exactly zero. GR_UNABLE: divisor ball contains zero; output unspecified, wrapper writes whole real line."
+
+# ---------------------------------------------------------------- nfloat
+[[op]]
+symbol = "nfloat_ctx_init"
+family = "nfloat"
+sig = "int(gr_ctx_ptr, slong bits, int flags)"
+kind = "export"
+status = "gr"
+note = "bits = 64*L. Flags NFLOAT_ALLOW_UNDERFLOW=1, ALLOW_INF=2, ALLOW_NAN=4."
+
+[[op]]
+symbol = "gr_ctx_clear"
+family = "nfloat"
+sig = "void(gr_ctx_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "nfloat_set_d"
+family = "nfloat"
+sig = "int(nfloat_ptr, double, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+
+[[op]]
+symbol = "nfloat_get_arf"
+family = "nfloat"
+sig = "int(arf_ptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+
+[[op]]
+symbol = "nfloat_set_arf"
+family = "nfloat"
+sig = "int(nfloat_ptr, arf_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+
+[[op]]
+symbol = "nfloat_add"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+
+[[op]]
+symbol = "nfloat_sub"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+
+[[op]]
+symbol = "nfloat_mul"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+
+[[op]]
+symbol = "nfloat_div"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+
+# ---------------------------------------------------------------- arf
+[[op]]
+symbol = "arf_init"
+family = "arbfloat"
+sig = "void(arf_ptr)"
+kind = "export"
+status = "none"
+note = "Header inline as well; the exported symbol is bound."
+
+[[op]]
+symbol = "arf_clear"
+family = "arbfloat"
+sig = "void(arf_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_set_round"
+family = "arbfloat"
+sig = "int(arf_ptr, arf_srcptr, slong prec, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Enforces the precision invariant."
+
+[[op]]
+symbol = "arf_set_d"
+family = "arbfloat"
+sig = "void(arf_ptr, double)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_get_d"
+family = "arbfloat"
+sig = "double(arf_srcptr, arf_rnd_t)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_add"
+family = "arbfloat"
+sig = "int(arf_ptr, arf_srcptr, arf_srcptr, slong prec, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Correctly rounded."
+
+[[op]]
+symbol = "arf_sub"
+family = "arbfloat"
+sig = "int(arf_ptr, arf_srcptr, arf_srcptr, slong prec, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+
+[[op]]
+symbol = "arf_mul"
+family = "arbfloat"
+sig = "int(arf_ptr, arf_srcptr, arf_srcptr, slong prec, arf_rnd_t)"
+kind = "inline"
+use = ["arf_mul_rnd_any"]
+status = "inexact"
+note = "Macro dispatching on rnd; bound through the arf_mul_rnd_any row below."
+
+[[op]]
+symbol = "arf_mul_rnd_any"
+family = "arbfloat"
+sig = "int(arf_ptr, arf_srcptr, arf_srcptr, slong prec, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Accepts every rounding mode; arf_mul is the macro over this and arf_mul_rnd_down."
+
+[[op]]
+symbol = "arf_div"
+family = "arbfloat"
+sig = "int(arf_ptr, arf_srcptr, arf_srcptr, slong prec, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Correctly rounded in strict modes. x/0 = NaN."
+
+[[op]]
+symbol = "arf_sqrt"
+family = "arbfloat"
+sig = "int(arf_ptr, arf_srcptr, slong prec, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+
+[[op]]
+symbol = "arf_cmp"
+family = "arbfloat"
+sig = "int(arf_srcptr, arf_srcptr)"
+kind = "export"
+status = "none"
+note = "Returns 0 when either argument is NaN. Wrapper tests arf_is_nan first."
+
+[[op]]
+symbol = "arf_equal"
+family = "arbfloat"
+sig = "int(arf_srcptr, arf_srcptr)"
+kind = "export"
+status = "none"
+note = "NaN equals NaN here; not Julia ==."
+
+[[op]]
+symbol = "arf_is_nan"
+family = "arbfloat"
+sig = "int(arf_srcptr)"
+kind = "export"
+status = "none"
+note = "Header inline as well; the exported symbol is bound."
+
+# ---------------------------------------------------------------- acf
+[[op]]
+symbol = "acf_init"
+family = "acbfloat"
+sig = "void(acf_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acf_clear"
+family = "acbfloat"
+sig = "void(acf_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acf_set_round"
+family = "acbfloat"
+sig = "int(acf_ptr, acf_srcptr, slong prec, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+
+[[op]]
+symbol = "acf_real_ptr"
+family = "acbfloat"
+sig = "arf_ptr(acf_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acf_imag_ptr"
+family = "acbfloat"
+sig = "arf_ptr(acf_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acf_add"
+family = "acbfloat"
+sig = "int(acf_ptr, acf_srcptr, acf_srcptr, slong prec, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Per-part correctly rounded; confirm by differential test (doc inconsistency for div/sqrt)."
+
+[[op]]
+symbol = "acf_sub"
+family = "acbfloat"
+sig = "int(acf_ptr, acf_srcptr, acf_srcptr, slong prec, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+
+[[op]]
+symbol = "acf_mul"
+family = "acbfloat"
+sig = "int(acf_ptr, acf_srcptr, acf_srcptr, slong prec, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+
+[[op]]
+symbol = "acf_div"
+family = "acbfloat"
+sig = "int(acf_ptr, acf_srcptr, acf_srcptr, slong prec, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+
+# ---------------------------------------------------------------- arb
+[[op]]
+symbol = "arb_init"
+family = "arbball"
+sig = "void(arb_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_clear"
+family = "arbball"
+sig = "void(arb_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_set_round"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, slong prec)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_set_si"
+family = "arbball"
+sig = "void(arb_ptr, slong)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_set_d"
+family = "arbball"
+sig = "void(arb_ptr, double)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_add"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, arb_srcptr, slong prec)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_sub"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, arb_srcptr, slong prec)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_mul"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, arb_srcptr, slong prec)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_div"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, arb_srcptr, slong prec)"
+kind = "export"
+status = "none"
+note = "Divisor containing zero gives [NaN +- inf]; no status."
+
+[[op]]
+symbol = "arb_contains"
+family = "arbball"
+sig = "int(arb_srcptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_overlaps"
+family = "arbball"
+sig = "int(arb_srcptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_equal"
+family = "arbball"
+sig = "int(arb_srcptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+# ---------------------------------------------------------------- acb
+[[op]]
+symbol = "acb_init"
+family = "acbball"
+sig = "void(acb_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_clear"
+family = "acbball"
+sig = "void(acb_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_set_round"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, slong prec)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_set_si"
+family = "acbball"
+sig = "void(acb_ptr, slong)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_add"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, acb_srcptr, slong prec)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_sub"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, acb_srcptr, slong prec)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_mul"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, acb_srcptr, slong prec)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_div"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, acb_srcptr, slong prec)"
+kind = "export"
+status = "none"
+
+# ---------------------------------------------------------------- shared
+[[op]]
+symbol = "flint_free"
+family = "shared"
+sig = "void(void*)"
+kind = "export"
+status = "none"
+note = "Frees strings returned by FLINT formatters."
+
+[[op]]
+symbol = "d2b_indeterminate"
+family = "dfloatball"
+sig = "void(d2b_ptr)"
+kind = "export"
+status = "none"
+note = "Whole real line [0 +- inf]; used when GR_UNABLE leaves output unspecified."
+
+[[op]]
+symbol = "d2_set"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_get_mid_d"
+family = "dfloatball"
+sig = "void(double*, d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_get_d"
+family = "dfloatball"
+sig = "double(d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_set"
+family = "arbfloat"
+sig = "void(arf_ptr, arf_srcptr)"
+kind = "export"
+status = "none"
+note = "Exact copy."
+
+[[op]]
+symbol = "acf_set"
+family = "acbfloat"
+sig = "void(acf_ptr, acf_srcptr)"
+kind = "export"
+status = "none"
+note = "Exact copy."
+
+[[op]]
+symbol = "arb_set"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr)"
+kind = "export"
+status = "none"
+note = "Exact copy."
+
+[[op]]
+symbol = "acb_set"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr)"
+kind = "export"
+status = "none"
+note = "Exact copy."
+
+[[op]]
+symbol = "arb_get_mid_arb"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr)"
+kind = "export"
+status = "none"
+note = "Midpoint as exact ball."
+
+[[op]]
+symbol = "arb_get_rad_arb"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_set_d_d"
+family = "acbball"
+sig = "void(acb_ptr, double, double)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_get_real"
+family = "acbball"
+sig = "void(arb_ptr, acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_get_imag"
+family = "acbball"
+sig = "void(arb_ptr, acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_set_arf"
+family = "arbball"
+sig = "void(arb_ptr, arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_set_si"
+family = "arbfloat"
+sig = "void(arf_ptr, slong)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "nfloat_set_si"
+family = "nfloat"
+sig = "int(nfloat_ptr, slong, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+
+[[op]]
+symbol = "d2_neg"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_abs"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_sqrt"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_is_zero"
+family = "dfloat"
+sig = "int(d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_is_finite"
+family = "dfloat"
+sig = "int(d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_is_nan"
+family = "dfloat"
+sig = "int(d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_sgn"
+family = "dfloat"
+sig = "int(d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_set_arf"
+family = "dfloat"
+sig = "void(d2_ptr, arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_get_arf"
+family = "dfloat"
+sig = "void(arf_ptr, d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_set_str"
+family = "dfloat"
+sig = "int(d2_ptr, const char*)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_neg"
+family = "dfloatball"
+sig = "void(d2b_ptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_abs"
+family = "dfloatball"
+sig = "void(d2b_ptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_sqrt"
+family = "dfloatball"
+sig = "int(d2b_ptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_is_zero"
+family = "dfloatball"
+sig = "int(d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_is_finite"
+family = "dfloatball"
+sig = "int(d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_is_exact"
+family = "dfloatball"
+sig = "int(d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_contains_zero"
+family = "dfloatball"
+sig = "int(d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_set_arf"
+family = "dfloatball"
+sig = "void(d2b_ptr, arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_set_str"
+family = "dfloatball"
+sig = "int(d2b_ptr, const char*)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "nfloat_neg"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+note = "Exact sign/copy operation; pinned src/nfloat/nfloat.c returns GR_SUCCESS. The wrapper checks the status before reading output."
+
+[[op]]
+symbol = "nfloat_abs"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+note = "Exact sign/copy operation; pinned src/nfloat/nfloat.c returns GR_SUCCESS. The wrapper checks the status before reading output."
+
+[[op]]
+symbol = "nfloat_sqrt"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+note = "Correctly truncated toward zero in the default context. Pinned rounding.md and src/nfloat/sqrt.c use exact integer-root kernels through the supported 1:66 limbs. Negative inputs need finite-only domain handling."
+
+[[op]]
+symbol = "arf_neg"
+family = "arbfloat"
+sig = "void(arf_ptr, arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_abs"
+family = "arbfloat"
+sig = "void(arf_ptr, arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_is_zero"
+family = "arbfloat"
+sig = "int(arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_is_finite"
+family = "arbfloat"
+sig = "int(arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_is_pos_inf"
+family = "arbfloat"
+sig = "int(arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_is_neg_inf"
+family = "arbfloat"
+sig = "int(arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_sgn"
+family = "arbfloat"
+sig = "int(arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_is_int"
+family = "arbfloat"
+sig = "int(arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_set_mpfr"
+family = "arbfloat"
+sig = "void(arf_ptr, mpfr_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_get_mpfr"
+family = "arbfloat"
+sig = "int(mpfr_ptr, arf_srcptr, int)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_nan"
+family = "arbfloat"
+sig = "void(arf_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_pos_inf"
+family = "arbfloat"
+sig = "void(arf_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_neg_inf"
+family = "arbfloat"
+sig = "void(arf_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_zero"
+family = "arbfloat"
+sig = "void(arf_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_one"
+family = "arbfloat"
+sig = "void(arf_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acf_neg"
+family = "acbfloat"
+sig = "void(acf_ptr, acf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acf_swap"
+family = "acbfloat"
+sig = "void(acf_ptr, acf_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_neg"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_abs"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_sqrt"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, slong prec)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_is_zero"
+family = "arbball"
+sig = "int(arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_is_exact"
+family = "arbball"
+sig = "int(arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_is_finite"
+family = "arbball"
+sig = "int(arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_is_int"
+family = "arbball"
+sig = "int(arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_set_str"
+family = "arbball"
+sig = "int(arb_ptr, const char*, slong prec)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_get_str"
+family = "arbball"
+sig = "char*(arb_srcptr, slong, ulong)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_zero_pm_inf"
+family = "arbball"
+sig = "void(arb_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_neg"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_conj"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_abs"
+family = "acbball"
+sig = "void(arb_ptr, acb_srcptr, slong prec)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_sqrt"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, slong prec)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_is_zero"
+family = "acbball"
+sig = "int(acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_is_exact"
+family = "acbball"
+sig = "int(acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_is_finite"
+family = "acbball"
+sig = "int(acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_indeterminate"
+family = "acbball"
+sig = "void(acb_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acf_sqrt"
+family = "acbfloat"
+sig = "int(acf_ptr, acf_srcptr, slong prec, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+
+[[op]]
+symbol = "acb_set_arb_arb"
+family = "acbball"
+sig = "void(acb_ptr, arb_srcptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_set_ui"
+family = "arbfloat"
+sig = "void(arf_ptr, ulong)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_set_ui"
+family = "arbball"
+sig = "void(arb_ptr, ulong)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_equal"
+family = "dfloat"
+sig = "int(d2_srcptr, d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2_cmp"
+family = "dfloat"
+sig = "int(d2_srcptr, d2_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_equal"
+family = "dfloatball"
+sig = "int(d2b_srcptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_cmp"
+family = "dfloatball"
+sig = "int(int*, d2b_srcptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_overlaps"
+family = "dfloatball"
+sig = "int(d2b_srcptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_contains"
+family = "dfloatball"
+sig = "int(d2b_srcptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_get_arb"
+family = "dfloatball"
+sig = "void(arb_ptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "d2b_set_arb"
+family = "dfloatball"
+sig = "void(d2b_ptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "_nfloat_cmp"
+family = "nfloat"
+sig = "int(nfloat_srcptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_abs_bound_lt_2exp_si"
+family = "arbfloat"
+sig = "slong(arf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arf_mul_2exp_si"
+family = "arbfloat"
+sig = "void(arf_ptr, arf_srcptr, slong)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acf_equal"
+family = "acbfloat"
+sig = "int(acf_srcptr, acf_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_eq"
+family = "arbball"
+sig = "int(arb_srcptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_ne"
+family = "arbball"
+sig = "int(arb_srcptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_lt"
+family = "arbball"
+sig = "int(arb_srcptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_le"
+family = "arbball"
+sig = "int(arb_srcptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_gt"
+family = "arbball"
+sig = "int(arb_srcptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_ge"
+family = "arbball"
+sig = "int(arb_srcptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_eq"
+family = "acbball"
+sig = "int(acb_srcptr, acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_ne"
+family = "acbball"
+sig = "int(acb_srcptr, acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_equal"
+family = "acbball"
+sig = "int(acb_srcptr, acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_overlaps"
+family = "acbball"
+sig = "int(acb_srcptr, acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_contains"
+family = "acbball"
+sig = "int(acb_srcptr, acb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "acb_set_arb"
+family = "acbball"
+sig = "void(acb_ptr, arb_srcptr)"
+kind = "export"
+status = "none"
+
+[[op]]
+symbol = "arb_add_error_arf"
+family = "arbball"
+sig = "void(arb_ptr, arf_srcptr)"
+kind = "export"
+status = "none"
+note = "Adds an upper bound of |err| to the radius."
+
+# M4a: pinned dfloat.h declarations and src/dfloat/template.inc, DBV(vec_add).
+[[op]]
+symbol = "_d2b_vec_add"
+family = "dfloatball"
+sig = "void(d2b_ptr, d2b_srcptr, d2b_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous elementwise add; len structs, not doubles. SIMD blocks load all inputs before storing; exceptional blocks fall back before storing. Exact res==x/res==y allowed; partial overlap unsupported. Nonfinite/overflow lanes become whole-line balls as in scalar add. Source: template.inc DBV(vec_add), DB(_vaddsub4), DB(_add_impl); upstream t-vec.c and t-vec_aliasing.c."
+
+# M4b: nfloat.h and src/nfloat/nfloat.c. Both return OR-combined GR_* statuses.
+[[op]]
+symbol = "_nfloat_vec_add"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, nfloat_srcptr, slong, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+note = "Elementwise finite-only add, ALLOW_UNDERFLOW context; L+2 word stride. L=1..4 specialized, larger L call scalar add. Context read-only. Failed outputs not published: Julia uses separate initialized scratch and commits only on GR_SUCCESS. No partial-overlap native calls."
+
+[[op]]
+symbol = "_nfloat_vec_mul"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, nfloat_srcptr, slong, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+note = "Elementwise finite-only multiply; L=1,2 specialized, larger L use scalar mul (or sqr when x==y). Error guarantee is operation-specific, not correctly rounded. Context read-only. Underflow flushes zero; overflow nonzero status; scratch isolates failed lanes and destination aliases."
+
+# M4c: fixed-size packed arb/acb vectors. init allocates and initializes all elements;
+# clear clears all elements and frees with FLINT's allocator. vec_set copies values, never pointers.
+[[op]]
+symbol = "_arb_vec_init"
+family = "arbball"
+sig = "arb_ptr(slong)"
+kind = "export"
+status = "none"
+note = "Owned initialized allocation; pair with _arb_vec_clear(pointer, same length). Source arb/vec_init.c. Julia skips allocation at length zero and checks byte-count overflow."
+
+[[op]]
+symbol = "_arb_vec_clear"
+family = "arbball"
+sig = "void(arb_ptr, slong)"
+kind = "export"
+status = "none"
+note = "Clear each initialized arb and flint_free vector. Exactly one owner. Source arb/vec_clear.c."
+
+[[op]]
+symbol = "_arb_vec_set"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Semantic arb_set per initialized element. Exact alias permitted; no partial overlap. Source arb/vec.c SET_OP."
+
+[[op]]
+symbol = "_arb_vec_add"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, arb_srcptr, slong, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous arb_add per element at supplied precision. Exact destination/input alias permitted; partial overlap rejected by Julia. Indeterminate enclosures preserved. Source arb/vec.c AORS_OP."
+
+[[op]]
+symbol = "_acb_vec_init"
+family = "acbball"
+sig = "acb_ptr(slong)"
+kind = "export"
+status = "none"
+note = "Owned initialized allocation; pair with _acb_vec_clear(pointer, same length). Source acb/vec_init.c. Julia skips allocation at zero and checks byte-count overflow."
+
+[[op]]
+symbol = "_acb_vec_clear"
+family = "acbball"
+sig = "void(acb_ptr, slong)"
+kind = "export"
+status = "none"
+note = "Clear every initialized acb and flint_free allocation; one owner. Source acb/vec_clear.c."
+
+[[op]]
+symbol = "_acb_vec_set"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Semantic acb_set per initialized element. Exact alias permitted; partial overlap unsupported. Source acb/vec.c SET_OP."
+
+[[op]]
+symbol = "_acb_vec_add"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, acb_srcptr, slong, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous acb_add per element at supplied precision. Exact destination/input alias permitted; partial overlap rejected. Source acb/vec.c AORS_OP."
+
+# M4d: pinned arb/acb index.md and dot.c. Both enclose the unconjugated product sum;
+# subtract is 0/1, initial may be NULL, strides count structs and may be negative.
+[[op]]
+symbol = "arb_dot"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, int, arb_srcptr, slong, arb_srcptr, slong, slong, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous initial + (-1)^subtract sum(x*y), signed struct strides. Output may alias initial but not input entries. Native fixed-point accumulation; no scalar-loop representation equality claim. Julia uses independent result storage; empty spans skip C."
+
+[[op]]
+symbol = "acb_dot"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, int, acb_srcptr, slong, acb_srcptr, slong, slong, slong)"
+kind = "export"
+status = "none"
+note = "Unconjugated rigorous complex product sum; not directly Julia dot. Used only for a benchmarked conjugated-copy candidate. Initial/output alias allowed; input/output overlap forbidden; signed struct strides."
+
+# M5 selected elementary enclosures: pinned arb/acb headers and index documentation.
+
+[[op]]
+symbol = "arb_exp"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous real enclosure; log of a ball containing nonpositive values is indeterminate. Midpoint rounded at prec; aliasing permitted."
+
+[[op]]
+symbol = "arb_log"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous real enclosure; log of a ball containing nonpositive values is indeterminate. Midpoint rounded at prec; aliasing permitted."
+
+[[op]]
+symbol = "arb_sin"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous real enclosure; log of a ball containing nonpositive values is indeterminate. Midpoint rounded at prec; aliasing permitted."
+
+[[op]]
+symbol = "arb_cos"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous real enclosure; log of a ball containing nonpositive values is indeterminate. Midpoint rounded at prec; aliasing permitted."
+
+[[op]]
+symbol = "arb_atan"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous real enclosure; log of a ball containing nonpositive values is indeterminate. Midpoint rounded at prec; aliasing permitted."
+
+[[op]]
+symbol = "acb_exp"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous complex enclosure; principal log cut (-infinity,0], atan cuts +/-i*[1,infinity). Crossing cuts encloses both sides; singularities may be indeterminate. Output/input aliasing permitted."
+
+[[op]]
+symbol = "acb_log"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous complex enclosure; principal log cut (-infinity,0], atan cuts +/-i*[1,infinity). Crossing cuts encloses both sides; singularities may be indeterminate. Output/input aliasing permitted."
+
+[[op]]
+symbol = "acb_sin"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous complex enclosure; principal log cut (-infinity,0], atan cuts +/-i*[1,infinity). Crossing cuts encloses both sides; singularities may be indeterminate. Output/input aliasing permitted."
+
+[[op]]
+symbol = "acb_cos"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous complex enclosure; principal log cut (-infinity,0], atan cuts +/-i*[1,infinity). Crossing cuts encloses both sides; singularities may be indeterminate. Output/input aliasing permitted."
+
+[[op]]
+symbol = "acb_atan"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous complex enclosure; principal log cut (-infinity,0], atan cuts +/-i*[1,infinity). Crossing cuts encloses both sides; singularities may be indeterminate. Output/input aliasing permitted."
+
+# M5 strict point elementary functions: pinned arf/acf headers, elem sources and docs.
+
+[[op]]
+symbol = "arf_exp"
+family = "arbfloat"
+sig = "int(arf_ptr, arf_srcptr, slong, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Strict modes only: correctly rounded real result; flag zero iff exact. Pinned headers and arf/elem.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."
+
+[[op]]
+symbol = "arf_log"
+family = "arbfloat"
+sig = "int(arf_ptr, arf_srcptr, slong, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Strict modes only: correctly rounded real result; flag zero iff exact. Pinned headers and arf/elem.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."
+
+[[op]]
+symbol = "arf_sin"
+family = "arbfloat"
+sig = "int(arf_ptr, arf_srcptr, slong, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Strict modes only: correctly rounded real result; flag zero iff exact. Pinned headers and arf/elem.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."
+
+[[op]]
+symbol = "arf_cos"
+family = "arbfloat"
+sig = "int(arf_ptr, arf_srcptr, slong, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Strict modes only: correctly rounded real result; flag zero iff exact. Pinned headers and arf/elem.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."
+
+[[op]]
+symbol = "arf_atan"
+family = "arbfloat"
+sig = "int(arf_ptr, arf_srcptr, slong, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Strict modes only: correctly rounded real result; flag zero iff exact. Pinned headers and arf/elem.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."
+
+[[op]]
+symbol = "acf_exp"
+family = "acbfloat"
+sig = "int(acf_ptr, acf_srcptr, slong, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Strict modes only: correctly rounded each component; flag bits 0/1 indicate inexact real/imaginary parts. Pinned headers and acf/elem.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."
+
+[[op]]
+symbol = "acf_log"
+family = "acbfloat"
+sig = "int(acf_ptr, acf_srcptr, slong, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Strict modes only: correctly rounded each component; flag bits 0/1 indicate inexact real/imaginary parts. Pinned headers and acf/elem.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."
+
+[[op]]
+symbol = "acf_sin"
+family = "acbfloat"
+sig = "int(acf_ptr, acf_srcptr, slong, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Strict modes only: correctly rounded each component; flag bits 0/1 indicate inexact real/imaginary parts. Pinned headers and acf/elem.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."
+
+[[op]]
+symbol = "acf_cos"
+family = "acbfloat"
+sig = "int(acf_ptr, acf_srcptr, slong, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Strict modes only: correctly rounded each component; flag bits 0/1 indicate inexact real/imaginary parts. Pinned headers and acf/elem.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."
+
+[[op]]
+symbol = "acf_atan"
+family = "acbfloat"
+sig = "int(acf_ptr, acf_srcptr, slong, arf_rnd_t)"
+kind = "export"
+status = "inexact"
+note = "Strict modes only: correctly rounded each component; flag bits 0/1 indicate inexact real/imaginary parts. Pinned headers and acf/elem_acb.c; principal branches; aliases allowed. Huge elementary arguments may return NaN."
+
+# M5 inline elementary kernels: dfloat.h static bounds and nfloat elem/rounding source.
+
+[[op]]
+symbol = "d2_exp"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr)"
+kind = "export"
+status = "none"
+note = "Approximate normalized expansion; pinned dfloat.h DFLOAT_EXP/LOG/TRIG/ATAN_EPS_N static bounds, not correctly rounded. Nonfinites follow native results."
+
+[[op]]
+symbol = "d2_log"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr)"
+kind = "export"
+status = "none"
+note = "Approximate normalized expansion; pinned dfloat.h DFLOAT_EXP/LOG/TRIG/ATAN_EPS_N static bounds, not correctly rounded. Nonfinites follow native results."
+
+[[op]]
+symbol = "d2_sin"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr)"
+kind = "export"
+status = "none"
+note = "Approximate normalized expansion; pinned dfloat.h DFLOAT_EXP/LOG/TRIG/ATAN_EPS_N static bounds, not correctly rounded. Nonfinites follow native results."
+
+[[op]]
+symbol = "d2_cos"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr)"
+kind = "export"
+status = "none"
+note = "Approximate normalized expansion; pinned dfloat.h DFLOAT_EXP/LOG/TRIG/ATAN_EPS_N static bounds, not correctly rounded. Nonfinites follow native results."
+
+[[op]]
+symbol = "d2_atan"
+family = "dfloat"
+sig = "void(d2_ptr, d2_srcptr)"
+kind = "export"
+status = "none"
+note = "Approximate normalized expansion; pinned dfloat.h DFLOAT_EXP/LOG/TRIG/ATAN_EPS_N static bounds, not correctly rounded. Nonfinites follow native results."
+
+[[op]]
+symbol = "d2b_exp"
+family = "dfloatball"
+sig = "void(d2b_ptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+note = "Rigorous enclosure; log returns GR_DOMAIN for entirely nonpositive inputs and GR_UNABLE for other nonpositive-reaching balls; failed output must not be read."
+
+[[op]]
+symbol = "d2b_log"
+family = "dfloatball"
+sig = "int(d2b_ptr, d2b_srcptr)"
+kind = "export"
+status = "gr"
+note = "Rigorous enclosure; log returns GR_DOMAIN for entirely nonpositive inputs and GR_UNABLE for other nonpositive-reaching balls; failed output must not be read."
+
+[[op]]
+symbol = "d2b_sin"
+family = "dfloatball"
+sig = "void(d2b_ptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+note = "Rigorous enclosure; log returns GR_DOMAIN for entirely nonpositive inputs and GR_UNABLE for other nonpositive-reaching balls; failed output must not be read."
+
+[[op]]
+symbol = "d2b_cos"
+family = "dfloatball"
+sig = "void(d2b_ptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+note = "Rigorous enclosure; log returns GR_DOMAIN for entirely nonpositive inputs and GR_UNABLE for other nonpositive-reaching balls; failed output must not be read."
+
+[[op]]
+symbol = "d2b_atan"
+family = "dfloatball"
+sig = "void(d2b_ptr, d2b_srcptr)"
+kind = "export"
+status = "none"
+note = "Rigorous enclosure; log returns GR_DOMAIN for entirely nonpositive inputs and GR_UNABLE for other nonpositive-reaching balls; failed output must not be read."
+
+[[op]]
+symbol = "nfloat_exp"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+note = "Approximate elementary result at function precision; not correctly rounded. Finite-only context, underflow flushes zero; nonzero status must be checked before reading output. Context read only in exp/log/sin_cos/atan/elem sources."
+
+[[op]]
+symbol = "nfloat_log"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+note = "Approximate elementary result at function precision; not correctly rounded. Finite-only context, underflow flushes zero; nonzero status must be checked before reading output. Context read only in exp/log/sin_cos/atan/elem sources."
+
+[[op]]
+symbol = "nfloat_sin"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+note = "Approximate elementary result at function precision; not correctly rounded. Finite-only context, underflow flushes zero; nonzero status must be checked before reading output. Context read only in exp/log/sin_cos/atan/elem sources."
+
+[[op]]
+symbol = "nfloat_cos"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+note = "Approximate elementary result at function precision; not correctly rounded. Finite-only context, underflow flushes zero; nonzero status must be checked before reading output. Context read only in exp/log/sin_cos/atan/elem sources."
+
+[[op]]
+symbol = "nfloat_atan"
+family = "nfloat"
+sig = "int(nfloat_ptr, nfloat_srcptr, gr_ctx_ptr)"
+kind = "export"
+status = "gr"
+note = "Approximate elementary result at function precision; not correctly rounded. Finite-only context, underflow flushes zero; nonzero status must be checked before reading output. Context read only in exp/log/sin_cos/atan/elem sources."

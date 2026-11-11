@@ -1,0 +1,39 @@
+Portable binary acceptance baseline; minimum warmed time; 100 samples, 0.05 s per case
+Julia=1.13.3 CPU=Intel(R) Core(TM) i9-14900K threads=4 FLINT_jll=301.690.0+1
+lib=/tmp/flint-checkpoint-depot/artifacts/d3d8eabffb56db6d7cfa77fe9fa38dbe6dd4d6c1/lib/libflint.so source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25
+BinaryBuilder GCC 14.2.0; x86-64 baseline artifact d3d8eabffb56db6d7cfa77fe9fa38dbe6dd4d6c1
+Different families have different precision/accuracy contracts; no cross-family speed ranking. Julia counts exclude native allocations.
+type operation time_ns allocations bytes
+DFloat{2} + 5.3 0 0
+DFloat{2} * 3.9 0 0
+DFloat{2} exp 53.1 0 0
+DFloatBall{2} + 3.9 0 0
+DFloatBall{2} * 9.4 0 0
+DFloatBall{2} exp 55.2 0 0
+NFloat{2} + 6.3 0 0
+NFloat{2} * 6.2 0 0
+NFloat{2} exp 26.0 0 0
+ArbFloat{128} + 17.9 1 48
+ArbFloat{128} * 10.1 1 48
+ArbFloat{128} exp 34.0 1 48
+AcbFloat{128} + 15.0 1 80
+AcbFloat{128} * 16.7 1 80
+AcbFloat{128} exp 34.9 1 80
+ArbBall{128} + 14.0 1 64
+ArbBall{128} * 11.1 1 64
+ArbBall{128} exp 33.6 1 64
+AcbBall{128} + 26.3 1 112
+AcbBall{128} * 19.3 1 112
+AcbBall{128} exp 35.5 1 112
+ArbBall{128} packed_sum 7110.5 1 64
+ArbBall{128} packed_sum_abs2 23715.0 2 128
+ArbBall{128} packed_dot 3296.0 1 64
+AcbBall{128} packed_sum 9613.0 1 112
+AcbBall{128} packed_sum_abs2 18146.0 3 192
+AcbBall{128} packed_dot 9806.0 3 240
+ArbBall{512} packed_sum 9520.0 1 64
+ArbBall{512} packed_sum_abs2 33241.0 2 128
+ArbBall{512} packed_dot 20843.0 1 64
+AcbBall{512} packed_sum 12176.0 1 112
+AcbBall{512} packed_sum_abs2 40373.0 3 192
+AcbBall{512} packed_dot 27460.0 3 240

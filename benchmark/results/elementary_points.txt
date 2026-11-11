@@ -1,0 +1,38 @@
+Strict point elementary functions; minimum warmed time; 100 samples, 0.05 s per case
+Julia=1.13.3 CPU=Intel(R) Core(TM) i9-14900K threads=4 FLINT_jll=301.690.0+0
+lib=/home/jas/.julia/artifacts/b375a8872bc46fbeeae1a15e10297b29900d2451/lib/libflint.so source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25
+Strict RoundNearest, each component correctly rounded. Julia allocation counts exclude native scratch.
+family P function allocating_ns allocs bytes reused_ns reused_allocs reused_bytes
+ArbFloat{64} 64 exp 28.0 1 48 17.5 0 0
+ArbFloat{64} 64 log 20.6 1 48 17.1 0 0
+ArbFloat{64} 64 sin 25.3 1 48 20.6 0 0
+ArbFloat{64} 64 cos 24.9 1 48 21.0 0 0
+ArbFloat{64} 64 atan 26.4 1 48 22.1 0 0
+ArbFloat{256} 256 exp 80.7 1 48 65.9 0 0
+ArbFloat{256} 256 log 85.4 1 48 74.1 0 0
+ArbFloat{256} 256 sin 166.3 1 48 138.0 0 0
+ArbFloat{256} 256 cos 155.1 1 48 138.3 0 0
+ArbFloat{256} 256 atan 107.9 1 48 95.8 0 0
+ArbFloat{1024} 1024 exp 285.9 1 48 264.4 0 0
+ArbFloat{1024} 1024 log 78.7 1 48 61.9 0 0
+ArbFloat{1024} 1024 sin 712.7 1 48 695.1 0 0
+ArbFloat{1024} 1024 cos 709.2 1 48 689.8 0 0
+ArbFloat{1024} 1024 atan 64.7 1 48 50.9 0 0
+AcbFloat{64} 64 exp 52.4 1 80 45.0 0 0
+AcbFloat{64} 64 log 50.8 1 80 45.4 0 0
+AcbFloat{64} 64 sin 75.3 1 80 68.9 0 0
+AcbFloat{64} 64 cos 75.7 1 80 69.5 0 0
+AcbFloat{64} 64 atan 568.3 1 80 560.5 0 0
+AcbFloat{256} 256 exp 371.6 1 80 359.9 0 0
+AcbFloat{256} 256 log 404.2 1 80 384.6 0 0
+AcbFloat{256} 256 sin 557.8 1 80 536.3 0 0
+AcbFloat{256} 256 cos 558.9 1 80 540.4 0 0
+AcbFloat{256} 256 atan 949.4 1 80 935.6 0 0
+AcbFloat{1024} 1024 exp 1233.1 1 80 1199.6 0 0
+AcbFloat{1024} 1024 log 729.2 1 80 700.6 0 0
+AcbFloat{1024} 1024 sin 1636.0 1 80 3123.2 0 0
+AcbFloat{1024} 1024 cos 1643.1 1 80 1625.5 0 0
+AcbFloat{1024} 1024 atan 2342.6 1 80 2312.4 0 0
+Fresh precision first construction+exp call, includes compilation (seconds):
+ArbFloat997 0.008746039
+AcbFloat998 0.011154756

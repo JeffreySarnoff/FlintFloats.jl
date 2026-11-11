@@ -1,0 +1,33 @@
+Bounded nested packed broadcast; minimum warmed times, 100 samples, 0.05 s per case
+Julia=1.13.3 CPU=Intel(R) Core(TM) i9-14900K threads=1 FLINT_jll=301.690.0+0
+lib=/home/jas/.julia/artifacts/b375a8872bc46fbeeae1a15e10297b29900d2451/lib/libflint.so source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25
+Host-tuned x86_64 Linux artifact; no global thread changes. Julia bytes exclude native allocations.
+Independent 1/7 and 2/9 inputs; output reused. Trees preserve scalar precision and association.
+family P n nodes generic_ns generic_allocs generic_bytes optimized_ns optimized_allocs optimized_bytes
+ArbBall 128 1 2 95.0 5 320 66.1 2 128
+ArbBall 128 1 8 364.3 17 1088 276.4 8 512
+ArbBall 128 32 2 2515.9 160 10240 1225.6 2 128
+ArbBall 128 32 8 16421.0 544 34816 5317.0 8 512
+ArbBall 128 512 2 38992.0 2560 163840 17957.0 2 128
+ArbBall 128 512 8 157055.0 8704 557056 80807.0 8 512
+ArbBall 512 1 2 166.5 5 320 109.7 2 128
+ArbBall 512 1 8 546.6 17 1088 379.4 8 512
+ArbBall 512 32 2 4804.6 160 10240 1925.2 2 128
+ArbBall 512 32 8 15725.0 544 34816 6145.4 8 512
+ArbBall 512 512 2 77256.0 2560 163840 31759.0 2 128
+ArbBall 512 512 8 252243.0 8704 557056 97414.0 8 512
+AcbBall 128 1 2 121.8 5 560 85.6 2 224
+AcbBall 128 1 8 438.7 17 1904 323.2 8 896
+AcbBall 128 32 2 3243.5 160 17920 1795.3 2 224
+AcbBall 128 32 8 11762.0 544 60928 6737.0 8 896
+AcbBall 128 512 2 51614.0 2560 286720 26735.0 2 224
+AcbBall 128 512 8 188301.0 8704 974848 103745.0 8 896
+AcbBall 512 1 2 207.6 5 560 269.9 2 224
+AcbBall 512 1 8 641.9 17 1904 438.3 8 896
+AcbBall 512 32 2 9135.5 160 17920 2428.9 2 224
+AcbBall 512 32 8 28570.0 544 60928 7685.8 8 896
+AcbBall 512 512 2 91756.0 2560 286720 37310.0 2 224
+AcbBall 512 512 8 296683.0 8704 974848 116482.0 8 896
+First timed materialization at fresh precision; inputs prepared, elapsed includes compilation:
+P=997 eight-node first_ms=105.02
+P=998 eight-node first_ms=104.61

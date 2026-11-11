@@ -1,13 +1,31 @@
 name = "FlintFloats"
 uuid = "26cde3c2-a71e-4793-a8a7-00c12dc13036"
-authors = ["Jeffrey Sarnoff <jeffrey.sarnoff@gmail.com> and contributors"]
 version = "0.1.0"
+authors = ["Jeffrey Sarnoff <jeffrey.sarnoff@gmail.com> and contributors"]
+
+[deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+FLINT_jll = "e134572f-a0d5-539d-bddf-3cad8db41a82"
+
+[weakdeps]
+Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
+
+[extensions]
+FlintFloatsSerializationExt = "Serialization"
+
+[sources]
+FLINT_jll = {path = "FlintFloat.jl/FLINT_jll"}
 
 [compat]
-julia = "1.10.10"
+Serialization = "1"
+LinearAlgebra = "1"
+FLINT_jll = "=301.690.0"
+julia = "1.13"
 
 [extras]
+Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
+test = ["Random", "Test", "Serialization"]

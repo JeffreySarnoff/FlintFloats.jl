@@ -1,0 +1,32 @@
+Portable FLINT acceptance
+source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25
+wrapper=301.690.0+1
+artifact_tree=d3d8eabffb56db6d7cfa77fe9fa38dbe6dd4d6c1
+archive_sha256=71384459c4f0da6add70885117c493cab4dff67174d4e2bce926611ded9974a5
+Julia 1.13.3; four threads; x86_64 Linux, i9-14900K/glibc 2.43
+BinaryBuilder GCC 14.2.0 x86-64 baseline; GLIBC symbols through 2.16; supported runtime floor 2.17
+
+Numerical/ownership/Julia contracts (candidate binary, all source):
+Test Summary:  |  Pass  Total     Time
+FlintFloats.jl | 34151  34151  1m08.1s
+
+Wrapper smoke checks (promoted bundle):
+Test Summary:                  | Pass  Total  Time
+FLINT 3.7 development artifact |   16     16  0.0s
+Test Summary:                               | Pass  Total  Time
+dfloat through the exported library product |    2      2  0.0s
+Test Summary:                        | Pass  Total  Time
+arb and acb ownership and arithmetic |    3      3  0.0s
+
+Fresh matching-header ABI probe:
+Supported bundled target: x86_64 Linux, Intel(R) Core(TM) i9-14900K, glibc 2.43.0
+Fresh artifact-header ABI probe matches recorded layout
+
+Symbol audit:
+checked 374 symbols against /tmp/flint-portable-prefix/lib/libflint.so
+all present
+
+Clean installation/API/extension result:
+Fresh portable bundle installation/API/extension checks pass: /tmp/flint-clean-depot/artifacts/d3d8eabffb56db6d7cfa77fe9fa38dbe6dd4d6c1/lib/libflint.so
+
+No remote CI run or public release publication is claimed.

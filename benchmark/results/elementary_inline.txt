@@ -1,0 +1,61 @@
+Inline elementary functions; minimum warmed time; 100 samples, 0.05 s per case
+Julia=1.13.3 CPU=Intel(R) Core(TM) i9-14900K threads=4 FLINT_jll=301.690.0+0
+lib=/home/jas/.julia/artifacts/b375a8872bc46fbeeae1a15e10297b29900d2451/lib/libflint.so source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25
+Dfloat/nfloat approximate, dfloat balls rigorous; Julia counts exclude native scratch.
+type function time_ns allocations bytes
+DFloat{1} exp 4.7 0 0
+DFloat{1} log 4.4 0 0
+DFloat{1} sin 3.3 0 0
+DFloat{1} cos 3.5 0 0
+DFloat{1} atan 3.4 0 0
+DFloat{2} exp 39.2 0 0
+DFloat{2} log 28.6 0 0
+DFloat{2} sin 35.2 0 0
+DFloat{2} cos 37.2 0 0
+DFloat{2} atan 36.6 0 0
+DFloat{4} exp 171.9 0 0
+DFloat{4} log 63.3 0 0
+DFloat{4} sin 163.7 0 0
+DFloat{4} cos 164.0 0 0
+DFloat{4} atan 188.8 0 0
+DFloatBall{1} exp 8.1 0 0
+DFloatBall{1} log 7.4 0 0
+DFloatBall{1} sin 6.0 0 0
+DFloatBall{1} cos 6.0 0 0
+DFloatBall{1} atan 5.8 0 0
+DFloatBall{2} exp 41.8 0 0
+DFloatBall{2} log 20.0 0 0
+DFloatBall{2} sin 38.5 0 0
+DFloatBall{2} cos 39.5 0 0
+DFloatBall{2} atan 37.9 0 0
+DFloatBall{4} exp 176.5 0 0
+DFloatBall{4} log 67.2 0 0
+DFloatBall{4} sin 164.9 0 0
+DFloatBall{4} cos 166.0 0 0
+DFloatBall{4} atan 187.5 0 0
+NFloat{1} exp 13.4 0 0
+NFloat{1} log 11.2 0 0
+NFloat{1} sin 16.8 0 0
+NFloat{1} cos 16.7 0 0
+NFloat{1} atan 17.8 0 0
+NFloat{2} exp 23.8 0 0
+NFloat{2} log 21.4 0 0
+NFloat{2} sin 32.2 0 0
+NFloat{2} cos 32.5 0 0
+NFloat{2} atan 37.0 0 0
+NFloat{4} exp 61.5 0 0
+NFloat{4} log 64.7 0 0
+NFloat{4} sin 129.2 0 0
+NFloat{4} cos 127.3 0 0
+NFloat{4} atan 88.2 0 0
+NFloat{16} exp 245.5 0 0
+NFloat{16} log 55.0 0 0
+NFloat{16} sin 673.7 0 0
+NFloat{16} cos 673.4 0 0
+NFloat{16} atan 43.5 0 0
+NFloat{66} exp 4422.4 0 0
+NFloat{66} log 476.8 0 0
+NFloat{66} sin 9556.0 0 0
+NFloat{66} cos 9587.0 0 0
+NFloat{66} atan 632.5 0 0
+Fresh NFloat65 construction+exp, includes runtime compilation (seconds): 0.010033552

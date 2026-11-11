@@ -1,0 +1,50 @@
+M4b nfloat add/multiply; minimum warmed times, 100 samples, 0.05 s per case
+Julia=1.13.3 CPU=Intel(R) Core(TM) i9-14900K Julia threads=1
+kernel=Linux arch=x86_64 libc=glibc 2.43
+FLINT_jll=301.690.0+0 lib=/home/jas/.julia/artifacts/b375a8872bc46fbeeae1a15e10297b29900d2451/lib/libflint.so
+source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25; host-tuned artifact
+context=shared immutable ALLOW_UNDERFLOW only; no threaded native kernels or global setting changes
+Inputs: full mantissas from decimal parse, finite mixed signs, ordinary exponents; same numerical guarantees
+scalar_transaction includes allocation/copy; checked_native includes scratch initialization, context lookup, validation, native call, commit
+raw_native excludes validation/scratch allocation/commit; copy and inferred-context columns isolate those costs (context is a compiler-optimized lower bound)
+op L length scalar_transaction_ns checked_native_ns speedup checked_allocs checked_bytes raw_native_ns copy_ns context_ns
+add 1 1 18.4 14.6 1.26 2 80 5.6 2.8 1.2
+mul 1 1 17.9 13.8 1.3 2 80 4.1 2.8 1.2
+add 1 4 36.1 21.9 1.64 2 160 11.4 2.6 1.2
+mul 1 4 33.6 17.1 1.96 2 160 6.2 2.6 1.2
+add 1 64 406.7 179.6 2.26 2 1664 143.1 6.9 1.2
+mul 1 64 358.1 96.3 3.72 2 1664 58.9 6.9 1.2
+add 1 1024 6422.6 2896.6 2.22 3 24648 2172.7 85.5 1.4
+mul 1 1024 5699.0 1681.6 3.39 3 24648 913.2 85.5 1.4
+add 2 1 16.3 15.9 1.02 2 96 5.8 2.1 1.4
+mul 2 1 15.2 14.9 1.02 2 96 4.4 2.1 1.4
+add 2 4 34.8 24.9 1.4 2 192 13.1 2.3 1.4
+mul 2 4 30.9 20.4 1.52 2 192 8.9 2.3 1.4
+add 2 64 446.7 243.4 1.84 3 2120 177.9 9.0 1.4
+mul 2 64 381.2 165.8 2.3 3 2120 108.8 9.0 1.4
+add 2 1024 6766.8 3675.4 1.84 3 32840 2972.6 428.8 1.8
+mul 2 1024 6951.5 2610.6 2.66 3 32840 1672.2 428.8 1.8
+add 4 1 24.4 17.2 1.42 2 112 6.0 2.3 1.7
+mul 4 1 26.0 17.3 1.5 2 112 6.8 2.3 1.7
+add 4 4 72.5 27.3 2.65 2 256 15.5 2.7 1.7
+mul 4 4 68.3 31.7 2.16 2 256 19.4 2.7 1.7
+add 4 64 816.6 307.3 2.66 3 3144 210.5 13.7 1.7
+mul 4 64 926.2 369.8 2.5 3 3144 274.2 13.7 1.7
+add 4 1024 12789.0 4791.3 2.67 3 49224 3267.8 628.5 1.8
+mul 4 1024 14837.0 5766.2 2.57 3 49224 4259.6 628.5 1.8
+add 16 1 39.5 33.4 1.18 2 208 21.5 2.8 1.4
+mul 16 1 66.5 54.8 1.21 2 208 44.0 2.8 1.4
+add 16 4 125.4 104.1 1.2 2 656 79.5 4.4 1.4
+mul 16 4 236.6 190.1 1.24 2 656 173.0 4.4 1.4
+add 16 64 1830.6 1500.5 1.22 3 9288 1242.5 28.1 1.8
+mul 16 64 3600.4 3018.2 1.19 3 9288 2746.0 28.1 1.8
+add 16 1024 30017.0 24803.0 1.21 3 147528 20044.0 1884.5 1.8
+mul 16 1024 58303.0 48959.0 1.19 3 147528 44053.0 1884.5 1.8
+add 66 1 102.6 84.5 1.21 2 608 70.2 3.9 2.1
+mul 66 1 627.9 607.0 1.03 2 608 578.3 3.9 2.1
+add 66 4 409.6 368.5 1.11 3 2248 279.6 12.7 1.7
+mul 66 4 2494.8 2507.9 0.99 3 2248 2308.4 12.7 1.7
+add 66 64 6195.8 5398.0 1.15 3 34888 4355.6 456.6 1.7
+mul 66 64 38806.0 38541.0 1.01 3 34888 36914.0 456.6 1.7
+add 66 1024 107648.0 89416.0 1.2 3 557128 69558.0 7052.0 1.7
+mul 66 1024 630574.0 621278.0 1.01 3 557128 591902.0 7052.0 1.7

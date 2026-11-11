@@ -1,0 +1,163 @@
+Flat packed broadcast; minimum warmed times, 100 samples, 0.05 s per case
+Julia=1.13.3 CPU=Intel(R) Core(TM) i9-14900K Julia threads=1
+kernel=Linux arch=x86_64 libc=glibc 2.43
+FLINT_jll=301.690.0+0 lib=/home/jas/.julia/artifacts/b375a8872bc46fbeeae1a15e10297b29900d2451/lib/libflint.so
+source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25; host-tuned artifact
+Inputs: rigorous 1/7 and 2/9; same-format independent parents; reused initialized output
+generic invokes Base's unspecialized destination path; optimized includes axes/lifetime/alias preparation
+Julia allocation counts exclude FLINT allocation/growth; no global thread settings changed
+family P n kind op generic_ns generic_allocs generic_bytes optimized_ns optimized_allocs optimized_bytes
+ArbBall 128 1 full copy 5.3 0 0 9.5 0 0
+ArbBall 128 1 full add 64.5 3 192 34.4 0 0
+ArbBall 128 1 full mul 88.5 3 192 22.1 0 0
+ArbBall 128 1 scalar copy 5.3 0 0 9.5 0 0
+ArbBall 128 1 scalar add 53.6 2 128 27.0 0 0
+ArbBall 128 1 scalar mul 44.5 2 128 17.8 0 0
+ArbBall 128 1 singleton copy 5.4 0 0 9.3 0 0
+ArbBall 128 1 singleton add 64.9 3 192 35.0 0 0
+ArbBall 128 1 singleton mul 50.1 3 192 22.2 0 0
+ArbBall 128 1 views copy 35.5 1 64 28.3 0 0
+ArbBall 128 1 views add 103.2 3 192 58.0 0 0
+ArbBall 128 1 views mul 61.5 3 192 54.6 0 0
+ArbBall 128 32 full copy 53.8 0 0 63.6 0 0
+ArbBall 128 32 full add 1840.8 96 6144 667.9 0 0
+ArbBall 128 32 full mul 2302.6 96 6144 377.0 0 0
+ArbBall 128 32 scalar copy 59.3 0 0 64.0 0 0
+ArbBall 128 32 scalar add 1466.1 64 4096 689.0 0 0
+ArbBall 128 32 scalar mul 1968.5 64 4096 356.9 0 0
+ArbBall 128 32 singleton copy 59.3 0 0 63.5 0 0
+ArbBall 128 32 singleton add 2386.8 96 6144 680.8 0 0
+ArbBall 128 32 singleton mul 2335.1 96 6144 377.3 0 0
+ArbBall 128 32 views copy 480.7 32 2048 291.3 0 0
+ArbBall 128 32 views add 2822.9 96 6144 798.1 0 0
+ArbBall 128 32 views mul 2400.9 96 6144 582.2 0 0
+ArbBall 128 512 full copy 820.5 0 0 826.0 0 0
+ArbBall 128 512 full add 44482.0 1536 98304 12532.0 0 0
+ArbBall 128 512 full mul 19945.0 1536 98304 5790.8 0 0
+ArbBall 128 512 scalar copy 820.9 0 0 825.7 0 0
+ArbBall 128 512 scalar add 23282.0 1024 65536 11048.0 0 0
+ArbBall 128 512 scalar mul 30095.0 1024 65536 5544.2 0 0
+ArbBall 128 512 singleton copy 820.5 0 0 825.6 0 0
+ArbBall 128 512 singleton add 44657.0 1536 98304 11809.0 0 0
+ArbBall 128 512 singleton mul 19437.0 1536 98304 5805.5 0 0
+ArbBall 128 512 views copy 7526.0 512 32768 4358.4 0 0
+ArbBall 128 512 views add 44555.0 1536 98304 11895.0 0 0
+ArbBall 128 512 views mul 19736.0 1536 98304 8612.3 0 0
+ArbBall 512 1 full copy 7.0 0 0 10.5 0 0
+ArbBall 512 1 full add 95.6 3 192 35.0 0 0
+ArbBall 512 1 full mul 101.6 3 192 44.0 0 0
+ArbBall 512 1 scalar copy 7.2 0 0 10.6 0 0
+ArbBall 512 1 scalar add 76.6 2 128 28.6 0 0
+ArbBall 512 1 scalar mul 85.9 2 128 39.1 0 0
+ArbBall 512 1 singleton copy 7.1 0 0 11.3 0 0
+ArbBall 512 1 singleton add 94.9 3 192 34.6 0 0
+ArbBall 512 1 singleton mul 102.1 3 192 44.1 0 0
+ArbBall 512 1 views copy 49.0 1 64 28.9 0 0
+ArbBall 512 1 views add 106.0 3 192 60.5 0 0
+ArbBall 512 1 views mul 118.0 3 192 77.4 0 0
+ArbBall 512 32 full copy 94.4 0 0 98.9 0 0
+ArbBall 512 32 full add 2681.3 96 6144 697.0 0 0
+ArbBall 512 32 full mul 2951.2 96 6144 1112.1 0 0
+ArbBall 512 32 scalar copy 93.6 0 0 98.3 0 0
+ArbBall 512 32 scalar add 2287.8 64 4096 705.7 0 0
+ArbBall 512 32 scalar mul 2617.0 64 4096 1042.4 0 0
+ArbBall 512 32 singleton copy 96.1 0 0 98.0 0 0
+ArbBall 512 32 singleton add 2675.2 96 6144 730.3 0 0
+ArbBall 512 32 singleton mul 2932.6 96 6144 1048.0 0 0
+ArbBall 512 32 views copy 817.1 32 2048 299.6 0 0
+ArbBall 512 32 views add 2697.1 96 6144 922.1 0 0
+ArbBall 512 32 views mul 2962.1 96 6144 1298.9 0 0
+ArbBall 512 512 full copy 1449.4 0 0 1445.4 0 0
+ArbBall 512 512 full add 41962.0 1536 98304 10795.0 0 0
+ArbBall 512 512 full mul 46910.0 1536 98304 16227.0 0 0
+ArbBall 512 512 scalar copy 1590.8 0 0 1506.3 0 0
+ArbBall 512 512 scalar add 37433.0 1024 65536 11467.0 0 0
+ArbBall 512 512 scalar mul 42259.0 1024 65536 15713.0 0 0
+ArbBall 512 512 singleton copy 1479.9 0 0 1515.7 0 0
+ArbBall 512 512 singleton add 42302.0 1536 98304 11264.0 0 0
+ArbBall 512 512 singleton mul 46589.0 1536 98304 16178.0 0 0
+ArbBall 512 512 views copy 13744.0 512 32768 4500.9 0 0
+ArbBall 512 512 views add 43137.0 1536 98304 14942.0 0 0
+ArbBall 512 512 views mul 47878.0 1536 98304 20304.0 0 0
+AcbBall 128 1 full copy 6.3 0 0 11.8 0 0
+AcbBall 128 1 full add 80.1 3 336 40.3 0 0
+AcbBall 128 1 full mul 65.3 3 336 28.1 0 0
+AcbBall 128 1 scalar copy 6.7 0 0 11.8 0 0
+AcbBall 128 1 scalar add 62.8 2 224 35.3 0 0
+AcbBall 128 1 scalar mul 57.0 2 224 23.4 0 0
+AcbBall 128 1 singleton copy 6.9 0 0 11.8 0 0
+AcbBall 128 1 singleton add 154.8 3 336 38.9 0 0
+AcbBall 128 1 singleton mul 68.2 3 336 28.7 0 0
+AcbBall 128 1 views copy 39.3 1 112 30.1 0 0
+AcbBall 128 1 views add 86.6 3 336 60.3 0 0
+AcbBall 128 1 views mul 86.2 3 336 60.4 0 0
+AcbBall 128 32 full copy 107.2 0 0 111.1 0 0
+AcbBall 128 32 full add 2165.6 96 10752 805.9 0 0
+AcbBall 128 32 full mul 1760.6 96 10752 548.5 0 0
+AcbBall 128 32 scalar copy 106.5 0 0 111.5 0 0
+AcbBall 128 32 scalar add 1781.7 64 7168 810.1 0 0
+AcbBall 128 32 scalar mul 1688.3 64 7168 532.4 0 0
+AcbBall 128 32 singleton copy 107.7 0 0 108.9 0 0
+AcbBall 128 32 singleton add 2270.1 96 10752 814.7 0 0
+AcbBall 128 32 singleton mul 1755.9 96 10752 548.7 0 0
+AcbBall 128 32 views copy 708.0 32 3584 384.7 0 0
+AcbBall 128 32 views add 2178.9 96 10752 875.1 0 0
+AcbBall 128 32 views mul 1788.8 96 10752 696.3 0 0
+AcbBall 128 512 full copy 1543.6 0 0 1576.2 0 0
+AcbBall 128 512 full add 33972.0 1536 172032 13615.0 0 0
+AcbBall 128 512 full mul 31949.0 1536 172032 8579.7 0 0
+AcbBall 128 512 scalar copy 1573.1 0 0 1547.7 0 0
+AcbBall 128 512 scalar add 30338.0 1024 114688 13631.0 0 0
+AcbBall 128 512 scalar mul 29362.0 1024 114688 8387.3 0 0
+AcbBall 128 512 singleton copy 1546.9 0 0 1548.7 0 0
+AcbBall 128 512 singleton add 34384.0 1536 172032 13954.0 0 0
+AcbBall 128 512 singleton mul 27512.0 1536 172032 8574.3 0 0
+AcbBall 128 512 views copy 10872.0 512 57344 5899.3 0 0
+AcbBall 128 512 views add 33357.0 1536 172032 13533.0 0 0
+AcbBall 128 512 views mul 27495.0 1536 172032 10857.0 0 0
+AcbBall 512 1 full copy 8.3 0 0 13.5 0 0
+AcbBall 512 1 full add 113.3 3 336 41.1 0 0
+AcbBall 512 1 full mul 120.2 3 336 49.8 0 0
+AcbBall 512 1 scalar copy 8.4 0 0 14.1 0 0
+AcbBall 512 1 scalar add 85.9 2 224 34.5 0 0
+AcbBall 512 1 scalar mul 101.3 2 224 80.2 0 0
+AcbBall 512 1 singleton copy 14.0 0 0 22.5 0 0
+AcbBall 512 1 singleton add 113.3 3 336 39.3 0 0
+AcbBall 512 1 singleton mul 123.8 3 336 48.4 0 0
+AcbBall 512 1 views copy 53.3 1 112 30.8 0 0
+AcbBall 512 1 views add 123.2 3 336 63.0 0 0
+AcbBall 512 1 views mul 137.9 3 336 81.4 0 0
+AcbBall 512 32 full copy 142.2 0 0 147.2 0 0
+AcbBall 512 32 full add 5126.6 96 10752 856.2 0 0
+AcbBall 512 32 full mul 4160.8 96 10752 1183.9 0 0
+AcbBall 512 32 scalar copy 142.3 0 0 146.9 0 0
+AcbBall 512 32 scalar add 3742.9 64 7168 850.5 0 0
+AcbBall 512 32 scalar mul 3059.1 64 7168 1112.4 0 0
+AcbBall 512 32 singleton copy 142.3 0 0 146.5 0 0
+AcbBall 512 32 singleton add 4998.8 96 10752 942.2 0 0
+AcbBall 512 32 singleton mul 5420.0 96 10752 1150.9 0 0
+AcbBall 512 32 views copy 1579.8 32 3584 400.0 0 0
+AcbBall 512 32 views add 5099.6 96 10752 1001.4 0 0
+AcbBall 512 32 views mul 5407.2 96 10752 1392.6 0 0
+AcbBall 512 512 full copy 2130.7 0 0 2145.4 0 0
+AcbBall 512 512 full add 82280.0 1536 172032 13038.0 0 0
+AcbBall 512 512 full mul 57955.0 1536 172032 18614.0 0 0
+AcbBall 512 512 scalar copy 2112.2 0 0 2505.9 0 0
+AcbBall 512 512 scalar add 63271.0 1024 114688 13676.0 0 0
+AcbBall 512 512 scalar mul 49719.0 1024 114688 18148.0 0 0
+AcbBall 512 512 singleton copy 2166.1 0 0 2145.8 0 0
+AcbBall 512 512 singleton add 50856.0 1536 172032 13436.0 0 0
+AcbBall 512 512 singleton mul 57301.0 1536 172032 18482.0 0 0
+AcbBall 512 512 views copy 25641.0 512 57344 6040.8 0 0
+AcbBall 512 512 views add 53727.0 1536 172032 15530.0 0 0
+AcbBall 512 512 views mul 59964.0 1536 172032 22568.0 0 0
+Alias snapshots: resets excluded, evals=1; both paths snapshot a shifted overlapping view before mutation
+family P n generic_ns generic_allocs generic_bytes optimized_ns optimized_allocs optimized_bytes
+ArbBall 128 32 1237.0 65 4128 510.0 1 32
+ArbBall 128 512 18231.0 1025 65568 7420.0 1 32
+ArbBall 512 32 1222.0 65 4128 477.0 1 32
+ArbBall 512 512 18033.0 1025 65568 7560.0 1 32
+AcbBall 128 32 1718.0 65 7200 795.0 1 32
+AcbBall 128 512 26404.0 1025 114720 17578.0 1 32
+AcbBall 512 32 1731.0 65 7200 733.0 1 32
+AcbBall 512 512 26305.0 1025 114720 12011.0 1 32

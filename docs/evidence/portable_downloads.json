@@ -1,0 +1,29 @@
+[
+  {
+    "name": "GCCBootstrap-x86_64-linux-gnu.v14.2.0.x86_64-linux-musl.unpacked",
+    "file": "GCCBootstrap-x86_64-linux-gnu.v14.2.0.x86_64-linux-musl.unpacked.tar.gz",
+    "sha256": "6604dbb32736974eacdc829ad12638cdb0074fb2bd8b9d3e22da6dbb59098bb5",
+    "git_tree_sha1": "3a76ade6c60758558f6c5c3bea522602ea9db090",
+    "url": "https://github.com/JuliaPackaging/Yggdrasil/releases/download/GCCBootstrap-v14.2.0/GCCBootstrap-x86_64-linux-gnu.v14.2.0.x86_64-linux-musl.unpacked.tar.gz",
+    "bytes": 1313185564,
+    "gzip_integrity": "pass"
+  },
+  {
+    "name": "GCCBootstrap-x86_64-linux-musl.v14.2.0.x86_64-linux-musl.unpacked",
+    "file": "GCCBootstrap-x86_64-linux-musl.v14.2.0.x86_64-linux-musl.unpacked.tar.gz",
+    "sha256": "75410eccc2393ec4c8b66a27df4a26be7eac8e3b9bcff82c13065d5c46f88f46",
+    "git_tree_sha1": "c99fbd722e09f35ef5e9b50c521540d5e482dd47",
+    "url": "https://github.com/JuliaPackaging/Yggdrasil/releases/download/GCCBootstrap-v14.2.0/GCCBootstrap-x86_64-linux-musl.v14.2.0.x86_64-linux-musl.unpacked.tar.gz",
+    "bytes": 1277472434,
+    "gzip_integrity": "pass"
+  },
+  {
+    "name": "Rootfs.v2026.6.10.x86_64-linux-musl.unpacked",
+    "file": "Rootfs.v2026.6.10.x86_64-linux-musl.unpacked.tar.gz",
+    "sha256": "fad7027c999302fe9cadb8a0808dbcbdb31af2ea5d1d2fe67f7ad5299984a3ae",
+    "git_tree_sha1": "7e143cec0b1ac13bf97f9af7d6b03d81ccdb48fe",
+    "url": "https://github.com/JuliaPackaging/Yggdrasil/releases/download/Rootfs-v2026.6.10/Rootfs.v2026.6.10.x86_64-linux-musl.unpacked.tar.gz",
+    "bytes": 178874173,
+    "gzip_integrity": "pass"
+  }
+]
