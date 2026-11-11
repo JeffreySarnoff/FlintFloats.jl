@@ -20,4 +20,5 @@ using Test
     include("packed_nested_broadcast_tests.jl")
     include("packed_reduce_tests.jl")
     include("packed_dot_tests.jl")
+    include("packed_mapped_reduce_tests.jl")
 end

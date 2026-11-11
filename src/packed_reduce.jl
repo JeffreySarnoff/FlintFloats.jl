@@ -9,7 +9,7 @@ accumulates in logical iteration order using one owned accumulator and borrowed 
 are typed zero and singleton results are independent. Its radius/representation need not match Base's
 possibly reassociated reduction. No per-term Julia scalar owners are allocated in a warmed typed loop.
 
-Calls with keywords (including `init`/`dims`) and mapped sums retain Base's generic interface and
+Calls with keywords (including `init`/`dims`) and other mapped sums retain Base's generic interface and
 copied scalar reads. Parents must remain open; concurrent writes/finalization during reading are
 unsupported. This specialization changes no allocating array container or generic callback semantics.
 """
@@ -23,6 +23,41 @@ function Base.sum(v::PackedBallSpan; kwargs...)
         add!(result,result,r)
     end
     return result
+end
+
+# Only the exact Base.abs2 function is recognized. Arbitrary callbacks keep copied value semantics.
+@inline function _packed_abs2!(mapped::ArbBall{P}, scratch, r::BorrowedBall{ArbBall{P}}) where {P}
+    mul!(mapped,r,r)
+end
+@inline function _packed_abs2!(mapped::ArbBall{P}, scratch, r::BorrowedBall{AcbBall{P}}) where {P}
+    LibFlint.acb_get_real(mapped,r)
+    LibFlint.acb_get_imag(scratch,r)
+    mul!(mapped,mapped,mapped)
+    mul!(scratch,scratch,scratch)
+    add!(mapped,mapped,scratch)
+end
+
+"""
+    sum(abs2, v::PackedBallVector)
+    sum(abs2, view(v, indices))
+
+Enclose the exact sum of squared magnitudes using borrowed reads and constant owned scratch.
+The fresh result is `ArbBall{P}` for both real and complex inputs at precision `P`, including empty
+inputs. Mapping follows scalar `abs2` arithmetic and accumulation follows logical order; radii may
+vary from Base's reduction order. Keywords retain Base's generic interface. Other callbacks always
+receive independent copied values. Parents must remain open without concurrent mutation/finalization.
+"""
+function Base.sum(::typeof(abs2), v::PackedBallSpan; kwargs...)
+    !isempty(kwargs) && return invoke(Base.sum,Tuple{Any,AbstractArray},abs2,v;kwargs...)
+    _check_packed_open(_packed_parent(v))
+    R=realtype(eltype(v))
+    result,mapped=R(),R()
+    scratch=eltype(v)<:AcbBall ? R() : nothing
+    for r in eachborrow(v)
+        _packed_abs2!(mapped,scratch,r)
+        add!(result,result,mapped)
+    end
+    result
 end
 
 # Start/step descriptors are logical struct offsets, never cached raw pointers. Native dot permits

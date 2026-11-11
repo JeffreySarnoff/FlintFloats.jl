@@ -6,7 +6,7 @@ The objective is a Julia interface to FLINT's **dfloat (plain and ball), nfloat,
 
 Descriptions of the existing repository are distinguished from requirements for future implementation. Proposed Julia constructors and operations below are interface specifications, not claims that those methods already exist.
 
-**Resume point (M0–M3, M4a–M4c, and reusable scratch complete):** [checkpoint.md](checkpoint.md) and [checkpoint_gpt.md](checkpoint_gpt.md) now cover inline bulk arithmetic, `NFloatWorkspace`, packed ball owners, and explicit borrowing, in addition to the scalar foundations. The prior M4c full-suite baseline passed **13,709 tests**; the latest reduction follow-up passes **346 dot checks and 205 sum checks** on Julia 1.13.3 with four threads, plus documentation/doctests. **M4a–M4c are implemented (§9.3). Copied-indexing documentation, `eachborrow`, and flat in-place broadcast are implemented (§9.4.1–3). Bounded nested broadcast is also implemented (§9.4.3); sum and audited M4d dot products are implemented (§9.4.4); next consider individually verified mapped reductions.** Keep elementary functions in M5. The capability table and current source determine what is implemented; the checkpoints are handoff snapshots of this update.
+**Resume point (M0–M3, M4a–M4c, and reusable scratch complete):** [checkpoint.md](checkpoint.md) and [checkpoint_gpt.md](checkpoint_gpt.md) now cover inline bulk arithmetic, `NFloatWorkspace`, packed ball owners, and explicit borrowing, in addition to the scalar foundations. The prior M4c full-suite baseline passed **13,709 tests**; the latest reduction follow-up passes **346 dot checks and 205 sum checks** on Julia 1.13.3 with four threads, plus documentation/doctests. **M4a–M4c are implemented (§9.3). Copied-indexing documentation, `eachborrow`, and flat in-place broadcast are implemented (§9.4.1–3). Bounded nested broadcast is also implemented (§9.4.3); sum and audited M4d dot products are implemented (§9.4.4); `sum(abs2, v)` is implemented; next close scalar verification gaps before M5.** Keep elementary functions in M5. The capability table and current source determine what is implemented; the checkpoints are handoff snapshots of this update.
 
 ## 1. Starting point and development priorities
 
@@ -363,7 +363,7 @@ Prioritize vector add/multiply, dot products, and measured matrix workloads. A f
 
 ### 9.3 Next implementation: M4 in reviewable parts
 
-**M4a–M4c are complete. Documentation, borrowed iteration, and flat in-place broadcast are implemented; sum and dot products are implemented; next consider selected mapped reductions (§9.4.4).** Ordinary Julia arrays already store concrete inline types; dot accumulation and measured matrix follow-up retain their separate numerical contracts. M4a is implemented in `src/arrays.jl`: qualified `FlintFloats.add!`/`mul!` accept matching-format `DFloat`/`DFloatBall` vectors, with ordinary/strided destinations, checked scalar fallbacks, and a native contiguous ball-add path at length ≥ 4. Exact aliasing uses `===`; other possible destination/input overlap is rejected. Gather/repeated-index destinations are rejected because they do not guarantee independent slots. M4b extends the same interface to `NFloat{L}`, with native aligned contiguous input paths and checked scalar fallbacks. It uses initialized private scratch and commits only after successful arithmetic, preserving the destination on numerical or input-read failure. M4c adds `PackedBallVector`, copied indexing, explicit `borrow` references, native ball-add, and borrowed scalar multiply. M4d sum and dot products are implemented; mapped reductions and measured matrix work remain. The checkpoints summarize this state.
+**M4a–M4c are complete. Documentation, borrowed iteration, and flat in-place broadcast are implemented; sum and dot products are implemented; `sum(abs2, v)` is implemented (§9.4.4); next close scalar verification gaps.** Ordinary Julia arrays already store concrete inline types; dot accumulation and measured matrix follow-up retain their separate numerical contracts. M4a is implemented in `src/arrays.jl`: qualified `FlintFloats.add!`/`mul!` accept matching-format `DFloat`/`DFloatBall` vectors, with ordinary/strided destinations, checked scalar fallbacks, and a native contiguous ball-add path at length ≥ 4. Exact aliasing uses `===`; other possible destination/input overlap is rejected. Gather/repeated-index destinations are rejected because they do not guarantee independent slots. M4b extends the same interface to `NFloat{L}`, with native aligned contiguous input paths and checked scalar fallbacks. It uses initialized private scratch and commits only after successful arithmetic, preserving the destination on numerical or input-read failure. M4c adds `PackedBallVector`, copied indexing, explicit `borrow` references, native ball-add, and borrowed scalar multiply. M4d sum and dot products are implemented; mapped reductions and measured matrix work remain. The checkpoints summarize this state.
 
 | Part | Deliverable | Acceptance evidence |
 | --- | --- | --- |
@@ -618,7 +618,7 @@ arithmetic time. Scratch Julia allocations scale with tree size, not vector leng
 
 #### 9.4.4 Optimize reductions with their own numerical contract (M4d)
 
-Reduction implementation is in `src/packed_reduce.jl`. **`sum(v)` and dot products are implemented**. The sum path supports for matching
+Reduction implementation is in `src/packed_reduce.jl`. **`sum(v)` and dot products are implemented**. The sum path supports matching
 packed real/complex ball owners and supported views. Use one fresh owned accumulator at element
 precision and borrowed inputs; do not call ordinary copied indexing per term. An empty sum is a fresh
 typed zero; a singleton result must also be independent of its input. Return an owned scalar, never
@@ -687,7 +687,15 @@ workloads. Radius quality differs by algorithm: tables include ordinary uncertai
 cross-component cancellation; none claims correctly rounded point results or identical enclosures.
 The binding inventory now audits 309 symbols and regenerates twice without drift.
 
-Only after sum/dot evidence, consider selected mappings such as `sum(abs2, v)`. Specify mapping result
+**Selected mapping implemented:** `sum(abs2, v)` reuses mapped-value scratch and a fresh real
+accumulator for both packed families. Complex parts are extracted into two reusable real scalars;
+squares/addition preserve the existing scalar mapping. Keywords delegate to Base, and arbitrary
+callbacks keep copied arguments. Focused tests cover exact rational interval bounds, zero crossing,
+view order, independence, finalized parents, inference, and allocation independent of length.
+The [mapped reduction benchmark](../benchmark/results/packed_mapped_reduce.txt) records complete
+operation time, Julia allocations, and radius quality. No new native bindings.
+
+For any additional mapping, Specify mapping result
 family/precision (complex `abs2` is real), reuse destination-capable scalar primitives, and prove the
 mapped bounds. Arbitrary `sum(f, v)`/`mapreduce` callbacks must continue to receive independent scalar
 values and retain their generic effects/exception behavior; never pass them implicit mutable borrows.
@@ -711,7 +719,7 @@ any conjugated-input copy. Optimize additional inline families only in separate 
 | Flat broadcast (complete) | `src/packed_broadcast.jl`, module include, focused broadcast tests/benchmarks; reuse checked kernels after compatible alias preparation. | Ordinary Base result/axes/style behavior and overlap semantics, with measured benefit or a retained generic path. |
 | Nested broadcast (complete) | Bounded typed evaluator and private per-node scratch in that same file. | Tree/precision preservation, repeated destination-leaf safety, bounded specialization and no per-element owners. |
 | Sum, then dot (M4d; complete) | `src/packed_reduce.jl`, module include, focused reduction tests/benchmarks; add `LinearAlgebra` and inventory/generation changes only when dot bindings are ready. | Independent containment/conjugation evidence and complete-operation/radius measurements. |
-| Selected mapped reductions | Add only individually supported mappings after the preceding gates. | Correct mapped result type, generic-callback compatibility, and measured allocation/accuracy benefit. |
+| Selected mapped reductions (`abs2` complete) | `sum(abs2, v)` is implemented; add any other mapping only with individual evidence. | Correct mapped result type, generic-callback compatibility, and measured allocation/accuracy benefit. |
 
 Review the implementation against these rejected shortcuts before accepting a fast path:
 
@@ -785,7 +793,7 @@ Use Julia threads only over independent writable destinations. Verify context be
 | **M4 — bulk arithmetic** | Concrete fixed-format arrays; packed ball vectors; explicit borrowing and `eachborrow`; selected broadcast/reduction/dot paths under §9.4. | Copied indexing retained; container/lifetime, Base compatibility, aliasing, empty/strided inputs, expression precision, reduction containment/conjugation, and measured performance are verified per path. |
 | **M5 — function expansion and release** | Selected elementary/special functions; portable artifacts; clean CI/docs setup; capability and benchmark reports. | Every advertised function and target passes its required evidence; users can install without a compiler or development-host assumptions. |
 
-**Status:** M0–M3 and M4a–M4c are implemented. Documentation, `eachborrow`, and flat in-place broadcast are implemented. Bounded nested broadcast is implemented; borrowed sum and dot products are implemented; next are individually verified mapped reductions, with matrix work only on measured need. M5 remains pending. M0 completion covers the compatible development host, not portable distribution.
+**Status:** M0–M3 and M4a–M4c are implemented. Documentation, `eachborrow`, and flat in-place broadcast are implemented. Bounded nested broadcast is implemented; borrowed sum and dot products are implemented; `sum(abs2, v)` is implemented; close scalar verification gaps next, with matrix work only on measured need. M5 remains pending. M0 completion covers the compatible development host, not portable distribution.
 
 All seven types participate in M1 and M2. A family-specific issue may delay its completion without forcing unrelated work to stop, but the first complete release includes all seven. Do not expand the function inventory faster than it can be verified.
 

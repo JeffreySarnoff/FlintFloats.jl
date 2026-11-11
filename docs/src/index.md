@@ -185,6 +185,22 @@ julia> sum(PackedBallVector(T, 0)) == T(0)
 true
 ```
 
+## Squared magnitude sums
+
+`sum(abs2, v)` uses borrowed reads and a constant number of owned temporaries. Both real and complex
+inputs return a fresh `ArbBall{P}`, including empty inputs. It follows scalar squared-magnitude
+arithmetic and logical accumulation order; enclosure widths may differ from Base's reduction order.
+Keywords and other callbacks keep Base's generic behavior and independent copied arguments.
+
+```jldoctest
+julia> using FlintFloats
+
+julia> v = PackedBallVector(AcbBall{128}, [AcbBall{128}(1.0, 2.0), AcbBall{128}(3.0, 4.0)]);
+
+julia> sum(abs2, v) == ArbBall{128}(30)
+true
+```
+
 ## Conjugating packed dot products
 
 Use `LinearAlgebra.dot(x, y)` for packed ball vectors and views. Complex dot conjugates its first
@@ -206,8 +222,8 @@ Native and scalar accumulation can return different enclosure widths; both must 
 product sum. Complex part accumulation avoids materializing a full conjugated input; benchmark reports
 include that alternative and radius quality under cancellation. Dot does not rewrite unconjugated
 `sum(x .* y)`, and it does not mutate inputs. Keep parents open and avoid concurrent writes/finalization
-while reading; independent concurrent dot results are supported. Selected mapped reductions remain
-future optimization work; generic mapped sums continue to work with copied scalar values.
+while reading; independent concurrent dot results are supported. The selected mapped reduction `sum(abs2, v)` also reuses scratch; other mapped sums continue
+to work with copied scalar values.
 
 ```@index
 ```

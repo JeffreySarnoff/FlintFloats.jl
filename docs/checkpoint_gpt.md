@@ -1,17 +1,31 @@
 # FlintFloats.jl development checkpoint
 
-This handoff covers M0–M3, M4a–M4c, and reusable nfloat scratch. The last implementation
-commit before this update is `4712769` (borrowed sum); this checkpoint is updated with conjugating dot in `src/packed_reduce.jl`, its audited bindings, dependency setup, tests, and benchmarks. It does not replace the [public interface contract](float_interfacing.md),
+## Latest continuation: mapped squared magnitudes
+
+HEAD before this step: `f5d929a` (conjugating packed dot). This continuation adds `sum(abs2, v)`
+with fresh `ArbBall{P}` results for both packed families, borrowed reads, and constant owned scratch.
+Keyword and arbitrary callback behavior stays generic. Tests cover rational endpoint bounds,
+zero crossing, view order, ownership, finalized parents, inference, and constant Julia allocation.
+Validation: **259 mapped + 205 sum + 346 dot checks pass** on Julia 1.13.3/four threads;
+documentation/doctests pass. No whole-suite rerun.
+See `benchmark/results/packed_mapped_reduce.txt` for complete-operation timings and radius quality.
+This source/documentation step is prepared for one commit; use `git log` for its resulting hash.
+Next: close the nfloat square-root differential-evidence gap, then audited M5 elementary functions.
+Native matrices remain conditional on measured need; portable artifacts and CI remain release work.
+
+
+This handoff covers M0–M3, M4a–M4c, and reusable nfloat scratch. This checkpoint includes conjugating dot (`f5d929a`) and the mapped reduction update in
+`src/packed_reduce.jl`, its focused tests, and benchmarks. It does not replace the [public interface contract](float_interfacing.md),
 [capability table](capability_table.md), or [development guide](enact_interfacing.md). Check the current
-tree before acting. The next implementation part is **selected mapped reductions (§9.4.4)**; sum and audited conjugating dot products are implemented.
+tree before acting. Sum, conjugating dot, and selected `abs2` mapped reductions are implemented; see the latest continuation above.
 
 ## Repository and binary state
 
-- **Completed milestones:** M0 (binary contract), M1 (representations), M2 (scalar arithmetic), and M3 (Julia numeric contracts). M4a (inline vector arithmetic), M4b (nfloat vectors), and reusable nfloat scratch are also implemented. M4c packed ball owners/borrowing and §9.4.1–2 documentation/`eachborrow` are also implemented; flat in-place broadcast is implemented; bounded nested broadcast is implemented; borrowed sum is implemented; audited dot products are implemented; selected mapped reductions are next.
+- **Completed milestones:** M0 (binary contract), M1 (representations), M2 (scalar arithmetic), and M3 (Julia numeric contracts). M4a (inline vector arithmetic), M4b (nfloat vectors), and reusable nfloat scratch are also implemented. M4c packed ball owners/borrowing and §9.4.1–2 documentation/`eachborrow` are also implemented; flat in-place broadcast is implemented; bounded nested broadcast is implemented; borrowed sum is implemented; audited dot products are implemented; selected `sum(abs2, v)` is also implemented.
 - **Julia floor:** 1.13; local development uses 1.13.3.
 - **Pinned library:** FLINT `3.7.0-dev`, source commit `82c40b299084b92299c2d8dac464e39d6743fce4`, ABI 25. The nested `FlintFloat.jl/FLINT_jll` package has version `301.690.0+0`; the main project resolves it by path.
 - **Artifact constraint:** The bundled x86_64 Linux binary is tuned for the development host (i9-14900K, glibc 2.43). It is unsuitable as a portable CI or release artifact. The BinaryBuilder recipe exists but has not been validated on the target matrix.
-- **Commit context:** HEAD is `4712769` (borrowed sum), following `409f81e` (bounded nested broadcast) and `a140f35` (flat broadcast). The third continuation, packed dot, is implemented and verified but **uncommitted**, including bindings, LinearAlgebra dependency/manifests, tests, benchmarks, and documentation. All three requested development steps are complete. Inspect `git status` before resuming; earlier checkpoints are available in Git history.
+- **Commit context:** The sum implementation is `4712769`, following `409f81e` (bounded nested broadcast) and `a140f35` (flat broadcast). Packed dot, bindings, dependencies, tests, benchmarks, and documentation were committed in `f5d929a`. All three requested development steps are complete. Inspect `git status` before resuming; earlier checkpoints are available in Git history.
 
 ## Implemented numeric interface
 
@@ -199,13 +213,13 @@ No process-global thread settings or relaxed arithmetic modes are changed.
 
 ## Next work and open limits
 
-1. **Selected mapped reductions (§9.4.4):** implement individual destination-capable mappings such as
-   `sum(abs2, v)` with independent numerical/type evidence. Keep arbitrary callback/keyword semantics.
+1. **Close scalar evidence gaps (§9.5):** establish independent nfloat square-root differential
+   evidence before expanding elementary functions. Additional mapped reductions require measured need.
 2. **Measured matrix work only if needed:** native dot support does not establish matrix layout or
    justify a speculative storage type. Other-family bulk/dot expansion requires its own evidence.
 3. **M5:** elementary/special functions, portable artifacts, and verified CI/release targets.
 
-Remaining gaps include native matrix methods, specialized mapped reductions, packed point owners,
+Remaining gaps include native matrix methods, further specialized mapped reductions, packed point owners,
 complex dfloat/nfloat public types, Rational/Complex{Float64} interop, portable artifacts, and elementary
 functions. NFloat sqrt still has exact-case tests only. The proposed shared scalar protocol remains
 unfactored. The host-tuned artifact is unsuitable for generic CI. Historical drafts remain superseded.

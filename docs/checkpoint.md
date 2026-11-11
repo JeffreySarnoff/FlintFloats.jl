@@ -1,11 +1,25 @@
 # Checkpoint
 
+## Latest continuation: mapped squared magnitudes
+
+HEAD before this step: `f5d929a` (conjugating packed dot). This continuation adds `sum(abs2, v)`
+with fresh `ArbBall{P}` results for both packed families, borrowed reads, and constant owned scratch.
+Keyword and arbitrary callback behavior stays generic. Tests cover rational endpoint bounds,
+zero crossing, view order, ownership, finalized parents, inference, and constant Julia allocation.
+Validation: **259 mapped + 205 sum + 346 dot checks pass** on Julia 1.13.3/four threads;
+documentation/doctests pass. No whole-suite rerun.
+See `benchmark/results/packed_mapped_reduce.txt` for complete-operation timings and radius quality.
+This source/documentation step is prepared for one commit; use `git log` for its resulting hash.
+Next: close the nfloat square-root differential-evidence gap, then audited M5 elementary functions.
+Native matrices remain conditional on measured need; portable artifacts and CI remain release work.
+
+
 State after M0–M3, M4a–M4c, reusable scratch, bounded packed broadcast, sum and dot from
 [enact_interfacing.md](enact_interfacing.md). Written to resume the work cold.
 
-- Current HEAD: `4712769` (borrowed sum). Preceding commits are `409f81e` (bounded nested
-  broadcast) and `a140f35` (flat broadcast). The third continuation, conjugating packed dot, remains
-  **uncommitted**, including bindings, LinearAlgebra dependency/manifests, tests, benchmarks, and docs.
+- Previous sum implementation: `4712769`. Preceding commits are `409f81e` (bounded nested
+  broadcast) and `a140f35` (flat broadcast). Conjugating packed dot and its bindings, dependencies, tests, benchmarks, and docs are now
+  committed in `f5d929a`.
   These three development steps are complete; inspect `git status` before resuming.
 - Focused checks: **346 dot checks** and the **205 sum checks** pass on Julia 1.13.3/four threads;
   documentation/doctests pass. The prior full-suite baseline (13,709 tests) remains historical.
@@ -77,7 +91,7 @@ Implemented (per [capability_table.md](capability_table.md), which is the author
   real/imaginary native dots for finite length ≥4, and borrowed fallback for other supported spans.
   New dot results survive parent cleanup. Native/loop radius differences are measured explicitly.
 
-Not implemented: native matrix methods and specialized mapped reductions,
+Not implemented: native matrix methods and further specialized mapped reductions,
 elementary functions, a shared internal protocol across families, portable artifacts, verified generic
 CI, and `DFloat`/`NFloat` complex types.
 
@@ -179,7 +193,7 @@ method, add a differential test, add a row to `capability_table.md`, all in one 
 
 ## 6. Next
 
-**Selected mapped reductions (§9.4.4)** are next: add individually verified destination-capable
+**Selected mapped reduction `sum(abs2, v)` is implemented (§9.4.4)**. For any further mapping, add individually verified destination-capable
 mappings such as `sum(abs2, v)`, preserving result family/precision and generic callback/keyword
 behavior. Keep ordinary reads independent and avoid implicit numeric borrows. Native matrix work
 requires measured need. M5 remains elementary/special functions, portable artifacts, and verified CI.
