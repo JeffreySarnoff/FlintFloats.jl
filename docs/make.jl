@@ -13,6 +13,7 @@ makedocs(;
     format=Documenter.HTML(;
         canonical="https://JeffreySarnoff.github.io/FlintFloats.jl",
         edit_link="main",
+        repolink="https://github.com/JeffreySarnoff/FlintFloats.jl",
         assets=String[],
     ),
     pages=[

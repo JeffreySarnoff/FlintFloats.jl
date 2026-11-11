@@ -11,6 +11,7 @@ seven families, including ownership/deepcopy/persistence corrections. The accept
 x86-64 glibc artifact (`FLINT_jll 301.690.0+1`) passes **34,151 tests**, 374-symbol/fresh ABI checks,
 wrapper/target checks, clean-project installation, and docs/doctests. The [checkpoints](checkpoint.md)
 and [release evidence](release_evidence.md) identify the exact archive/tree and historical checks.
+The [completion audit](enact_completion_audit.md) maps the remaining gates to evidence.
 Next execute the configured hosted workflow and complete public release publication; these external
 actions have not occurred. Additional platforms, functions, or matrices require separate evidence.
 
@@ -20,13 +21,13 @@ actions have not occurred. Additional platforms, functions, or matrices require 
 
 | Area | Current state | Consequence for development |
 | --- | --- | --- |
-| Main Julia package | Seven scalar types, M0–M3, M4a–M4c bulk operations, packed ball owners/borrowing, and reusable nfloat scratch are implemented | Complete compatible CI and portable release gates; extend mappings/matrices only on measured need. |
+| Main Julia package | Seven scalar types, M0–M3, M4a–M4c bulk operations, packed ball owners/borrowing, and reusable nfloat scratch are implemented | Complete remote CI and publication; extend mappings/matrices only on measured need. |
 | Julia compatibility | Main project requires Julia 1.13; precision is in the type | Use `with_precision(f, bits)` as a `Val` function barrier; there is no scoped runtime precision default. |
 | Local binary package | [`FlintFloat.jl/FLINT_jll`](../FlintFloat.jl/FLINT_jll/README.md) contains a working loader, native artifact, headers, source archive, and build tools | Use this package for host development rather than waiting for a published dfloat-capable wrapper. |
 | Pinned FLINT source | `82c40b299084b92299c2d8dac464e39d6743fce4`, reporting `3.7.0-dev` | Consult this revision's declarations and implementation when writing bindings. |
 | Local wrapper version | `301.690.0+1`, shared-library ABI 25 | Do not equate its layout or compatibility with the reference wrapper's ABI 24. |
 | Existing validation | Binary/layout/symbol checks and 6,540 Julia tests passed at the M3 checkpoint; scalar benchmarks are recorded | Preserve those contracts; add container and per-kernel evidence for M4. Sampled numerical tests are not universal proofs. |
-| Portable distribution | BinaryBuilder recipe is present but has not been executed | Portable artifacts and platform coverage remain release work. |
+| Portable distribution | Executed BinaryBuilder recipe; bundled baseline x86_64 glibc Linux artifact passed local acceptance | Remote CI execution and public publication remain; other targets require separate evidence. |
 
 The active artifact is a BinaryBuilder GCC 14.2.0 x86-64 baseline build for glibc Linux, with
 a supported glibc floor of 2.17. It passes 34,151 tests, 374-symbol and fresh ABI checks, and
@@ -51,10 +52,10 @@ Run commands in this section from the repository root unless stated otherwise.
 
 ### 2.1 Verify the local binary package
 
-On the compatible development host:
+On the supplied x86_64 glibc Linux target:
 
 ```sh
-julia --project=FlintFloat.jl/FLINT_jll -e 'using Pkg; Pkg.instantiate(); Pkg.build("FLINT_jll"); Pkg.test()'
+julia --project=FlintFloat.jl/FLINT_jll -e 'using Pkg; Pkg.instantiate(;allow_autoprecomp=false); Pkg.build("FLINT_jll"); Pkg.test()'
 julia --project=FlintFloat.jl/FLINT_jll -e 'using FLINT_jll; println(FLINT_jll.libflint_path)'
 ```
 
@@ -65,14 +66,14 @@ julia --project=FlintFloat.jl/FLINT_jll -e 'using FLINT_jll; println(FLINT_jll.l
 The main `Project.toml` already declares `FLINT_jll`, pins `=301.690.0`, and resolves the nested package through `[sources]`. Instantiate the existing environment and install its bundled artifact:
 
 ```sh
-julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.build("FLINT_jll")'
+julia --project=. -e 'using Pkg; Pkg.instantiate(;allow_autoprecomp=false); Pkg.build("FLINT_jll")'
 ```
 
 Review dependency resolution in the manifest. Retain the exact wrapper-version constraint until additional builds have been validated. Keep runtime dependencies limited to the wrapper and required standard libraries. Put BenchmarkTools and generator tools in their own development environments.
 
 The local package uses the official `FLINT_jll` UUID. Developing its path replaces that dependency in the selected environment. Use an isolated environment when examining Nemo or Arblib so their dependency requirements do not accidentally select or constrain the development binary.
 
-The main and documentation projects already declare local `[sources]` paths; the generator and benchmark environments also need the intended wrapper resolution. Instantiate each environment separately. A developer manifest alone is insufficient for reproducible setup. Before distribution, select a reproducible source-resolution mechanism for the intended deployment and replace the host-specific artifact with validated portable artifacts.
+The main and documentation projects already declare local `[sources]` paths; the generator and benchmark environments also need the intended wrapper resolution. Instantiate each environment separately. A developer manifest alone is insufficient for reproducible setup. The repository now bundles a validated portable artifact and resolves its wrapper by a local source path. Public package/distribution publication remains separate from local acceptance.
 
 ### 2.3 Record the baseline
 
@@ -780,8 +781,8 @@ uncertain inputs, formats through 66 nfloat limbs, failure recovery, and concurr
 adjacent Base-float test now expects explicit exp support. The inventory audits 374 symbols.
 [Measurements](../benchmark/results/elementary_inline.txt) report complete inline-call costs.
 Portable artifact acceptance is also complete; next run remote CI and complete publication. Selected functions are sufficient for this milestone; further special
-functions require individually justified scope. Portable artifacts and verified target CI remain
-release gates after numerical implementation.
+functions require individually justified scope. The supplied portable artifact passed local acceptance; actual remote CI and public release
+publication remain external release gates.
 
 ## 10. Verification and performance evidence
 
@@ -903,7 +904,7 @@ Resolve these decisions at their designated milestone rather than leaving them i
 | Context sharing versus task-owned reuse | M1 — **resolved**: shared immutable contexts for `+ - * /` (source audit; 8-task test). Re-audit before adding functions that may use workspaces. | Matching-source audit and concurrent tests; conservative ownership until verified. |
 | Exact supported function/rounding/flag set | Before each operation is added | Inventory entry, source guarantee, and numerical test cases. |
 | Hash normalization and mixed-type identity | M3 — **resolved** in `src/compare.jl` and `test/compare_tests.jl`; includes canonical indeterminate balls and allowed huge-exponent hash collisions | Preserve equality/hash laws across supported mixed types and seeds. |
-| First native bulk kernels | M4a — **resolved**: contiguous `_dNb_vec_add`, N = 1–4; M4b adds `_nfloat_vec_add`/`_nfloat_vec_mul`; M4c adds arb/acb init/clear/set/add; dot kernels remain M4d | Exact endpoint containment, scalar equivalence, alias/layout checks, and recorded benchmarks. |
-| Portable artifact delivery and supported platforms | Before public release | Built/audited binaries and clean-machine installation/test results. |
+| First native bulk kernels | M4a — **resolved**: contiguous `_dNb_vec_add`, N = 1–4; M4b adds `_nfloat_vec_add`/`_nfloat_vec_mul`; M4c adds arb/acb init/clear/set/add; M4d adds verified conjugating native/borrowed packed dot | Exact endpoint containment, scalar equivalence, alias/layout checks, and recorded benchmarks. |
+| Portable artifact delivery and supported platforms | x86_64 glibc Linux artifact built/audited and locally accepted; other targets unprovided | Exact archive/tree, ABI/symbol/numerical checks, installation evidence; remote CI/publication still pending. |
 
 This sequence keeps the managed numeric interface deep: callers obtain useful arithmetic and containment behavior from a small interface, while implementation details and verification remain local to the code that owns them.

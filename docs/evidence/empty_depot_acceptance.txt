@@ -1,0 +1,14 @@
+Clean-install acceptance from git archive f1a9c2e
+JULIA_DEPOT_PATH=/tmp/flint-empty-depot (no fallback or cache links)
+Main project initially uses the tracked lockfile; docs resolve after both developer manifests are absent.
+
+       Added `General` registry to /tmp/flint-empty-depot/registries
+   Installed JLLWrappers ──── v1.8.0
+   Installed OpenBLAS32_jll ─ v0.3.34+1
+   Installed Preferences ──── v1.6.1
+  Installing 1 artifacts
+   Installed artifact OpenBLAS32 5.0 MiB
+    Building FLINT_jll → `/tmp/flint-empty-depot-project/FlintFloat.jl/FLINT_jll/deps/build.log`
+Installed FLINT artifact: /tmp/flint-empty-depot/artifacts/d3d8eabffb56db6d7cfa77fe9fa38dbe6dd4d6c1
+EMPTY-DEPOT ACCEPTANCE PASS: independently downloaded dependencies, bundled FLINT installation, seven-family arithmetic/elementary, packed reduction, deepcopy, optional extension
+Selected binary: /tmp/flint-empty-depot/artifacts/d3d8eabffb56db6d7cfa77fe9fa38dbe6dd4d6c1/lib/libflint.so

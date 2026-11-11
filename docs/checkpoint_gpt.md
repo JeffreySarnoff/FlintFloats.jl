@@ -1,8 +1,8 @@
 # FlintFloats.jl development checkpoint
 
 State after M0–M3, scoped M4 bulk/packed work, selected M5 elementary functions, ownership
-corrections, and portable x86_64 Linux artifact acceptance. This snapshot accompanies the portable
-bundle promotion; the preceding commit is `4dfb12d` (verified replacement build downloads).
+corrections, and portable x86_64 Linux artifact acceptance. The portable bundle was promoted in `f1a9c2e`; this snapshot records the subsequent
+requirement-by-requirement completion audit.
 Inspect `git log` and `git status` for subsequent changes.
 
 ## Implemented
@@ -74,6 +74,20 @@ Serialization extension rejects raw native owners/references. Complex owning `se
 point rounding and containing ball copies across precision; all have focused evidence and are
 included in the accepted full run. Matrix and further mapping work remain conditional on need.
 
+## Completion-audit follow-up
+
+The [section-by-section audit](enact_completion_audit.md) maps all fourteen guide sections and
+release checklist items to current source/evidence, keeping remote CI/publication incomplete.
+It corrects stale guide entries about the portable recipe and legacy ABI setup. Pinned nfloat
+neg/abs implementations return GR_SUCCESS; their inventory metadata now says `gr`, with no
+binding/runtime change and unchanged generated files.
+
+A genuinely empty depot independently downloaded registry/package/artifact dependencies, installed
+the bundled portable FLINT without compilation, and passed seven-family/public API/deepcopy/optional-
+extension smoke checks. The docs project also resolves with neither main nor docs developer manifest.
+The source-archive docs navbar now has an explicit repository link. Review-branch push and a draft
+PR are authorized by the user; public release publication is not yet performed.
+
 ## Current verification
 
 Julia 1.13.3, four threads: **34,151 tests pass** on the new portable binary, plus wrapper,
@@ -128,7 +142,9 @@ julia --project=benchmark benchmark/elementary_inline.jl
 
 Run tests covering changed code and directly affected shared contracts. Nested broadcast tests must
 follow the flat file because they reuse its helpers. Full-suite/ABI/native diagnostics are separate
-validation steps; ABI probes require the matching external build tree and configured BLAS directory.
+validation steps. The current `scripts/check_abi.jl` uses installed artifact headers and verified
+GMP/MPFR headers from `scripts/prepare_abi_headers.jl`; the legacy `test/abi/run.sh` instead expects
+an external native build tree.
 
 ## Next and open limits
 

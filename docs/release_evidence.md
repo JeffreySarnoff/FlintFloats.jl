@@ -28,6 +28,20 @@ reused, so this does not claim a completely empty-machine download test. The new
 baseline identifies the new tree and accuracy contracts; older host-tuned reports remain historical.
 Actual remote CI execution and public release publication are still pending.
 
+## Empty-depot installation follow-up
+
+A `git archive` of `f1a9c2e` was installed with `JULIA_DEPOT_PATH` pointing only to a new, empty
+directory: no dependency source/artifact cache links or fallback depot. Pkg independently obtained
+the General registry, JLLWrappers, Preferences, OpenBLAS32_jll and its artifact using its usual
+integrity checks. The verified bundled FLINT archive was unpacked into that depot; no FLINT C
+compiler was invoked. Arithmetic/elementary smoke checks for all seven families, complex packed
+abs2, semantic deepcopy alias graphs, and Serialization rejection passed.
+
+The main manifest was then removed before separately resolving the docs project, which also had
+no manifest. This checks that docs resolve their own sources rather than depending on the main
+lockfile. The install result is recorded in [empty-depot evidence](evidence/empty_depot_acceptance.txt);
+the section audit is in [enact_completion_audit.md](enact_completion_audit.md).
+
 ## Fresh project and bundled installation
 
 A `git archive` of commit `8a52604` was extracted to a temporary directory. Its main Manifest.toml
