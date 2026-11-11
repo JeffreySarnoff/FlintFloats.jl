@@ -1,14 +1,14 @@
 # FlintFloats.jl development checkpoint
 
-This handoff covers M0–M3, M4a/M4b, and the reusable-scratch source update. The last implementation
-commit before this update is `d7b2b58` (M4b); this checkpoint is committed with `src/reusable.jl`, its
+This handoff covers M0–M3, M4a–M4c, and reusable nfloat scratch. The last implementation
+commit before this update is `e1a67ac` (reusable scratch); this checkpoint is updated with `src/packed.jl`, its
 integration, tests, benchmarks, and documentation. It does not replace the [public interface contract](float_interfacing.md),
 [capability table](capability_table.md), or [development guide](enact_interfacing.md). Check the current
-tree before acting. The next implementation part is **M4c: packed ball owners and borrowing**.
+tree before acting. The next implementation part is **M4d: dot products**.
 
 ## Repository and binary state
 
-- **Completed milestones:** M0 (binary contract), M1 (representations), M2 (scalar arithmetic), and M3 (Julia numeric contracts). M4a (inline vector arithmetic), M4b (nfloat vectors), and reusable nfloat scratch are also implemented. M4c is next.
+- **Completed milestones:** M0 (binary contract), M1 (representations), M2 (scalar arithmetic), and M3 (Julia numeric contracts). M4a (inline vector arithmetic), M4b (nfloat vectors), and reusable nfloat scratch are also implemented. M4c packed ball owners/borrowing is also implemented; M4d is next.
 - **Julia floor:** 1.13; local development uses 1.13.3.
 - **Pinned library:** FLINT `3.7.0-dev`, source commit `82c40b299084b92299c2d8dac464e39d6743fce4`, ABI 25. The nested `FlintFloat.jl/FLINT_jll` package has version `301.690.0+0`; the main project resolves it by path.
 - **Artifact constraint:** The bundled x86_64 Linux binary is tuned for the development host (i9-14900K, glibc 2.43). It is unsuitable as a portable CI or release artifact. The BinaryBuilder recipe exists but has not been validated on the target matrix.
@@ -59,6 +59,28 @@ strided paths allocate no Julia heap memory within capacity, but validation/guar
 costs remain. See [recorded measurements](../benchmark/results/reusable.txt); reuse is not universally
 faster on tiny vectors or when large-format native multiplication dominates.
 
+## Packed ball ownership and borrowing (M4c)
+
+`PackedBallVector(ArbBall{P}, n)` and the `AcbBall{P}` form own one initialized FLINT allocation;
+`PackedBallVector(T, values)` copies in values. Length and allocation are fixed. One idempotent
+finalizer clears all initialized elements and frees the allocation; failed population cleans up
+immediately. Indexing copies an independent scalar; assignment rounds with containment to destination
+precision. Copy/deepcopy never duplicate owning pointer bytes. Ordinary Base array semantics work;
+optimized broadcast, native dot products, and matrices are not introduced.
+
+`borrow(v, i)` on packed owners/views returns a nonnumeric `BorrowedBall` retaining its fixed parent.
+Read a copy using `r[]`/`copy(r)`, mutate with `r[] = x`, `FlintFloats.set!`, or same-format scalar
+`add!`/`sub!`/`mul!`/`div!`. References have no independent finalizer/raw-pointer constructor and reject
+already-finalized parents. Mutations affect the parent; ordinary copied reads do not. Concurrent
+operations require independent destination slots and no explicit parent finalization during use.
+
+Vector add uses `_arb_vec_add`/`_acb_vec_add` for direct packed vectors; views and multiply use borrowed
+scalar calls. Identical formats/axes and independent strided destination slots are required. Exact
+aliases are supported; other possible destination/input overlap is rejected. Empty operations skip C.
+Validation failures preserve destinations; custom input-read exceptions may partially update valid
+balls. Indeterminate enclosures follow FLINT. Arithmetic throughput is comparable to scalar-owner
+loops; native layout and construction/cleanup are the principal measured advantages so far.
+
 ## Behavioral decisions that matter when extending the code
 
 - Ball comparisons express proofs. Unproved equality or ordering returns `false`; `!=` is implemented separately from negated equality. Balls do not support numeric `isless`, `min`, `max`, or `sort`; use `sortkey` for presentation order.
@@ -78,11 +100,12 @@ faster on tiny vectors or when large-format native multiplication dominates.
 | `src/{dfloat,dfloatball,nfloat,arf,acf,arb,acb}.jl` | Family implementation |
 | `src/{precision,storage,typegrid,conversions,show,compare,promotion,basefloat}.jl` | Shared numerical and Julia behavior |
 | `src/arrays.jl`, `src/reusable.jl` | Bulk validation/dispatch; workspace owner, growth/exclusive-use guard, shared nfloat kernels and commit |
+| `src/packed.jl` | Packed owners, parent-retaining references, semantic array copying, native add and borrowed scalar arithmetic |
 | `src/libflint/generated/` | Generated C declarations; edit the inventory, not these files |
 | `gen/inventory.toml`, `gen/{audit,generate}.jl` | Symbol inventory, audit, deterministic generation |
 | `test/abi/` | Matching-header layout probe and recorded evidence |
 | `test/*_tests.jl` | Numeric, ownership, conversion, comparison, promotion, Base, arithmetic, vector, and workspace checks |
-| `benchmark/results/{m1_scalar,m4a_vectors,m4b_vectors,reusable}.txt` | Scalar/latency, bulk/context/copy, and reusable-scratch measurements |
+| `benchmark/results/{m1_scalar,m4a_vectors,m4b_vectors,reusable,m4c_packed}.txt` | Scalar/latency, bulk/context/copy, and reusable-scratch measurements |
 
 From the repository root:
 
@@ -94,6 +117,7 @@ julia --project=benchmark benchmark/m1_scalar.jl
 julia --project=benchmark benchmark/m4a_vectors.jl
 julia --project=benchmark benchmark/m4b_vectors.jl
 julia --project=benchmark benchmark/reusable.jl
+julia --project=benchmark benchmark/m4c_packed.jl
 ```
 
 The ABI probe (`./test/abi/run.sh`) expects an external FLINT build tree under `/tmp/flintfloats-jll-build` and a configured OpenBLAS32 library directory. Inspect the script before relying on it in a clean environment. `docs/make.jl` builds the documentation in its own Julia project.
@@ -102,26 +126,22 @@ For a new FLINT operation, update `gen/inventory.toml`, audit the symbol, regene
 
 ## Verification at this checkpoint
 
-The source update passed **12,759 tests** on Julia 1.13.3 with **four Julia threads**, using
+The source update passed **13,709 tests** on Julia 1.13.3 with **four Julia threads**, using
 `JULIA_DEPOT_PATH=/tmp/flint-checkpoint-depot:/home/jas/.julia`. Documentation and doctests pass.
 Workspace tests cover growth, active prefixes, alias/type rejection, zero warmed native allocations,
 overflow and input exceptions followed by reuse, and deterministic concurrent/reentrant-use rejection.
-The M4b binding audit resolved all **299** inventoried symbols and regenerated twice without drift;
-this workspace update adds no C bindings. Matching-header ABI evidence now includes nfloat exponent
+The inventory now contains **307** audited symbols; M4c adds eight arb/acb vector init/clear/set/add exports. Regeneration must remain deterministic. Packed tests add rational endpoint oracles, GC/heap-backed ownership, fixed-size/reference semantics, copy independence, views/aliases, cleanup, and independent concurrent slots. Matching-header ABI evidence now includes nfloat exponent
 limits. Numerical error tests use independent exact dyadics and retain their sampled scope.
 
 ## Next work and open limits
 
-1. **M4c:** implement fixed-size packed `ArbBall{P}`/`AcbBall{P}` owners, semantic element copies,
-   assignment, and explicit parent-retaining borrowing. Verify cleanup, lifetime, bounds, precision,
-   containment, and aliasing before adding native arithmetic.
-2. **M4d:** selected native dot products, with exact/certified references, empty sums, complex
+1. **M4d:** selected native dot products, with exact/certified references, empty sums, complex
    conjugation conventions, and independent accumulation guarantees. Evaluate matrix storage only
    after measured workloads justify it.
-3. **M5:** elementary/special functions with per-operation source/rounding/domain evidence, portable
+2. **M5:** elementary/special functions with per-operation source/rounding/domain evidence, portable
    artifacts, and CI on supported binaries. Keep elementary functions after M4.
 
-Remaining gaps include packed ball owners/borrowing, native dot/matrix methods, elementary functions,
+Remaining gaps include native dot/matrix methods, optimized packed broadcast, packed point owners, elementary functions,
 complex dfloat/nfloat public types, `Rational`/`Complex{Float64}` interop, and portable artifacts.
 `NFloat` `sqrt` still has exact-case tests only. Huge `ArbFloat` exponents can hash like Inf (allowed).
 The proposed shared `_result`/`_with`/`_status` protocol remains unfactored. The host artifact cannot

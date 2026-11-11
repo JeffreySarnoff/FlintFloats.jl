@@ -1237,3 +1237,69 @@ sig = "int(nfloat_ptr, nfloat_srcptr, nfloat_srcptr, slong, gr_ctx_ptr)"
 kind = "export"
 status = "gr"
 note = "Elementwise finite-only multiply; L=1,2 specialized, larger L use scalar mul (or sqr when x==y). Error guarantee is operation-specific, not correctly rounded. Context read-only. Underflow flushes zero; overflow nonzero status; scratch isolates failed lanes and destination aliases."
+
+# M4c: fixed-size packed arb/acb vectors. init allocates and initializes all elements;
+# clear clears all elements and frees with FLINT's allocator. vec_set copies values, never pointers.
+[[op]]
+symbol = "_arb_vec_init"
+family = "arbball"
+sig = "arb_ptr(slong)"
+kind = "export"
+status = "none"
+note = "Owned initialized allocation; pair with _arb_vec_clear(pointer, same length). Source arb/vec_init.c. Julia skips allocation at length zero and checks byte-count overflow."
+
+[[op]]
+symbol = "_arb_vec_clear"
+family = "arbball"
+sig = "void(arb_ptr, slong)"
+kind = "export"
+status = "none"
+note = "Clear each initialized arb and flint_free vector. Exactly one owner. Source arb/vec_clear.c."
+
+[[op]]
+symbol = "_arb_vec_set"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Semantic arb_set per initialized element. Exact alias permitted; no partial overlap. Source arb/vec.c SET_OP."
+
+[[op]]
+symbol = "_arb_vec_add"
+family = "arbball"
+sig = "void(arb_ptr, arb_srcptr, arb_srcptr, slong, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous arb_add per element at supplied precision. Exact destination/input alias permitted; partial overlap rejected by Julia. Indeterminate enclosures preserved. Source arb/vec.c AORS_OP."
+
+[[op]]
+symbol = "_acb_vec_init"
+family = "acbball"
+sig = "acb_ptr(slong)"
+kind = "export"
+status = "none"
+note = "Owned initialized allocation; pair with _acb_vec_clear(pointer, same length). Source acb/vec_init.c. Julia skips allocation at zero and checks byte-count overflow."
+
+[[op]]
+symbol = "_acb_vec_clear"
+family = "acbball"
+sig = "void(acb_ptr, slong)"
+kind = "export"
+status = "none"
+note = "Clear every initialized acb and flint_free allocation; one owner. Source acb/vec_clear.c."
+
+[[op]]
+symbol = "_acb_vec_set"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, slong)"
+kind = "export"
+status = "none"
+note = "Semantic acb_set per initialized element. Exact alias permitted; partial overlap unsupported. Source acb/vec.c SET_OP."
+
+[[op]]
+symbol = "_acb_vec_add"
+family = "acbball"
+sig = "void(acb_ptr, acb_srcptr, acb_srcptr, slong, slong)"
+kind = "export"
+status = "none"
+note = "Rigorous acb_add per element at supplied precision. Exact destination/input alias permitted; partial overlap rejected. Source acb/vec.c AORS_OP."

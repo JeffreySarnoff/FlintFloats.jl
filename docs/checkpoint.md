@@ -1,13 +1,12 @@
 # Checkpoint
 
-State of FlintFloats.jl after M0–M3, M4a/M4b bulk arithmetic, and reusable nfloat scratch from
+State of FlintFloats.jl after M0–M3, M4a–M4c bulk arithmetic, and reusable nfloat scratch from
 [enact_interfacing.md](enact_interfacing.md). Written to resume the work cold.
 
-- Last committed implementation before this update: `d7b2b58` (M4b). This update adds `src/reusable.jl`
-  and its integration, tests, benchmarks, and documentation; its commit also contains this checkpoint.
-- Tests: **12,759 pass** on Julia 1.13.3 with four Julia threads. Documentation and doctests pass.
-- Binding evidence at M4b: all **299** inventory symbols resolve; regeneration twice has no drift.
-  Reusable scratch adds no foreign declarations.
+- Last committed implementation before this update: `e1a67ac` (reusable scratch). This update adds
+  `src/packed.jl`, its audited bindings, tests, benchmarks, and documentation.
+- Tests: **13,709 pass** on Julia 1.13.3 with four Julia threads. Use focused tests for subsequent changes.
+- Binding inventory now includes **307** audited symbols (M4c adds eight); regenerate twice without drift.
 - Pinned FLINT: 3.7.0-dev, source `82c40b299084b92299c2d8dac464e39d6743fce4`, ABI 25, wrapper
   `FLINT_jll 301.690.0+0` (host-tuned: x86_64 Linux, i9-14900K).
 - Julia floor: 1.13 (developed on 1.13.3).
@@ -49,7 +48,15 @@ Implemented (per [capability_table.md](capability_table.md), which is the author
   failures preserve the destination and release the workspace. Concurrent/reentrant workspace use
   and workspace/operand overlap are rejected. Use one workspace per concurrent operation.
 
-Not implemented: packed owning ball vectors and borrowing (M4c), native dot/matrix methods (M4d),
+- `PackedBallVector(T, n/values)` for real/complex balls: fixed-size initialized storage, independent
+  copied indexing, containing assignment, semantic copy/deepcopy, ordinary iteration/similar/fill/broadcast.
+- Explicit `borrow(v, i)` references retain the parent, never clear slots, and support copied `r[]`
+  reads, semantic writes, and qualified same-format scalar destination arithmetic. Packed vector add
+  uses native kernels; views/multiply use borrowed scalar calls. Exact aliases are supported; other
+  possible overlap and gathered destinations are rejected. Custom-input errors may partially update
+  valid ball destinations. Finalization is idempotent; references reject closed parents.
+
+Not implemented: native dot/matrix methods (M4d),
 elementary functions, a shared internal protocol across families, portable artifacts, verified generic
 CI, and `DFloat`/`NFloat` complex types.
 
@@ -62,6 +69,7 @@ CI, and `DFloat`/`NFloat` complex types.
 | `src/{dfloat,dfloatball,nfloat,arf,acf,arb,acb}.jl` | one family each |
 | `src/{precision,storage,typegrid,conversions,show,compare,promotion,basefloat}.jl` | cross-cutting |
 | `src/arrays.jl`, `src/reusable.jl` | vector contracts/dispatch; reusable scratch, shared nfloat kernels and commit-on-success |
+| `src/packed.jl` | fixed-size packed ball owners, explicit borrowing, semantic copying, native add and borrowed arithmetic |
 | `gen/` | `inventory.toml` (every bound symbol), `inventory.jl`, `audit.jl`, `generate.jl`, own env |
 | `test/abi/` | `probe.c`, `run.sh`, `layout.txt` (recorded C layout evidence) |
 | `test/*_tests.jl` | abi, construction, conversion, unary, compare, promotion, basefloat, arithmetic, ownership, inline/nfloat vectors, reusable workspaces |
@@ -79,6 +87,7 @@ julia --project=benchmark benchmark/m1_scalar.jl              # scalar benchmark
 julia --project=benchmark benchmark/m4a_vectors.jl            # inline ball vector benchmark
 julia --project=benchmark benchmark/m4b_vectors.jl            # nfloat bulk/context/copy benchmark
 julia --project=benchmark benchmark/reusable.jl               # allocating vs reused nfloat scratch
+julia --project=benchmark benchmark/m4c_packed.jl             # packed lifecycle and arithmetic
 julia --project=docs docs/make.jl                             # documentation site
 cd docs && pandoc enact_interfacing.md -f gfm -o enact_interfacing.docx
 ```
@@ -136,11 +145,24 @@ method, add a differential test, add a row to `capability_table.md`, all in one 
 
 ## 6. Next
 
-**M4c, packed ball owners and borrowing**, is next: fixed-size `ArbBall{P}`/`AcbBall{P}` owners,
-semantic indexing/assignment/copying, parent-retaining explicit borrowed references, then selected
-native vector arithmetic. Establish lifetime, cleanup, precision/containment, and aliasing tests before
-optimization. M4d adds dot products with independent numerical contracts; M5 adds elementary functions,
+**M4d, dot products**, is next: independently specify accumulation guarantees, empty sums, and
+complex conjugation, then audit selected native kernels and compare equivalent numerical contracts.
+Matrix storage follows only where measured workloads justify it. M5 adds elementary functions,
 portable artifacts, and verified CI. Keep that sequence.
+
+Packed ball example:
+
+```julia
+v = PackedBallVector(ArbBall{128}, [1, 2, 3])
+r = borrow(v, 2)
+FlintFloats.add!(r, r, ArbBall{128}(1))  # v[2] becomes 3
+snapshot = v[2]                         # independent owned copy
+```
+
+See [packed measurements](../benchmark/results/m4c_packed.txt); arithmetic throughput is comparable
+to reused scalar-owner loops on the recorded workloads, with packed layout and construction benefits.
+Zero warmed Julia allocations do not imply zero native allocation. Use independent writable slots
+concurrently and never explicitly finalize their parents during use.
 
 For repeated nfloat operations today:
 

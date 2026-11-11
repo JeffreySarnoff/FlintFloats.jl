@@ -6,7 +6,7 @@ The objective is a Julia interface to FLINT's **dfloat (plain and ball), nfloat,
 
 Descriptions of the existing repository are distinguished from requirements for future implementation. Proposed Julia constructors and operations below are interface specifications, not claims that those methods already exist.
 
-**Resume point (M0–M3, M4a/M4b, and reusable scratch complete):** [checkpoint.md](checkpoint.md) and [checkpoint_gpt.md](checkpoint_gpt.md) now cover inline bulk arithmetic and the exported `NFloatWorkspace`, in addition to the scalar foundations. The latest source passed **12,759 tests on Julia 1.13.3 with four threads**, plus documentation/doctests. **M4a and M4b are implemented (§9.3); continue with M4c, packed ball owners and borrowing.** Keep elementary functions in M5: bulk storage and borrowing are the next unfinished architectural step and do not depend on elementary functions. The capability table and current source determine what is implemented; the checkpoints are handoff snapshots of this update.
+**Resume point (M0–M3, M4a–M4c, and reusable scratch complete):** [checkpoint.md](checkpoint.md) and [checkpoint_gpt.md](checkpoint_gpt.md) now cover inline bulk arithmetic, `NFloatWorkspace`, packed ball owners, and explicit borrowing, in addition to the scalar foundations. The latest source passed **13,709 tests on Julia 1.13.3 with four threads**, with documentation/doctests checked for this update. **M4a–M4c are implemented (§9.3). Retain copied indexing and enact the surrounding-interface follow-up in §9.4: documentation, borrowed iteration, then narrow broadcast optimization and M4d reductions/dot products.** Keep elementary functions in M5. The capability table and current source determine what is implemented; the checkpoints are handoff snapshots of this update.
 
 ## 1. Starting point and development priorities
 
@@ -14,7 +14,7 @@ Descriptions of the existing repository are distinguished from requirements for 
 
 | Area | Current state | Consequence for development |
 | --- | --- | --- |
-| Main Julia package | Seven scalar types, M0–M3, M4a/M4b inline bulk operations, and reusable nfloat scratch are implemented | Continue with M4c packed ball owners/borrowing, then M4d dot products. |
+| Main Julia package | Seven scalar types, M0–M3, M4a–M4c bulk operations, packed ball owners/borrowing, and reusable nfloat scratch are implemented | Continue with M4d dot products, then M5 expansion/release. |
 | Julia compatibility | Main project requires Julia 1.13; precision is in the type | Use `with_precision(f, bits)` as a `Val` function barrier; there is no scoped runtime precision default. |
 | Local binary package | [`FlintFloat.jl/FLINT_jll`](../FlintFloat.jl/FLINT_jll/README.md) contains a working loader, native artifact, headers, source archive, and build tools | Use this package for host development rather than waiting for a published dfloat-capable wrapper. |
 | Pinned FLINT source | `82c40b299084b92299c2d8dac464e39d6743fce4`, reporting `3.7.0-dev` | Consult this revision's declarations and implementation when writing bindings. |
@@ -144,6 +144,7 @@ Use the existing organization below, adding container code in M4. The shared `_r
 | `src/conversions.jl`, `promotion.jl`, `compare.jl`, `basefloat.jl` | Cross-family conversion, narrow promotion, comparisons/hash, and audited Base methods. |
 | `src/arrays.jl` | Shared inline vector validation and dfloat dispatch (M4a/M4b). |
 | `src/reusable.jl` | Exported `NFloatWorkspace`, growth/exclusive-use guard, shared nfloat kernels and commit-on-success. |
+| `src/packed.jl` | Fixed-size `PackedBallVector`, `BorrowedBall`/`borrow`, lifetime/semantic copying, native ball-add and borrowed arithmetic. |
 | `src/show.jl` | Formatting, parsing, and round-trip policy. |
 | `gen/` | Binding inventory, generation environment, and regeneration command. |
 | `test/abi/` | Development C probes and recorded target-specific layout evidence. |
@@ -352,7 +353,7 @@ Use the C vector kernel's exact indexing and length conventions. A Julia array's
 
 ### 9.2 Packed ball containers
 
-Prototype fixed-size packed owners using FLINT's vector allocation/init/clear functions. One owner clears the entire allocation. Julia scalar indexing returns an independent value; explicit borrowed indexing retains the container and does not clear elements.
+Use fixed-size packed owners with FLINT's vector allocation/init/clear functions. One owner clears the entire allocation. **Retain copied ordinary indexing and iteration:** `v[i]` returns an independent scalar of `eltype(v)`, and `for x in v` yields independent values. Explicit borrowing retains the container and does not clear elements. Do not change these defaults to introduce implicit numeric proxies; improve the surrounding interface as specified in §9.4.
 
 Implement `eltype`, size/axes, iteration, copying, bounds behavior, assignment, and `similar` consistently before adding optimized broadcast. `setindex!` performs semantic copying into an initialized destination, never copying an owning pointer. Define how element working precision is represented and retained: begin with one container working precision, applied to copied-out values and destination operations.
 
@@ -362,14 +363,15 @@ Prioritize vector add/multiply, dot products, and measured matrix workloads. A f
 
 ### 9.3 Next implementation: M4 in reviewable parts
 
-**M4a and M4b are complete; implement M4c next, followed by M4d.** Ordinary Julia arrays already store concrete inline types; the remaining bulk work is packed ball ownership/borrowing and independently specified dot products. M4a is implemented in `src/arrays.jl`: qualified `FlintFloats.add!`/`mul!` accept matching-format `DFloat`/`DFloatBall` vectors, with ordinary/strided destinations, checked scalar fallbacks, and a native contiguous ball-add path at length ≥ 4. Exact aliasing uses `===`; other possible destination/input overlap is rejected. Gather/repeated-index destinations are rejected because they do not guarantee independent slots. M4b extends the same interface to `NFloat{L}`, with native aligned contiguous input paths and checked scalar fallbacks. It uses initialized private scratch and commits only after successful arithmetic, preserving the destination on numerical or input-read failure. M4c–M4d remain pending. The historical checkpoints predate this work.
+**M4a–M4c are complete. Next enact the packed-interface follow-up in §9.4, beginning with documentation and borrowed iteration, then broadcast and M4d reductions/dot products.** Ordinary Julia arrays already store concrete inline types; dot accumulation and measured matrix follow-up retain their separate numerical contracts. M4a is implemented in `src/arrays.jl`: qualified `FlintFloats.add!`/`mul!` accept matching-format `DFloat`/`DFloatBall` vectors, with ordinary/strided destinations, checked scalar fallbacks, and a native contiguous ball-add path at length ≥ 4. Exact aliasing uses `===`; other possible destination/input overlap is rejected. Gather/repeated-index destinations are rejected because they do not guarantee independent slots. M4b extends the same interface to `NFloat{L}`, with native aligned contiguous input paths and checked scalar fallbacks. It uses initialized private scratch and commits only after successful arithmetic, preserving the destination on numerical or input-read failure. M4c adds `PackedBallVector`, copied indexing, explicit `borrow` references, native ball-add, and borrowed scalar multiply. M4d remains pending. The checkpoints summarize this state.
 
 | Part | Deliverable | Acceptance evidence |
 | --- | --- | --- |
 | **M4a — array contract and first inline kernel (complete)** | Define destination-first elementwise add/multiply contracts over same-format vectors. Begin with a checked scalar implementation and one audited contiguous vector-add path for `DFloatBall{N}`; use `DFloat{N}` instead if the ball kernel's guarantee cannot yet be established. | Correct empty/singleton/ordinary vectors, concrete element types, length/axes checks, initialized outputs, dfloat capability gate, permitted aliasing, and a benchmark against the corresponding scalar loop. |
 | **M4b — nfloat vectors (complete)** | Extend the same interface to `Vector{NFloat{L}}`; bind selected `_nfloat_vec_add`/`_nfloat_vec_mul` kernels after verifying stride, status, flags, and context behavior. Hoist context lookup out of loops. | Multiple supported limb counts, finite-only/domain/underflow/overflow behavior, input preservation, failure policy, overlap and strided fallback tests, and measured copy/context costs. |
-| **M4c — packed ball owners and borrowing** | Add fixed-size `ArbBall{P}` and `AcbBall{P}` vector owners, semantic indexing/assignment/copying, explicit borrowed references, then selected native vector arithmetic. | One matching vector clear per allocation, safe partial-construction cleanup, independent copied elements, parent retention under GC, bounds checks, precision/containment, and destination alias tests. |
-| **M4d — dot products and measured follow-up** | Add selected native dot kernels with their own numerical contracts and reproducible bulk benchmarks. Evaluate matrix workloads only after vector evidence supports them. | Exact or certified enclosure references, cancellation and empty-sum cases, documented complex conjugation, length/stride conventions, and comparisons including construction and copy costs. |
+| **M4c — packed ball owners and borrowing (complete)** | Add fixed-size `ArbBall{P}` and `AcbBall{P}` vector owners, semantic indexing/assignment/copying, explicit borrowed references, then selected native vector arithmetic. | One matching vector clear per allocation, safe partial-construction cleanup, independent copied elements, parent retention under GC, bounds checks, precision/containment, and destination alias tests. |
+| **Packed-interface follow-up (planned, §9.4)** | Document copied indexing; add `eachborrow`; optimize selected in-place broadcast expressions without changing scalar or iteration semantics. | Independent copies, stable parent-retaining references, Base broadcast compatibility/alias handling, bounded scratch and specialization, and focused numerical/allocation evidence. |
+| **M4d — reductions, dot products, and measured follow-up (planned)** | Borrowed accumulation for `sum`, then audited native dot kernels and selected mapped reductions with their own numerical contracts. | Fresh typed empty/singleton results, independent exact/certified references, cancellation, complex conjugation, strides, radius quality, and complete-operation benchmarks. Matrix work follows measured need. |
 
 Before the first native call, settle and document these shared contracts:
 
@@ -380,9 +382,9 @@ Before the first native call, settle and document these shared contracts:
 - **Borrowing:** copied indexing returns an independent scalar; borrowed indexing returns an explicit parent-retaining reference, never an independently finalized scalar owner. Fixed-size owners cannot resize. Define permitted mutation through references and reject unsupported operations before exposing them.
 - **Dot semantics:** distinguish an unconjugated sum of products from Julia's conjugating complex `dot`. Audit native accumulator, initial-value, subtract, and stride arguments. Fused native accumulation need not equal a rounded scalar loop bit for bit, so validate its own error or containment guarantee.
 
-Candidate native entry points must be checked against the pinned headers **and** exported-symbol audit: `_dNb_vec_add`/`_dNb_vec_mul` (N = 1–4), `_nfloat_vec_add`/`_nfloat_vec_mul`, `_arb_vec_init`/`_arb_vec_clear`, `_acb_vec_init`/`_acb_vec_clear`, `_arb_vec_add`/`_acb_vec_add`, and selected dot functions. The add kernels for dfloat balls and the add/multiply kernels for nfloat are implemented and audited in M4a/M4b; the remaining entries are candidates requiring their own audits. Allocation interfaces differ: `_nfloat_vec_init` initializes supplied storage, whereas `_arb_vec_init` and `_acb_vec_init` allocate owned storage. Do not generalize one family's ownership contract to another. `Vector{ArbBall{P}}` and `Vector{AcbBall{P}}` contain Julia owner references and cannot be passed as packed native structs.
+Candidate native entry points must be checked against the pinned headers **and** exported-symbol audit: `_dNb_vec_add`/`_dNb_vec_mul` (N = 1–4), `_nfloat_vec_add`/`_nfloat_vec_mul`, `_arb_vec_init`/`_arb_vec_clear`, `_acb_vec_init`/`_acb_vec_clear`, `_arb_vec_add`/`_acb_vec_add`, and selected dot functions. The add kernels for dfloat balls and the add/multiply kernels for nfloat are implemented and audited in M4a/M4b; M4c also audits the arb/acb vector init/clear/set/add entries; the remaining entries are candidates requiring their own audits. Allocation interfaces differ: `_nfloat_vec_init` initializes supplied storage, whereas `_arb_vec_init` and `_acb_vec_init` allocate owned storage. Do not generalize one family's ownership contract to another. `Vector{ArbBall{P}}` and `Vector{AcbBall{P}}` contain Julia owner references and cannot be passed as packed native structs.
 
-For each part, keep `gen/inventory.toml`, generated declarations, implementation, focused container/numerical tests, and `docs/capability_table.md` synchronized. Audit symbols, regenerate twice without drift, run the scalar regression suite plus new container tests, and record bulk measurements in the benchmark environment. Cover short and long vectors at representative formats/precisions, with and without allocation/copying included. Retain a scalar path when a specialization has no demonstrated benefit. Do not block M4 on a wholesale internal-protocol refactor, elementary functions, complex dfloat/nfloat types, or speculative matrix storage.
+For each part, keep `gen/inventory.toml`, generated declarations, implementation, focused container/numerical tests, and `docs/capability_table.md` synchronized. For new bindings, audit symbols and regenerate twice without drift. After a change, run the focused tests covering the affected contracts and any directly affected shared callers; do not automatically rerun the entire suite. Record relevant bulk measurements in the benchmark environment. Cover short and long vectors at representative formats/precisions, with and without allocation/copying included. Retain a scalar path when a specialization has no demonstrated benefit. Do not block M4 on a wholesale internal-protocol refactor, elementary functions, complex dfloat/nfloat types, or speculative matrix storage.
 
 M4a verification on Julia 1.13.3: **8,591 tests pass**; all **297** inventoried symbols resolve; binding regeneration twice produces no drift. On the recorded host and input distribution, checked contiguous ball addition at lengths 4–4096 is about 1.5–7× faster than the scalar loop, with zero warmed Julia allocations.
 
@@ -396,9 +398,262 @@ M4b numerical evidence is in `test/nfloat_array_tests.jl`: independently decoded
 
 **Reusable nfloat scratch.** `NFloatWorkspace(NFloat{L}, capacity)` owns initialized scratch of one concrete format. Pass it as the fourth argument to `FlintFloats.add!`/`mul!`; use `sizehint!(work, capacity)` before a hot loop to reserve storage. Operations grow automatically when necessary, initialize only newly added slots, and process/copy only `length(dest)` elements even if more capacity is reserved. They retain capacity after smaller calls or failures. Workspace storage must not overlap any operand. An atomic exclusive-use guard rejects concurrent/reentrant operations and growth; it is released on every exit. Use independent workspaces concurrently. Context pointers are acquired at operation time rather than stored across serialization or precompilation. The successful-result copy remains necessary to preserve the supplied destination's identity.
 
-`test/reusable_tests.jl` verifies repeated add/multiply, growth and smaller active prefixes, exact aliases, rejected overlap and format mismatch, numerical/input exceptions followed by successful reuse, exclusive access under four threads, and zero warmed native allocations at L = 1, 2, 4, 16, 66. `benchmark/reusable.jl` and [recorded results](../benchmark/results/reusable.txt) compare allocating calls, reused workspaces, raw kernels, initial construction/growth, and strided fallbacks, including validation, atomic-guard, and commit costs in reused calls. Short-vector and large-format workloads can be dominated by those costs or native arithmetic; workspace reuse is not a universal speedup. M4c remains the next implementation part.
+`test/reusable_tests.jl` verifies repeated add/multiply, growth and smaller active prefixes, exact aliases, rejected overlap and format mismatch, numerical/input exceptions followed by successful reuse, exclusive access under four threads, and zero warmed native allocations at L = 1, 2, 4, 16, 66. `benchmark/reusable.jl` and [recorded results](../benchmark/results/reusable.txt) compare allocating calls, reused workspaces, raw kernels, initial construction/growth, and strided fallbacks, including validation, atomic-guard, and commit costs in reused calls. Short-vector and large-format workloads can be dominated by those costs or native arithmetic; workspace reuse is not a universal speedup. M4c is implemented; the planned surrounding-interface work and M4d are sequenced in §9.4.
 
-### 9.4 Carry forward checkpoint limits
+**Packed ball owners and borrowing (M4c).** `PackedBallVector(ArbBall{P}, n)` and the `AcbBall{P}`
+form allocate initialized fixed-size storage through FLINT; `PackedBallVector(T, values)` copies in
+values. One finalizer clears the entire allocation exactly once; failed population clears all already
+initialized slots immediately. Ordinary indexing returns an independent scalar. Assignment and
+`set!` round to the destination precision with containment. `copy`/`deepcopy` duplicate values into
+independent owners, never pointer bytes. `similar`, iteration, fill, and ordinary Base broadcast work;
+optimized broadcast is not introduced. Packed vectors cannot resize or reallocate.
+
+`borrow(v, i)` (also on packed views) creates a checked `BorrowedBall` retaining the parent and fixed
+slot index. It is not a number and does not clear storage. `r[]`/`copy(r)` read independently;
+`r[] = value`/`FlintFloats.set!` and qualified same-format scalar `add!`/`sub!`/`mul!`/`div!` mutate
+slots. Source or destination references retain their owners through C argument conversion. Explicit
+finalization is idempotent and surviving references detect closed parents before a C call; do not
+explicitly finalize a parent concurrently with use. Concurrent mutation requires independent slots.
+
+Packed vector `FlintFloats.add!`/`mul!` require identical element formats and axes. Native `_arb_vec_add`
+and `_acb_vec_add` are forward loops of rigorous scalar addition; exact aliases are supported. Views
+and multiplication use borrowed scalar calls. Other possible destination/input overlap is rejected;
+destination views require independent strided slots. Empty calls skip native arithmetic. Validation
+errors preserve the destination; custom input-read exceptions may leave it valid and partially updated.
+This family preserves FLINT's indeterminate enclosures rather than applying nfloat's status policy.
+
+Evidence is in `test/packed_tests.jl`: exact rational real/complex endpoint oracles, precision/containment,
+heap-backed copy independence, parent GC retention, bounds, construction failure, idempotent cleanup,
+strided/reversed views, exact/rejected alias cases, and independent concurrent owners/slots. The pinned
+`arb`/`acb` `vec_init.c`, `vec_clear.c`, and `vec.c` supply allocation, ownership, and scalar-loop evidence.
+`benchmark/m4c_packed.jl` and [results](../benchmark/results/m4c_packed.txt) record scalar-owner versus
+borrowed/native arithmetic, warmed allocations, independent copy-out, construction/cleanup, and semantic
+copying. Arithmetic throughput is comparable on the recorded workloads; construction and packed layout
+are the clearest benefits. Zero warmed Julia allocations do not imply zero native allocations.
+
+### 9.4 Improve the packed interface while retaining copied indexing
+
+**Status: the following is an implementation plan, not additional implemented functionality.**
+`PackedBallVector`, `borrow`, copied indexing/iteration, and qualified destination arithmetic already
+exist. `eachborrow`, specialized packed broadcast, and specialized packed reductions below do not.
+These additions keep the interface small: value reads stay ordinary Julia reads; explicit references
+serve custom mutation; ordinary broadcast/reduction expressions gain internal storage reuse.
+
+#### 9.4.1 Make value and mutation semantics prominent
+
+First update `docs/src/index.md`, `docs/float_interfacing.md` collection/destination sections, and the
+`PackedBallVector`/`BorrowedBall`/`borrow` docstrings in `src/packed.jl`. Put the following distinction
+next to the first packed-vector example, not only in performance notes:
+
+| Intent | Interface and effect |
+| --- | --- |
+| Independent value | `x = v[i]`, `copy(borrow(v, i))`, or ordinary iteration; later mutation of `x` does not change `v`. |
+| Replace a slot | `v[i] = x`; semantic containing copy at the element working precision, never pointer assignment. |
+| Convenient scalar update | `v[i] += step`; read, arithmetic, and write-back work, but can allocate temporary owners. |
+| Reuse whole-vector storage | `FlintFloats.add!(dest, x, y)` / `mul!`; prefer these when the operation already fits. |
+| Custom slot mutation | `r = borrow(v, i)` and `FlintFloats.add!(r, r, step)`; changes `v[i]` without copying out. |
+
+Explicitly show that `FlintFloats.add!(v[i], v[i], step)` mutates a temporary, not the packed slot.
+Views retain their parent, but reading `view(v, inds)[j]` still copies; assignment through the view
+changes its mapped slot. `r[]` also copies. Keeping one reference keeps the entire packed owner alive;
+a copied scalar can survive independently after that owner is released. Document fixed size,
+precision/containment, explicit-finalization checks, and independent writable slots for concurrency.
+Keep `BorrowedBall` nonnumeric and the scalar owning representation unchanged.
+
+**Acceptance:** small doctests demonstrate independent read, explicit write-back, `+=`, view writes,
+and borrowed mutation. Extend only the existing packed ownership tests needed to check those public
+contracts. Benchmark copy-out and borrowed mutation with equivalent work and retained outputs; report
+Julia and native allocation distinctions. Do not promise that every ordinary array expression is
+already optimized. Documentation changes need documentation/doctest checks, not a full numeric run.
+
+#### 9.4.2 Add one explicit borrowed-element iterator
+
+Add exported **`eachborrow(v)`** in `src/packed.jl` for the same packed owners/views accepted by
+`borrow(v, i)`. Keep its concrete iterator type private. Implement `iterate`, `length`, type-level `eltype`, and the Base iterator traits returning
+`HasLength()` and `HasEltype()`. For a span with element type `T`, the iterator
+eltype is concretely `BorrowedBall{T}`, with an inferred `(reference, next_state)` iteration result. The iterator retains its span and therefore the parent. Traverse
+logical view order, including reversed ranges and existing gather-view reads, by reusing the checked
+`borrow` mapping. Do not cache raw pointers. View index maps must remain valid under Base's view rules.
+
+Yield a separate immutable reference value for each position; never reuse a mutable cursor whose
+index changes references already saved by the caller. Stored references stay attached to their
+original slots after iteration ends. Check finalized parents when constructing/resuming iteration,
+including empty spans. References remain bounds/lifetime checked when entering C, even if the iterator
+later gains a proved internal bounds fast path. Ordinary `iterate(v)` and `eltype(v)` remain unchanged.
+The iterator is not an `AbstractVector` of numbers and does not implicitly read or mutate slots.
+
+Proposed usage after implementation:
+
+```julia
+for r in eachborrow(v)
+    FlintFloats.mul!(r, r, scale)  # scale has the same concrete scalar type
+end
+```
+
+Do not teach unchecked `zip` as a substitute for validating multi-vector axes: it truncates at the
+shortest input. Existing bulk methods remain the preferred interface for operations they cover.
+
+**Acceptance:** focused `test/packed_iteration_tests.jl` cases cover concrete inference, empty/full/
+strided/reversed/gathered spans, stable saved references, partial iterator consumption, copied versus
+borrowed iteration, GC after dropping the original owner name, finalized parents, and independent
+concurrent destinations. Compare the iterator against manual `borrow` loops and current bulk methods
+at several lengths and precisions. Require no per-element Julia allocation in a warmed typed loop;
+`collect(eachborrow(v))` intentionally allocates a collection of references and retains the parent.
+If iteration adds overhead, improve its private implementation rather than making ordinary indexing
+return references or exposing unchecked pointer access.
+
+#### 9.4.3 Optimize in-place broadcast in two bounded steps
+
+Put broadcast implementation in proposed `src/packed_broadcast.jl`, included after `packed.jl`.
+Begin with destination specialization at `Base.copyto!(dest, bc::Broadcasted{Nothing})` for packed
+owners and supported strided packed views; keep normal broadcast style and allocating-result container
+selection unchanged. Do not introduce a new `BroadcastStyle` or override `broadcasted` globally just
+to optimize assignment. Verify method ambiguities against Julia 1.13 and each supported version.
+Keep version-sensitive Base broadcast handling in this file. The first release targets `dest .= ...`;
+an allocating expression such as `x .+ y` retains its current result-container behavior. If that result
+is an ordinary vector of scalar owners, per-element ownership allocation is inherent. Teach
+`dest = similar(x); dest .= x .+ y` for packed output reuse. A later custom broadcast style for
+allocating packed results needs its own result-type, mixed-style, and compatibility review; it is
+not a prerequisite for these in-place optimizations.
+
+**First step: flat expressions.** Recognize only `identity`, binary `+`, and binary `*` with supported
+packed leaves and same-concrete-type owned scalar/`Ref` leaves. Optimize `dest .= src`, `dest .= x .+ y`,
+and `dest .= x .* y`; use current vector kernels where the prepared spans and axes qualify. Scalar
+expansion and singleton dimensions must follow Base's instantiated axes/index mapping. Mixed precision,
+other element/result types, custom functions, and unsupported array inputs use the existing generic
+Base path. In particular, comparison broadcasts must still produce Boolean results, and real-valued
+functions of complex balls must retain their scalar result types. Add functions only with explicit
+destination semantics and independent evidence.
+
+Validate before writing and use Base-compatible alias preprocessing. Julia 1.13's installed
+`base/broadcast.jl` documents the destination specialization and uses `instantiate`/`preprocess`,
+with `broadcast_unalias` exempting `dest === src`. Audit these helpers per supported version; treat
+the nonpublic helpers as private implementation dependencies, not user interface. Snapshot overlapping
+views or leaves whose broadcast mapping reads a destination slot at a different logical index;
+preserve safe exact self-aliasing. Singleton expansion is an alias case, not just a shape case.
+For example, `dest .= view(dest, 1:1) .+ x` must retain the original singleton value for every output,
+and shifted-view assignments must not depend on loop direction. Allocate snapshots before mutation.
+Repeated-index destination views use generic Base behavior, not the packed arithmetic fast path.
+Explicit `FlintFloats.add!`/`mul!` keep their existing overlap-rejection contract; dotted assignment
+must not inherit that restriction accidentally.
+
+Choose optimization or generic fallback **before mutation**. Never catch an exception after a partial
+optimized evaluation and retry through Base: arbitrary functions or inputs could then run twice.
+Keep a direct invocation of the unspecialized Base destination method as the fallback, avoiding
+recursive dispatch into the new method. Preserve generic scalar-call counts and exceptions on the
+fallback. Recognized fast paths retain the current valid-but-partially-updated policy for evaluation
+errors; allocation/shape/alias-preparation failures happen before writing.
+
+**Second step: bounded nested arithmetic.** Extend the supported set to same-format pure trees of
+`identity`, unary negation, and binary `+ - * /`. A private evaluator walks the concrete broadcast
+tree and reuses one initialized owned scalar per arithmetic-node occurrence, allocated once per
+call. Evaluate each element fully into scratch, then copy its root result into the packed destination.
+This is essential for `dest .= dest .* y .+ dest`: an intermediate must not overwrite a destination
+leaf needed later in the same element. Distinct live subexpressions need distinct scratch; do not
+reuse a left-result slot while evaluating its right sibling.
+
+Preserve tree structure and the scalar working precision at every node. Do not reassociate,
+common-subexpression eliminate, introduce `fma`/`addmul!`, or evaluate at higher precision and round
+only once: those changes can alter enclosure widths and the scalar-expression contract. Initially
+limit specialization to eight arithmetic-node occurrences; larger or unsupported trees fall back to
+Base. Benchmark that budget for first-use latency/code size as well as runtime, and revise it only
+with evidence. Do not allocate full intermediate vectors or an owner per element. Keep scratch
+private to one invocation; add no global cache or new public broadcast workspace without measured need.
+
+**Acceptance:** focused `test/packed_broadcast_tests.jl` covers owners and views, scalar/singleton
+expansion, empty axes, exact aliases, shifted/reversed/gathered sources, repeated destination indices
+on the generic path, and repeated destination leaves in nested trees. Check normal generic behavior
+for Boolean outputs, precision/type changes, arbitrary callbacks, exceptions, and conflicting broadcast
+styles. Supported arithmetic should match independently evaluated scalar trees in representation
+where deterministic, and must contain independent exact references. Check midpoint precision and
+indeterminate values. Benchmark `dest .= x .+ y`, `dest .= x .* y .+ w`, self-updates, tiny/long spans,
+and larger mantissas against generic copied-scalar broadcast, manual borrowed loops, and explicit bulk
+methods. Report alias-snapshot cost separately. Scratch allocations may scale with expression size
+but not vector length on nonoverlapping warmed fast paths; claims exclude native capacity growth.
+
+#### 9.4.4 Optimize reductions with their own numerical contract (M4d)
+
+Put reduction implementation in proposed `src/packed_reduce.jl`. Begin with **`sum(v)`** for matching
+packed real/complex ball owners and supported views. Use one fresh owned accumulator at element
+precision and borrowed inputs; do not call ordinary copied indexing per term. An empty sum is a fresh
+typed zero; a singleton result must also be independent of its input. Return an owned scalar, never
+a borrowed slot. Initial accumulation is deterministic in logical iteration order and encloses the
+exact set sum. State that its representation/radius need not equal Base's possibly reassociated
+reduction. Keep generic handling of `init`, `dims`, mapped functions, and unsupported combinations
+unless their semantics are explicitly implemented; do not intercept and silently discard keywords
+or change result types. A private destination helper can support internal reuse without adding a
+public `sum!` name before there is a caller need.
+
+The pinned `arb.h`/`acb.h` inspected for this plan expose dot kernels but no general vector-sum entry.
+Do not invent a `_arb_vec_sum` binding or allocate a vector of ones as the default sum algorithm.
+Audit any later native substitute independently and retain borrowed accumulation unless measurements
+support replacing it. Accumulator allocation is expected; the performance goal is no per-term Julia
+owner allocation and bounded private scratch.
+
+Next add audited **`LinearAlgebra.dot(x, y)`** specializations for same-concrete-format packed spans.
+Declare the standard-library dependency and import only `dot`, keeping the package's qualified
+`mul!` convention intact. Other combinations retain the generic interface until separately supported.
+Real dot encloses the ordinary sum of products; complex dot conjugates the **first** operand.
+FLINT `acb_dot` must not be treated as a drop-in conjugating dot. First implement a correct borrowed
+reference path with reusable product/conjugation temporaries. Audit a native alternative using real/
+imaginary strided `arb_dot` calls, or a conjugated copy plus `acb_dot`, and benchmark complete costs
+before choosing. Prefer avoiding a full conjugated input copy when verified part-stride calls are
+competitive; keep part offsets/stride conversion inside the checked packed implementation.
+
+Record source guarantees, exports, signed element-stride and native-length conventions, initial/
+subtract arguments, output/input alias permissions, precision, and indeterminate behavior before
+binding. For reversed/strided spans, derive the first element and step in native **struct units**,
+not bytes, and check arithmetic overflow; fall back to borrowed loops where source support is unproved.
+Preserve all parents during native calls. Empty dot returns a fresh typed zero without pointer
+arithmetic; nonempty output storage is independent of inputs. Native accumulation may produce different
+radii from a rounded scalar loop; require rigorous containment and record radius quality rather than
+requiring bitwise equality across different algorithms. Avoid `approx` kernels.
+
+Only after sum/dot evidence, consider selected mappings such as `sum(abs2, v)`. Specify mapping result
+family/precision (complex `abs2` is real), reuse destination-capable scalar primitives, and prove the
+mapped bounds. Arbitrary `sum(f, v)`/`mapreduce` callbacks must continue to receive independent scalar
+values and retain their generic effects/exception behavior; never pass them implicit mutable borrows.
+Do not rewrite unconjugated `sum(x .* y)` into conjugating complex `dot`. Leave general reductions,
+`norm`, numerical extrema, threading, and matrix work outside the first change.
+
+**Acceptance:** focused `test/packed_reduce_tests.jl` covers exact dyadic/rational set references,
+large cancellation/exponent gaps, empty/singleton independence, real/complex conjugation, uncertain
+inputs, indeterminates, precision invariants, strided/reversed/gather fallback, keyword/generic
+compatibility, and parent lifetime. Test a nonreal singleton dot so omission of conjugation is visible.
+Benchmark generic copied-scalar reductions, borrowed accumulation, and native candidates over length
+and precision; report result/scratch allocation, first-use cost, native memory, radius quality, and
+any conjugated-input copy. Optimize additional inline families only in separate verified changes.
+
+#### 9.4.5 Enactment order and review gates
+
+| Change | Files and implementation | Gate before the following change |
+| --- | --- | --- |
+| Documentation | Packed docstrings, `docs/src/index.md`, interface/capability documents; examples distinguish values, writes, and references. | Focused doctests and packed copy/mutation cases; no change to indexing/iteration return types. |
+| Borrowed iteration | Private iterator and exported `eachborrow` in `src/packed.jl`; iteration tests and a benchmark driver. | Stable saved references, parent lifetime, inference, and allocation/throughput parity with manual borrowing. |
+| Flat broadcast | `src/packed_broadcast.jl`, module include, focused broadcast tests/benchmarks; reuse checked kernels after compatible alias preparation. | Ordinary Base result/axes/style behavior and overlap semantics, with measured benefit or a retained generic path. |
+| Nested broadcast | Bounded typed evaluator and private per-node scratch in that same file. | Tree/precision preservation, repeated destination-leaf safety, bounded specialization and no per-element owners. |
+| Sum, then dot (M4d) | `src/packed_reduce.jl`, module include, focused reduction tests/benchmarks; add `LinearAlgebra` and inventory/generation changes only when dot bindings are ready. | Independent containment/conjugation evidence and complete-operation/radius measurements. |
+| Selected mapped reductions | Add only individually supported mappings after the preceding gates. | Correct mapped result type, generic-callback compatibility, and measured allocation/accuracy benefit. |
+
+Review the implementation against these rejected shortcuts before accepting a fast path:
+
+| Shortcut considered | Decision and reason |
+| --- | --- |
+| Return a borrowed proxy from ordinary indexing | Keep independent `T` values; proxy results would change the declared element-type/ownership contract. |
+| Yield one mutable reference cursor repeatedly | Yield stable reference values; callers can safely retain different yielded references. |
+| Add one broad broadcast rewrite or change allocating result containers immediately | Start with destination-only, recognized trees; retain Base compatibility and generic function effects. |
+| Evaluate a nested tree directly into the destination or use fused scalar arithmetic | Keep live per-node scratch and preserve the tree, so repeated destination leaves and enclosure rounding remain correct. |
+| Borrow arguments implicitly for arbitrary reduction callbacks or use complex `acb_dot` unchanged | Keep copied callback values and explicit conjugation; mutation effects and the mathematical dot definition must remain correct. |
+
+The review decisions above preserve `AbstractVector{T}` value reads, keep iterator references stable,
+separate broadcast alias preparation from explicit bulk rejection, and distinguish expression-tree
+rounding from reduction accumulation. All temporary ownership, pointer lifetimes, dispatch/fallback,
+and numerical handling remain behind the packed module's small interface. On a source change, run
+only the tests covering that change and directly affected shared contracts; document the selected
+scope. Update the capability table when implementation lands, not merely because this plan names a
+method. A planned benchmark or test is not current evidence.
+
+### 9.5 Carry forward checkpoint limits
 
 Keep the following limits visible while extending the package: `NFloat` square root has exact-case tests only and needs a differential guarantee before broader accuracy claims; `Rational` and `Complex{Float64}` interop remain future work; shared helper factoring remains incomplete; and portable artifacts/CI remain unverified. New bulk methods inherit none of the scalar numerical guarantees automatically: record the selected kernel's guarantee and failure policy explicitly. Elementary-function expansion (`exp`, `log`, `sin`, `cos`, `atan` as possible first candidates) remains M5, with a source audit and domain/rounding evidence per function.
 
@@ -449,10 +704,10 @@ Use Julia threads only over independent writable destinations. Verify context be
 | **M1 — representation prototypes** | One dfloat add, one dfloat-ball add (with the `GR_UNABLE` → whole real line rule), one nfloat add/context, and one add with complete ownership for each of ArbFloat, AcbFloat, ArbBall and AcbBall; resolved concrete nfloat layout. | All seven paths construct, calculate, copy as applicable, and clean up correctly; inference and allocation/copying measurements establish the representation choice. |
 | **M2 — scalar foundation** | Constructors, core arithmetic, precision rules, classification, basic conversion, parsing, display, and ball destination methods. | Each family has a usable tested path; domain/status handling and special values match the operation table. No guessed layouts or unresolved ownership remain. |
 | **M3 — Julia numeric contracts** | Type-precision function barrier; explicit comparison/inequality behavior; `isequal`/hash; narrow promotion; audited Base fallbacks and complex behavior. | Contract tests pass, including uncertainty examples, mixed hashing, task isolation, and concrete promoted types. Documentation identifies unsupported generic algorithms. |
-| **M4 — bulk arithmetic** | Concrete fixed-format arrays; packed ball vectors; explicit borrowing; selected native kernels. | Container semantics, aliasing, lifetime, empty/strided inputs, and precision behavior are tested; benchmark evidence supports every specialized path. |
+| **M4 — bulk arithmetic** | Concrete fixed-format arrays; packed ball vectors; explicit borrowing and `eachborrow`; selected broadcast/reduction/dot paths under §9.4. | Copied indexing retained; container/lifetime, Base compatibility, aliasing, empty/strided inputs, expression precision, reduction containment/conjugation, and measured performance are verified per path. |
 | **M5 — function expansion and release** | Selected elementary/special functions; portable artifacts; clean CI/docs setup; capability and benchmark reports. | Every advertised function and target passes its required evidence; users can install without a compiler or development-host assumptions. |
 
-**Status:** M0–M3 are complete at the checkpoint; M4a and M4b are implemented, M4c is next, and M5 is pending. M0 completion covers the compatible development host, not portable distribution.
+**Status:** M0–M3 and M4a–M4c are implemented. The surrounding-interface work in §9.4 is planned: document copied reads, add borrowed iteration, then narrow broadcast and M4d reductions/dot products. M5 remains pending. M0 completion covers the compatible development host, not portable distribution.
 
 All seven types participate in M1 and M2. A family-specific issue may delay its completion without forcing unrelated work to stop, but the first complete release includes all seven. Do not expand the function inventory faster than it can be verified.
 
@@ -512,7 +767,7 @@ Resolve these decisions at their designated milestone rather than leaving them i
 | Context sharing versus task-owned reuse | M1 — **resolved**: shared immutable contexts for `+ - * /` (source audit; 8-task test). Re-audit before adding functions that may use workspaces. | Matching-source audit and concurrent tests; conservative ownership until verified. |
 | Exact supported function/rounding/flag set | Before each operation is added | Inventory entry, source guarantee, and numerical test cases. |
 | Hash normalization and mixed-type identity | M3 — **resolved** in `src/compare.jl` and `test/compare_tests.jl`; includes canonical indeterminate balls and allowed huge-exponent hash collisions | Preserve equality/hash laws across supported mixed types and seeds. |
-| First native bulk kernels | M4a — **resolved**: contiguous `_dNb_vec_add`, N = 1–4; M4b adds `_nfloat_vec_add`/`_nfloat_vec_mul`; packed ball and dot kernels remain M4c–M4d | Exact endpoint containment, scalar equivalence, alias/layout checks, and recorded benchmarks. |
+| First native bulk kernels | M4a — **resolved**: contiguous `_dNb_vec_add`, N = 1–4; M4b adds `_nfloat_vec_add`/`_nfloat_vec_mul`; M4c adds arb/acb init/clear/set/add; dot kernels remain M4d | Exact endpoint containment, scalar equivalence, alias/layout checks, and recorded benchmarks. |
 | Portable artifact delivery and supported platforms | Before public release | Built/audited binaries and clean-machine installation/test results. |
 
 This sequence keeps the managed numeric interface deep: callers obtain useful arithmetic and containment behavior from a small interface, while implementation details and verification remain local to the code that owns them.

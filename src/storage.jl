@@ -1,4 +1,4 @@
-# Pointer conversion for owned values. The only place that turns an owner into a raw pointer.
+# Pointer conversion for scalar owned values. Packed owners/borrowers use the adapter in packed.jl.
 #
 # An owner is a mutable struct whose single field `w` is an NTuple of words laid out exactly as the C
 # struct (sizes and offsets checked against test/abi/layout.txt). `pointer_from_objref` addresses

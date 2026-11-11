@@ -2,7 +2,7 @@
 
 ## Decisions and scope
 
-Build a Julia interface to FLINT's floating-point families using `FLINT_jll`, as described in `README.md`. Optimize for inexpensive scalar calls, contiguous bulk arithmetic, and source that makes ownership and numerical guarantees easy to inspect. This plan now accompanies implemented M0–M3 and M4a/M4b: the pinned dependency/bindings, seven scalar types, Julia contracts, inline bulk arithmetic, and reusable nfloat scratch are in place. M4c packed ball owners/borrowing is next. See the current [checkpoint](checkpoint_gpt.md), [guide](enact_interfacing.md), and [capability table](capability_table.md) for status and evidence.
+Build a Julia interface to FLINT's floating-point families using `FLINT_jll`, as described in `README.md`. Optimize for inexpensive scalar calls, contiguous bulk arithmetic, and source that makes ownership and numerical guarantees easy to inspect. This plan now accompanies implemented M0–M3 and M4a–M4c: the pinned dependency/bindings, seven scalar types, Julia contracts, inline bulk arithmetic, and reusable nfloat scratch are in place. Fixed-size packed ball owners and explicit borrowing are also implemented; M4d dot products are next. See the current [checkpoint](checkpoint_gpt.md), [guide](enact_interfacing.md), and [capability table](capability_table.md) for status and evidence.
 
 The Julia floor is **1.13**. Julia 1.13 gives `Base.ScopedValues` and package extensions without shims; precision itself is a type parameter (below), so scoped values are not used for numeric precision. `Project.toml` and CI are updated with this plan.
 
@@ -62,6 +62,7 @@ src/
   conversions.jl         explicit conversions and promotion rules
   arrays.jl              inline vector validation and dfloat dispatch
   reusable.jl            NFloatWorkspace, shared nfloat kernels and commit-on-success
+  packed.jl              PackedBallVector owners, borrowed slots and ball vector arithmetic
   show.jl                formatting and parsing policy
 gen/                     binding inventory and regeneration tools
 test/                    interface, ABI, numerical and ownership checks
@@ -202,7 +203,7 @@ Study [Nemo's owners and init/clear pattern](https://github.com/Nemocas/Nemo.jl/
 2. **Representation prototypes:** implement one dfloat add, one dfloat-ball add, one nfloat add/context, and one owning add with cleanup for each of ArbFloat, AcbFloat, ArbBall and AcbBall. Compare inline results, destination reuse and direct calls. Exit: verified layouts/lifetimes, inferred concrete returns and measured allocation/copying behavior. Adjust representation here, before broad generation.
 3. **Vertical slice across the seven types (`DFloat`, `DFloatBall`, `NFloat`, `ArbFloat`, `ArbBall`, `AcbFloat`, `AcbBall`):** constructors, conversion, display, basic arithmetic and predicates; ball precision rules and complex behavior included. Exit: numerical and ownership checks pass through the public interface. A missing dfloat artifact blocks that family's completion, not the others.
 4. **Julia integration:** complete the documented Base subset, equality/hashing and mixed-operation rules; implement type-level precision (`with_precision`, `DEFAULT_PRECISION`). Exit: uncertainty semantics and unsupported generic operations are documented and tested.
-5. **Bulk arithmetic:** inline vectors and native ball-add/nfloat-add/multiply paths are implemented (M4a/M4b). Reusable `NFloatWorkspace` scratch is also implemented: reserve once, pass as a fourth argument to vector `FlintFloats.add!`/`mul!`, grow only as needed, and commit the active prefix only after success. M4c next adds packed ball vectors/borrowing; M4d adds dot kernels, followed by matrices where justified. Exit: validated aliasing/lifetimes and measured throughput improvements over scalar loops.
+5. **Bulk arithmetic:** inline vectors and native ball-add/nfloat-add/multiply paths are implemented (M4a/M4b). Reusable `NFloatWorkspace` scratch is also implemented: reserve once, pass as a fourth argument to vector `FlintFloats.add!`/`mul!`, grow only as needed, and commit the active prefix only after success. M4c adds implemented `PackedBallVector` owners, independent copies, explicit `BorrowedBall` references, and ball vector arithmetic; M4d next adds dot kernels, followed by matrices where justified. Exit: validated aliasing/lifetimes and measured throughput improvements over scalar loops.
 6. **Release hardening:** expand elementary functions and required special functions, run platform and memory checks, publish the guarantee/capability tables and benchmark results. Exit: all seven types work against released supported artifacts, with no unsupported performance or rounding claims.
 
 Do not gate the entire design on a claim of being faster than existing packages. The deliverable is a clear, safe interface to the selected FLINT formats; each optimization earns its complexity with measurements. Keep remaining decisions concrete: verified wrapper versions, supported targets, exported function inventory, context sharing guarantees and the measured choice of fixed-format result storage.
