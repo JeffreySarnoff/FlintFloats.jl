@@ -6,18 +6,20 @@ The objective is a Julia interface to FLINT's **dfloat (plain and ball), nfloat,
 
 Descriptions of the existing repository are distinguished from requirements for future implementation. Proposed Julia constructors and operations below are interface specifications, not claims that those methods already exist.
 
+**Resume point (M0–M3 complete):** [checkpoint.md](checkpoint.md) and [checkpoint_gpt.md](checkpoint_gpt.md) record the implemented scalar interface, ownership model, and Julia numeric contracts. The implementation through `c03df7d` passed 6,540 tests at the checkpoint; this is historical evidence, not a fresh test run. **Continue with M4, beginning with the array contracts and first fixed-format vector path in §9.3.** Keep elementary functions in M5: bulk storage and borrowing are the next unfinished architectural step and do not depend on elementary functions. The capability table and current source determine what is implemented; the checkpoints are handoff snapshots.
+
 ## 1. Starting point and development priorities
 
 ### 1.1 Existing implementation
 
 | Area | Current state | Consequence for development |
 | --- | --- | --- |
-| Main Julia package | `src/FlintFloats.jl` and its tests are skeletons | Implement the numeric interface from the storage and arithmetic foundations upward. |
-| Julia compatibility | Main project requires Julia 1.13 | Use `Base.ScopedValues`; maintain one supported precision-scoping implementation. |
-| Local binary package | [`../FlintFloat.jl/FLINT_jll`](../FlintFloat.jl/FLINT_jll/README.md) contains a working loader, native artifact, headers, source archive, and build tools | Use this package for host development rather than waiting for a published dfloat-capable wrapper. |
+| Main Julia package | All seven scalar types and M0–M3 are implemented, with ABI, arithmetic, ownership, and Julia-contract tests | Extend the established scalar contracts to M4 containers and bulk arithmetic. |
+| Julia compatibility | Main project requires Julia 1.13; precision is in the type | Use `with_precision(f, bits)` as a `Val` function barrier; there is no scoped runtime precision default. |
+| Local binary package | [`FlintFloat.jl/FLINT_jll`](../FlintFloat.jl/FLINT_jll/README.md) contains a working loader, native artifact, headers, source archive, and build tools | Use this package for host development rather than waiting for a published dfloat-capable wrapper. |
 | Pinned FLINT source | `82c40b299084b92299c2d8dac464e39d6743fce4`, reporting `3.7.0-dev` | Consult this revision's declarations and implementation when writing bindings. |
 | Local wrapper version | `301.690.0+0`, shared-library ABI 25 | Do not equate its layout or compatibility with the reference wrapper's ABI 24. |
-| Existing validation | Wrapper tests, C arithmetic/size smoke test, and upstream dfloat/nfloat tests have passed | These establish a working binary; they do not establish the correctness of future Julia numeric wrappers. |
+| Existing validation | Binary/layout/symbol checks and 6,540 Julia tests passed at the M3 checkpoint; scalar benchmarks are recorded | Preserve those contracts; add container and per-kernel evidence for M4. Sampled numerical tests are not universal proofs. |
 | Portable distribution | BinaryBuilder recipe is present but has not been executed | Portable artifacts and platform coverage remain release work. |
 
 The native artifact is tuned for the development host: x86_64 Linux, glibc 2.43, and an Intel i9-14900K. Its platform entry does not encode all CPU and libc restrictions. Do not install it on a generic CI runner or interpret `FLINT_jll.is_available()` as a CPU compatibility test.
@@ -51,17 +53,17 @@ julia --project=FlintFloat.jl/FLINT_jll -e 'using FLINT_jll; println(FLINT_jll.l
 
 ### 2.2 Connect the numeric package to the local wrapper
 
-The main package does not yet depend on `FLINT_jll`. As the first implementation change, develop the nested package into the main environment:
+The main `Project.toml` already declares `FLINT_jll`, pins `=301.690.0`, and resolves the nested package through `[sources]`. Instantiate the existing environment and install its bundled artifact:
 
 ```sh
-julia --project=. -e 'using Pkg; Pkg.develop(path="FlintFloat.jl/FLINT_jll"); Pkg.build("FLINT_jll")'
+julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.build("FLINT_jll")'
 ```
 
-Review the resulting `Project.toml` and manifest. Declare only the wrapper versions whose ABI has been verified; begin with an exact local-version constraint and broaden it after validating additional builds. Keep runtime dependencies limited to the wrapper and required standard libraries. Put BenchmarkTools and generator tools in their own development environments.
+Review dependency resolution in the manifest. Retain the exact wrapper-version constraint until additional builds have been validated. Keep runtime dependencies limited to the wrapper and required standard libraries. Put BenchmarkTools and generator tools in their own development environments.
 
 The local package uses the official `FLINT_jll` UUID. Developing its path replaces that dependency in the selected environment. Use an isolated environment when examining Nemo or Arblib so their dependency requirements do not accidentally select or constrain the development binary.
 
-A local path in a developer manifest is insufficient for a clean checkout or documentation environment. Provide explicit setup for every environment that needs it. Before distribution, select a reproducible source-resolution mechanism for the intended deployment and replace the host-specific artifact with validated portable artifacts.
+The main and documentation projects already declare local `[sources]` paths; the generator and benchmark environments also need the intended wrapper resolution. Instantiate each environment separately. A developer manifest alone is insufficient for reproducible setup. Before distribution, select a reproducible source-resolution mechanism for the intended deployment and replace the host-specific artifact with validated portable artifacts.
 
 ### 2.3 Record the baseline
 
@@ -87,9 +89,7 @@ Capture Julia version, wrapper version, source revision, artifact tree hash, CPU
 
 **Type grid.** Provide `pointtype(T)`, `balltype(T)`, `realtype(T)` and `complextype(T)`; define the return types of `midpoint`, `radius`, `abs`, `real` and `imag` through them. A missing cell is a `MethodError`.
 
-**Resolve the nfloat representation before broad implementation.** Julia cannot use arithmetic on a type variable in a field declaration such as `NTuple{P+2,UInt}`. The preferred design takes the **limb count** as the single parameter: `NFloat{L}` with fields `exp::Int`, `sign::Int`, `d::NTuple{L,UInt}` and `precision(NFloat{L}) = 64L`. There is no derived second parameter and no inconsistent-combination check, every `NFloat{L}` is concrete (so `Vector{NFloat{2}}` is packed), and `NFloatType(bits)` returns `NFloat{bits÷64}` for users who think in bits. The earlier `NFloat{P,L}` prototype is superseded. Validate the layout with the C probe (header of `NFLOAT_HEADER_LIMBS = 2` words plus `L` limbs; 1–66 limbs on the pinned 64-bit build) in milestone M1 before dependent methods are added.
-
-With that design, `NFloat{128}` alone is a partially specified type, not a concrete array element type. Constructors, promotion, `zero`, and array factories must return the fully specified type; use `typeof(NFloat{128}(0))` when a concrete element type is needed. Do not advertise `Vector{NFloat{128}}` as packed storage. If this interface is too costly or confusing, resolve the representation in milestone M1 and revise the interface before adding dependent methods.
+**Resolved nfloat representation (M1).** `NFloat{L}` uses the **limb count** as its single parameter: `exp::Int`, `sign::UInt`, `d::NTuple{L,UInt}` with `precision(NFloat{L}) = 64L` on the verified 64-bit target. The C probe verifies `NFLOAT_HEADER_LIMBS = 2` and 1–66 supported mantissa limbs. `NFloat{2}` is a concrete isbits type suitable for packed `Vector{NFloat{2}}` storage. `NFloatType(bits)` rounds the requested bit count up to whole limbs (`NFloatType(128) == NFloat{2}`); validate the supported range before native use. `NFloat{128}` denotes 128 limbs and is outside the supported range, not a partially specified 128-bit type. The earlier two-parameter prototype is superseded.
 
 ### 3.2 First supported operations
 
@@ -100,8 +100,10 @@ Deliver a small, useful interface across all families before adding large functi
 - Addition, subtraction, multiplication, division, negation, absolute value, and square root where their domains are supported.
 - Explicit conversions and a narrowly defined set of mixed arithmetic methods.
 - For `AcbFloat` and `AcbBall`: `real`, `imag`, `conj`, `abs2`, and `abs`; the modulus returns `realtype(T)` (`ArbFloat` value or `ArbBall` enclosure). `AcbFloat` `abs` and `abs2` are correctly rounded although FLINT exports no `acf_abs` (see `src/acf.jl`).
-- For `ArbFloat` and `AcbFloat`: a trailing `RoundingMode` argument on rounding operations, and `_inexact` variants returning FLINT's inexact flag.
+- For `ArbFloat` and `AcbFloat`: a trailing `RoundingMode` argument on rounding operations, and `_inexact!` destination variants returning FLINT's inexact flag.
 - For mutable owned destinations (`ArbFloat`, `AcbFloat`, `ArbBall`, `AcbBall`): destination-first `add!`, `sub!`, `mul!`, and `div!`, returning the destination.
+
+Destination methods and their `_inexact!` variants are qualified as `FlintFloats.add!`, `FlintFloats.mul!`, etc.; they are not exported, avoiding conflicts such as `LinearAlgebra.mul!`.
 
 Use ordinary scalar arithmetic for immutable fixed formats. An exclamation-mark method cannot replace an immutable destination supplied by the caller. Introduce a separate writable buffer only when a benchmark demonstrates a benefit. Bulk `map!` and native vector kernels are independent opportunities.
 
@@ -127,20 +129,20 @@ LibFlint: verified layouts and concrete foreign declarations
 FLINT_jll.libflint
 ```
 
-Use this initial file organization:
+Use the existing organization below, adding container code in M4. The shared `_result`/`_with`/`_status` protocol proposed in the interface contract has not been factored: current family implementations carry these responsibilities. Extract only the helpers needed to make safe container operations possible, with scalar regression checks; a package-wide refactor is not a prerequisite for M4.
 
 | Location | Responsibility |
 | --- | --- |
 | `src/FlintFloats.jl` | Module declarations, imports, include ordering, and exports. |
 | `src/libflint/LibFlint.jl` | Private adapter module and library product import. |
-| `src/libflint/layouts.jl` | Hand-reviewed C layouts and ABI aliases. |
+| `src/{dfloat,dfloatball,nfloat,arf,acf,arb,acb}.jl`, `src/storage.jl` | Verified inline/owner layouts and pointer adapters; checked by `test/abi_tests.jl`. |
 | `src/libflint/generated/` | Checked-in foreign declarations grouped by family. |
 | `src/storage.jl` | Ownership, cleanup, and pointer-conversion helpers. |
 | `src/precision.jl` | Validated precision parameters, `DEFAULT_PRECISION`, `with_precision`, and context policy. |
-| `src/dfloat.jl`, `nfloat.jl`, `arf.jl`, `acf.jl`, `arb.jl`, `acb.jl` | Family values and their arithmetic/semantic rules. |
+| `src/dfloat.jl`, `dfloatball.jl`, `nfloat.jl`, `arf.jl`, `acf.jl`, `arb.jl`, `acb.jl` | Family values and their arithmetic/semantic rules. |
 | `src/typegrid.jl` | `pointtype`, `balltype`, `realtype`, `complextype`, and the guarantee/storage traits. |
-| `src/conversions.jl` | Cross-family conversion and promotion. |
-| `src/arrays.jl` | Packed owners, borrowed references, and bulk kernels. |
+| `src/conversions.jl`, `promotion.jl`, `compare.jl`, `basefloat.jl` | Cross-family conversion, narrow promotion, comparisons/hash, and audited Base methods. |
+| `src/arrays.jl` (proposed for M4) | Packed owners, borrowed references, and bulk kernels. |
 | `src/show.jl` | Formatting, parsing, and round-trip policy. |
 | `gen/` | Binding inventory, generation environment, and regeneration command. |
 | `test/abi/` | Development C probes and recorded target-specific layout evidence. |
@@ -241,19 +243,18 @@ For balls, adopt these rules consistently:
 | Construction | The type's precision parameter (`ArbBall{128}(x)`); `ArbBall(x)` uses the compile-time `DEFAULT_PRECISION`. No `precision=` keyword. |
 | Unary allocating arithmetic | Preserve the input's type, hence its precision. |
 | Binary allocating arithmetic | Promote to the maximum precision (`ArbBall{max(P,Q)}`). |
-| Destination arithmetic | Use the destination type's precision unless an operation-specific override is supplied. |
-| Explicit operation override | Change arithmetic work for that call, not the destination's type. |
-| Copy/part extraction | Preserve the source type unless an explicit documented conversion (`ArbBall{Q}(x)`, `withprec`) requests another. |
+| Destination arithmetic | Use the destination type's precision; no public precision override is currently implemented. Internal guard precision must still produce a result satisfying the destination invariant. |
+| Copy/part extraction | Preserve the source type unless an explicit documented conversion (`ArbBall{Q}(x)`) requests another. |
 
 Mixed arithmetic with integers and machine floats keeps the ball operand's type. Validate the precision parameter once, when the type is first instantiated, as an integer at or above the FLINT minimum and representable by the verified C type; pass it to C as a constant.
 
 `precision(x)` reports the type's precision, not a certificate of correct digits. Increasing working precision cannot recover information lost in an input enclosure. Precision-changing conversions preserve containment.
 
-Provide `with_precision(f, bits)`, which calls `f(Val(bits))`, as the function barrier for dynamic (adaptive) precision: the body is a method on `Val{P}`, compiled once per precision and free of dynamic dispatch. Use a documented 256-bit `DEFAULT_PRECISION`, a compile-time constant read from a package preference, so `ArbBall(x)` is type-stable. Keep it independent of `BigFloat` settings. There is no scoped runtime default and no `setprecision`: runtime state would make constructor return types depend on it. Each new `P` recompiles the methods it touches; precompile common values (64, 128, 256, 512, 1024), recommend multiples of 64, and measure first-call latency in M1. If latency is unacceptable, the fallback is a hybrid design with `P = 0` meaning precision stored in the value (see [float_interfacing.md §8](float_interfacing.md)). `ArbBall{P}` and `AcbBall{P}` have the same 48/96-byte layout at every `P`.
+Provide `with_precision(f, bits)`, which calls `f(Val(bits))`, as the function barrier for dynamic (adaptive) precision: the body is a method on `Val{P}`, compiled once per precision and free of dynamic dispatch. Use a documented 256-bit `DEFAULT_PRECISION`, the compile-time constant currently defined in `src/precision.jl` (no preference mechanism is implemented), so `ArbBall(x)` is type-stable. Keep it independent of `BigFloat` settings. There is no scoped runtime default and no `setprecision`: runtime state would make constructor return types depend on it. Each new `P` compiles the methods it touches. M1 recorded roughly 6–8 ms first-use latency per new precision, followed by microsecond warmed calls; the proposed hybrid `P = 0` fallback was not needed and is not supported. Consider precompiling common precisions only when measurements justify it. `ArbBall{P}` and `AcbBall{P}` have the same 48/96-byte layout at every `P`.
 
 Test that code inside the `with_precision` barrier infers concretely and allocates nothing beyond results, that nested barriers with different precisions are independent, and that concurrent tasks using different precisions do not interact (precision is part of the type, so there is no shared state).
 
-The type determines precision for every family. Changing precision constructs another concrete type (`withprec(x, bits)`). dfloat's nominal precision does not imply uniform relative accuracy, especially around subnormal values and cancellation.
+The type determines precision for every family. Changing precision constructs a value of another concrete type, for example `ArbBall{Q}(x)`; no `withprec` helper is implemented. dfloat's nominal precision does not imply uniform relative accuracy, especially around subnormal values and cancellation.
 
 ### 7.2 nfloat contexts
 
@@ -267,7 +268,7 @@ Support for infinities and NaNs is a context capability, not merely a storage en
 
 ### 7.3 Status and numerical guarantees
 
-For `dNb` operations returning a status, `GR_DOMAIN` means the input is disjoint from the function's domain (`DomainError`) and `GR_UNABLE` means it is only partly inside or undecidable; FLINT leaves the output **unspecified** in that case, so the wrapper writes the whole real line explicitly, element by element for vector kernels (whose statuses are OR-combined). `dNb_cmp` returns `GR_UNABLE` when the order is not certain, including balls that touch at an endpoint.
+For `dNb` operations returning a status, `GR_DOMAIN` means the input is disjoint from the function's domain (`DomainError`) and `GR_UNABLE` means it is only partly inside or undecidable; FLINT leaves the output **unspecified** in that case, so the scalar wrapper writes the whole real line explicitly. Do not assume vector entry points return scalar-style statuses: the pinned `dfloat.h` declares `_dNb_vec_*` arithmetic with `void` returns. Audit each kernel's failure semantics before binding it. If a selected status-returning bulk kernel OR-combines element statuses, that aggregate cannot identify failed elements; use a verified conservative policy or checked scalar fallback, and never read unspecified outputs. `dNb_cmp` returns `GR_UNABLE` when the order is not certain, including balls that touch at an endpoint.
 
 Maintain an operation capability table that identifies the C entry point, supported options, error bound or enclosure guarantee, special values, and failure behavior.
 
@@ -334,8 +335,8 @@ Show balls with uncertainty. Distinguish a display intended for readability from
 
 **M3 decisions.**
 
-- Points compare by exact value across precisions, families (`DFloat`, `NFloat`, `ArbFloat`, `AcbFloat`) and against Julia numbers (`Bool`, machine integers and floats, `Int128`, `BigInt`, `BigFloat`); precision is never part of equality or the hash. `hash` of a real point is the `BigFloat` hash of its exact value, so it equals the hash of the equal `Int`, `Float64` or `BigFloat`; a complex value with zero imaginary part hashes as its real part. A point zero is `+0`: it is `isequal` to `0.0` but not `-0.0`.
-- Ball `==`, `!=`, `<`, `<=`, `>`, `>=` are proofs (`arb_eq`/`arb_ne`/`arb_lt`/..., `acb_eq`/`acb_ne`) and return `false` when unproved; `isequal` is representation equivalence; an exact ball is `isequal` and hashes like its midpoint. Every indeterminate ball (NaN midpoint or infinite radius, and the whole real line of `DFloatBall`) is one value for `isequal` and `hash`, and is never `isequal` to a point or number. `ArbBall(Inf)` is an exact infinite ball; `DFloatBall(Inf)` is the whole real line.
+- Points compare by exact value across precisions, families (`DFloat`, `NFloat`, `ArbFloat`, `AcbFloat`) and against Julia numbers (`Bool`, machine integers and floats, `Int128`, `BigInt`, `BigFloat`); precision is never part of equality or the hash. `hash` of a real point uses the `BigFloat` hash of its exact value when its exponent is within MPFR's range, so it equals the hash of equal Julia numbers; outside that range, collision with Inf is allowed; a complex value with zero imaginary part hashes as its real part. A point zero is `+0`: it is `isequal` to `0.0` but not `-0.0`.
+- Real-ball `==`, `!=`, `<`, `<=`, `>`, `>=`, and complex-ball `==`, `!=` are proofs (`arb_eq`/`arb_ne`/`arb_lt`/..., `acb_eq`/`acb_ne`) and return `false` when unproved; complex balls have no numerical ordering; `isequal` is representation equivalence; an exact ball is `isequal` to and hashes like its midpoint. Every indeterminate ball (NaN midpoint or infinite radius, and the whole real line of `DFloatBall`) is one value for `isequal` and `hash`, and is never `isequal` to a point or number. `ArbBall(Inf)` is an exact infinite ball; `DFloatBall(Inf)` is the whole real line.
 - Balls have no `isless`, `min`, `max`, `sort`; `sortkey` gives a deterministic presentation order. `isapprox` and neighbours (`eps`, `nextfloat`, ...) are rejected for balls.
 - Promotion is implemented for the cases in `src/promotion.jl` only; `convert` narrows a point only when exact (`InexactError`) and a ball with containment. Converting a ball to a point never happens implicitly (`ArgumentError`).
 - `AbstractFloat` audit (`src/basefloat.jl`): `eps`, `nextfloat`, `prevfloat`, `significand`, `exponent` for `ArbFloat` and `NFloat`; `eps(::Type)` only for `DFloat`; `floatmin`/`floatmax` rejected everywhere; `typemin`/`typemax`, rounding and elementary functions are undefined.
@@ -358,6 +359,34 @@ Prevent resize or reallocation while references can be borrowed; a fixed-size ow
 
 Prioritize vector add/multiply, dot products, and measured matrix workloads. A fused or native dot kernel may have different rounding behavior from a scalar accumulation; publish its own guarantee. Add `@inbounds` or `@simd` only after establishing indexing and independence invariants.
 
+### 9.3 Next implementation: M4 in reviewable parts
+
+Start with **M4a**, then implement the other parts in order. Ordinary Julia arrays already store concrete inline types; the missing work is a safe bulk interface and measured native execution. Packed arb/acb containers and every optimized path below remain unimplemented at the checkpoint.
+
+| Part | Deliverable | Acceptance evidence |
+| --- | --- | --- |
+| **M4a — array contract and first inline kernel** | Define destination-first elementwise add/multiply contracts over same-format vectors. Begin with a checked scalar implementation and one audited contiguous vector-add path for `DFloatBall{N}`; use `DFloat{N}` instead if the ball kernel's guarantee cannot yet be established. | Correct empty/singleton/ordinary vectors, concrete element types, length/axes checks, initialized outputs, dfloat capability gate, permitted aliasing, and a benchmark against the corresponding scalar loop. |
+| **M4b — nfloat vectors** | Extend the same interface to `Vector{NFloat{L}}`; bind selected `_nfloat_vec_add`/`_nfloat_vec_mul` kernels after verifying stride, status, flags, and context behavior. Hoist context lookup out of loops. | Multiple supported limb counts, finite-only/domain/underflow/overflow behavior, input preservation, failure policy, overlap and strided fallback tests, and measured copy/context costs. |
+| **M4c — packed ball owners and borrowing** | Add fixed-size `ArbBall{P}` and `AcbBall{P}` vector owners, semantic indexing/assignment/copying, explicit borrowed references, then selected native vector arithmetic. | One matching vector clear per allocation, safe partial-construction cleanup, independent copied elements, parent retention under GC, bounds checks, precision/containment, and destination alias tests. |
+| **M4d — dot products and measured follow-up** | Add selected native dot kernels with their own numerical contracts and reproducible bulk benchmarks. Evaluate matrix workloads only after vector evidence supports them. | Exact or certified enclosure references, cancellation and empty-sum cases, documented complex conjugation, length/stride conventions, and comparisons including construction and copy costs. |
+
+Before the first native call, settle and document these shared contracts:
+
+- **Shape and precision:** initially require matching axes and identical concrete element types; reject mismatches before mutation. A mutating operation uses the destination precision and preserves enclosure containment. Defer mixed-precision bulk promotion until a separate policy and tests exist.
+- **Empty inputs and bounds:** validate dimensions and native length conversion before pointer arithmetic. Return the destination for an empty elementwise operation without dereferencing an element pointer. Define an empty dot as the appropriate typed zero.
+- **Aliasing and views:** allow exact destination/input aliasing only where the selected kernel's source supports it. Use a temporary or reject partial overlap before mutation; a forward scalar loop is not generally safe for overlapping views. Noncontiguous views need a documented checked scalar or copy fallback with the same numerical contract. Preserve all owners while raw pointers are live.
+- **Failures:** specify whether a destination may be partially updated on failure. Use scratch output when promising unchanged destinations. Do not infer successful elements from aggregate status bits or publish unspecified native outputs (§7.3).
+- **Borrowing:** copied indexing returns an independent scalar; borrowed indexing returns an explicit parent-retaining reference, never an independently finalized scalar owner. Fixed-size owners cannot resize. Define permitted mutation through references and reject unsupported operations before exposing them.
+- **Dot semantics:** distinguish an unconjugated sum of products from Julia's conjugating complex `dot`. Audit native accumulator, initial-value, subtract, and stride arguments. Fused native accumulation need not equal a rounded scalar loop bit for bit, so validate its own error or containment guarantee.
+
+Candidate native entry points must be checked against the pinned headers **and** exported-symbol audit: `_dNb_vec_add`/`_dNb_vec_mul` (N = 1–4), `_nfloat_vec_add`/`_nfloat_vec_mul`, `_arb_vec_init`/`_arb_vec_clear`, `_acb_vec_init`/`_acb_vec_clear`, `_arb_vec_add`/`_acb_vec_add`, and selected dot functions. These are candidates, not an implemented or fully audited capability list. Allocation interfaces differ: `_nfloat_vec_init` initializes supplied storage, whereas `_arb_vec_init` and `_acb_vec_init` allocate owned storage. Do not generalize one family's ownership contract to another. `Vector{ArbBall{P}}` and `Vector{AcbBall{P}}` contain Julia owner references and cannot be passed as packed native structs.
+
+For each part, keep `gen/inventory.toml`, generated declarations, implementation, focused container/numerical tests, and `docs/capability_table.md` synchronized. Audit symbols, regenerate twice without drift, run the scalar regression suite plus new container tests, and record bulk measurements in the benchmark environment. Cover short and long vectors at representative formats/precisions, with and without allocation/copying included. Retain a scalar path when a specialization has no demonstrated benefit. Do not block M4 on a wholesale internal-protocol refactor, elementary functions, complex dfloat/nfloat types, or speculative matrix storage.
+
+### 9.4 Carry forward checkpoint limits
+
+Keep the following limits visible while extending the package: `NFloat` square root has exact-case tests only and needs a differential guarantee before broader accuracy claims; `Rational` and `Complex{Float64}` interop remain future work; shared helper factoring remains incomplete; and portable artifacts/CI remain unverified. New bulk methods inherit none of the scalar numerical guarantees automatically: record the selected kernel's guarantee and failure policy explicitly. Elementary-function expansion (`exp`, `log`, `sin`, `cos`, `atan` as possible first candidates) remains M5, with a source audit and domain/rounding evidence per function.
+
 ## 10. Verification and performance evidence
 
 ### 10.1 Required verification layers
@@ -366,10 +395,10 @@ Prioritize vector add/multiply, dot products, and measured matrix workloads. A f
 | --- | --- |
 | Binary and ABI | Source/artifact identity, symbols, sizes, offsets, alignment, integer widths, and compatible runtime target. |
 | Ownership | Independent copies, failure cleanup, allowed aliasing, parent retention, GC during borrowed operations, and no double clear. |
-| Point arithmetic | Exact examples, exceptional inputs, and error checks matching each operation's actual guarantee. For `ArbFloat`/`AcbFloat`: bit-for-bit agreement with MPFR at equal precision in each rounding mode, the inexact flag, and the mantissa-length invariant. |
+| Point arithmetic | Exact examples, exceptional inputs, and error checks matching each operation's actual guarantee. For correctly rounded `ArbFloat` operations: bit-for-bit MPFR agreement at equal precision in each supported mode. For `AcbFloat`: independently certified component references (rounding a finite-precision complex approximation is insufficient). Check inexact flags and mantissa-length invariants where applicable. |
 | Enclosures | Exact rational cases, independently certified bounds, uncertain domains, cancellation, zero-crossing divisors, and complex branch cuts. |
 | Julia contracts | Inference, concrete promotion, equality/hash laws, unsupported fallback behavior, parsing/display, and array semantics. |
-| Precision and concurrency | Scoped restoration, nested scopes, child-task behavior, distinct concurrent defaults, and independent destinations. |
+| Precision and concurrency | Concrete inference through `with_precision`, nested barriers and tasks using distinct type precisions, immutable context reuse for audited operations, and independent writable destinations. No runtime default needs restoration. |
 | Performance | Warmed runtime, Julia allocation counts, native memory behavior where relevant, copying, and compilation cost. |
 
 Use the public interface as the main test surface. Internal ABI and ownership seams need focused tests because errors there can invalidate all public results. Generate tests from contracts and independent examples, not by repeating the implementation's formulas.
@@ -404,9 +433,11 @@ Use Julia threads only over independent writable destinations. Verify context be
 | **M0 — environment and binary contract** | Main-package dependency setup; binding inventory for the first operations; ABI probe; symbol audit; documented local setup. | A clean compatible-host environment loads the pinned wrapper; every required first-operation declaration and layout has evidence. Portable-build work is tracked separately. |
 | **M1 — representation prototypes** | One dfloat add, one dfloat-ball add (with the `GR_UNABLE` → whole real line rule), one nfloat add/context, and one add with complete ownership for each of ArbFloat, AcbFloat, ArbBall and AcbBall; resolved concrete nfloat layout. | All seven paths construct, calculate, copy as applicable, and clean up correctly; inference and allocation/copying measurements establish the representation choice. |
 | **M2 — scalar foundation** | Constructors, core arithmetic, precision rules, classification, basic conversion, parsing, display, and ball destination methods. | Each family has a usable tested path; domain/status handling and special values match the operation table. No guessed layouts or unresolved ownership remain. |
-| **M3 — Julia numeric contracts** | Scoped precision; explicit comparison/inequality behavior; `isequal`/hash; narrow promotion; audited Base fallbacks and complex behavior. | Contract tests pass, including uncertainty examples, mixed hashing, task isolation, and concrete promoted types. Documentation identifies unsupported generic algorithms. |
+| **M3 — Julia numeric contracts** | Type-precision function barrier; explicit comparison/inequality behavior; `isequal`/hash; narrow promotion; audited Base fallbacks and complex behavior. | Contract tests pass, including uncertainty examples, mixed hashing, task isolation, and concrete promoted types. Documentation identifies unsupported generic algorithms. |
 | **M4 — bulk arithmetic** | Concrete fixed-format arrays; packed ball vectors; explicit borrowing; selected native kernels. | Container semantics, aliasing, lifetime, empty/strided inputs, and precision behavior are tested; benchmark evidence supports every specialized path. |
 | **M5 — function expansion and release** | Selected elementary/special functions; portable artifacts; clean CI/docs setup; capability and benchmark reports. | Every advertised function and target passes its required evidence; users can install without a compiler or development-host assumptions. |
+
+**Status:** M0–M3 are complete at the checkpoint; M4 is next and M5 is pending. M0 completion covers the compatible development host, not portable distribution.
 
 All seven types participate in M1 and M2. A family-specific issue may delay its completion without forcing unrelated work to stop, but the first complete release includes all seven. Do not expand the function inventory faster than it can be verified.
 
@@ -455,7 +486,7 @@ Use these references in order:
 1. The pinned source archive and matching installed headers recorded in [Source.toml](../FlintFloat.jl/FLINT_jll/Source.toml).
 2. The local wrapper's [installation/build guide](../FlintFloat.jl/FLINT_jll/README.md), [Julia tests](../FlintFloat.jl/FLINT_jll/test/runtests.jl), and [C smoke test](../FlintFloat.jl/FLINT_jll/test/smoke.c).
 3. [FLINT documentation](https://flintlib.org/doc/index.html) and the [upstream source repository](https://github.com/flintlib/flint), interpreted against the selected revision.
-4. Julia's installed foreign-call, numeric-interface, and `Base.ScopedValues` documentation for the supported Julia version.
+4. Julia's installed foreign-call, numeric-interface, and type-specialization documentation for the supported Julia version.
 5. Nemo and Arblib as implementation precedents for owners, borrowed references, and ball semantics; validate adaptations against this guide's contracts.
 
 Resolve these decisions at their designated milestone rather than leaving them implicit in implementation:
@@ -465,7 +496,7 @@ Resolve these decisions at their designated milestone rather than leaving them i
 | Concrete nfloat representation and array construction interface | M1 — **resolved**: `NFloat{L}` = `exp::Int`, `sign::UInt`, `d::NTuple{L,UInt}` (`test/abi_tests.jl`; 0 allocations, `benchmark/results/m1_scalar.txt`). Array construction deferred to M4. | Valid layout, concrete inferred types, allocation/copying measurements. |
 | Context sharing versus task-owned reuse | M1 — **resolved**: shared immutable contexts for `+ - * /` (source audit; 8-task test). Re-audit before adding functions that may use workspaces. | Matching-source audit and concurrent tests; conservative ownership until verified. |
 | Exact supported function/rounding/flag set | Before each operation is added | Inventory entry, source guarantee, and numerical test cases. |
-| Hash normalization and mixed-type identity | M3 | Equality/hash laws, including huge exponents and special values. |
+| Hash normalization and mixed-type identity | M3 — **resolved** in `src/compare.jl` and `test/compare_tests.jl`; includes canonical indeterminate balls and allowed huge-exponent hash collisions | Preserve equality/hash laws across supported mixed types and seeds. |
 | First native bulk kernels | M4 | Real workloads, aliasing/layout evidence, and measurable improvements. |
 | Portable artifact delivery and supported platforms | Before public release | Built/audited binaries and clean-machine installation/test results. |
 
