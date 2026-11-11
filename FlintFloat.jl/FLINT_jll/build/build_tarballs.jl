@@ -4,8 +4,12 @@ using BinaryBuilder, Pkg, TOML
 
 source = TOML.parsefile(joinpath(@__DIR__, "..", "Source.toml"))
 name = "FLINT"
-version = VersionNumber(source["wrapper_version"])
-sources = [ArchiveSource(source["source_url"], source["source_sha256"])]
+wrapper_version = VersionNumber(source["wrapper_version"])
+# BinaryBuilder adds the JLL build suffix itself and rejects +0 in its source version.
+version = VersionNumber(wrapper_version.major, wrapper_version.minor, wrapper_version.patch)
+bundled_source = joinpath(@__DIR__, "..", source["source_archive"])
+source_location = isfile(bundled_source) ? abspath(bundled_source) : source["source_url"]
+sources = [ArchiveSource(source_location, source["source_sha256"])]
 
 script = raw"""
 cd ${WORKSPACE}/srcdir/flint-*
@@ -31,5 +35,9 @@ dependencies = [
     Dependency("OpenBLAS32_jll", v"0.3.29"),
 ]
 
-build_tarballs(ARGS, name, version, sources, script, supported_platforms(), products, dependencies;
+# First release candidate is 64-bit glibc Linux. Other targets require separate ABI and numerical
+# evidence before adding them to this list; a recipe is not a support claim.
+platforms = [Platform("x86_64", "linux"; libc="glibc")]
+
+build_tarballs(ARGS, name, version, sources, script, platforms, products, dependencies;
     julia_compat="1.13", preferred_gcc_version=v"14")

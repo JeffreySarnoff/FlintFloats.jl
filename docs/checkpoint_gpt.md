@@ -1,8 +1,8 @@
 # FlintFloats.jl development checkpoint
 
 State after M0–M3, M4 bulk/packed follow-ups, and the five selected M5 elementary functions from
-[enact_interfacing.md](enact_interfacing.md). This snapshot accompanies the CI/docs infrastructure update;
-its base commit is `7500642` (selected inline elementary functions). Inspect `git log` and `git status`
+[enact_interfacing.md](enact_interfacing.md). This snapshot accompanies the clean-install/portable-recipe update;
+its base commit is `8a52604` (CI/docs infrastructure). Inspect `git log` and `git status`
 for the current commit and any subsequent changes.
 
 ## Implemented
@@ -47,15 +47,20 @@ Precision is never a mutable runtime default; `with_precision(f,bits)` passes `V
 
 ## Latest infrastructure continuation
 
-Hosted CI now checks source/archive identity, target-gate rejection, and deterministic generation
-without loading tuned native code. Explicit manual native CI requires the controlled runner label
-`flintfloats-i9-14900k-glibc243` and matching headers via `FLINTFLOATS_DEPS_PREFIX`. Host/CPU/libc
-checks precede native import. The installed-artifact ABI checker uses runtime library paths and
-compares a fresh C probe without modifying the recorded layout. Documentation builds have an
-explicit source root and deployment is opt-in. See [ci_release.md](ci_release.md).
-Local validation: five target-gate checks, source/archive identity, fresh C ABI probe, YAML structure,
-and docs/doctests pass. Remote runner provisioning/execution is not claimed. No numeric source
-changed in this step, so numerical suites were not rerun.
+A fresh archived project without its main manifest resolved and installed FLINT into a separate
+depot (the FLINT artifact was excluded from cached dependencies). Public API smoke and installed
+license-file checks passed without compiling FLINT. The separately resolved docs environment passed
+docs/doctests after fixing source-archive builds without Git metadata. Dependency caches were reused;
+this is clean-project/install evidence, not empty-machine network-download or portable certification.
+
+An actual BinaryBuilder attempt exposed and corrected the recipe's invalid +0 source-version suffix.
+The recipe now prefers the SHA-verified bundled source and limits the initial candidate to x86_64
+glibc Linux. It passes version validation and verifies/extracts source; build/audit/target tests are
+still pending. No replacement artifact or remote distribution URL is claimed.
+See [release_evidence.md](release_evidence.md) and [ci_release.md](ci_release.md).
+Five host-gate tests, source/archive checks, fresh C ABI, YAML validation, and local docs passed in
+the previous infrastructure step. Remote runner execution remains unverified. Numeric suites were
+not rerun for this infrastructure-only change.
 
 ## Current verification
 

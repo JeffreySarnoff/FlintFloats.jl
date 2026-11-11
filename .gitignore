@@ -5,3 +5,5 @@
 /docs/build/
 gen/Manifest.toml
 benchmark/Manifest.toml
+# BinaryBuilder's local archive verification cache
+/FlintFloat.jl/FLINT_jll/sources/*.tar.gz.sha256

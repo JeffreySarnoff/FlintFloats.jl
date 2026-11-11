@@ -13,7 +13,8 @@ and `sum(abs2, v)`. The five selected M5 elementary functions now support all se
 rigorous enclosures. Latest focused validation: 712 inline elementary + 2,227 adjacent Base-float
 checks, documentation/doctests, 374-symbol audit, and unchanged regeneration. The 13,709 M4c
 full-suite result remains historical. [Both](checkpoint.md) [checkpoints](checkpoint_gpt.md) record
-completed checks and current limits. Next complete compatible CI and portable release gates.
+completed checks and current limits. Compatible CI configuration and local fresh-project install/docs evidence are implemented;
+next finish portable build/audit, target tests, and external CI execution.
 
 ## 1. Starting point and development priorities
 
@@ -842,7 +843,9 @@ Establish one of two explicit CI paths during development: a compatible controll
 
 Documentation has its own environment. Ensure it resolves the intended wrapper and run it from a clean setup; do not rely on a developer's main-project manifest. Keep expensive memory diagnostics and noisy speed comparisons in separate jobs or controlled runners. Ordinary CI should run deterministic numerical, ownership, ABI, and contract checks.
 
-Before release, require all of the following:
+The [release evidence report](release_evidence.md) records fresh-project resolution, actual bundled
+installation, archive docs checks, and portable-recipe fixes. These do not satisfy portable-target
+certification. Before release, require all of the following:
 
 - All seven types implement the documented scalar foundation and numerical guarantees.
 - Every foreign declaration resolves against supported artifacts and every mirrored layout has matching probe evidence.

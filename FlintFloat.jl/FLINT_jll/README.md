@@ -111,7 +111,11 @@ The separate recipe uses BinaryBuilder's toolchains, dependency prefixes and
 artifact auditing, pins the same source archive/hash, and declares the
 `libflint` product. It follows the upstream Yggdrasil FLINT recipe's Autotools
 build, including musl and MinGW configuration. It is supplied for further
-platform builds; **it has not been executed here**.
+platform builds. The initial recipe target is x86_64 glibc Linux; a build attempt has verified and
+extracted the bundled pinned source, but a portable artifact has not yet passed complete build/audit
+and target tests. The recipe strips the JLL build suffix for BinaryBuilder and reuses the local
+source archive when available. See the main package
+[release evidence](../../docs/release_evidence.md) for the current verification limits.
 
 ```sh
 julia --project=build -e 'using Pkg; Pkg.instantiate()'
