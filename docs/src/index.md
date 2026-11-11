@@ -107,8 +107,45 @@ The typed borrowed loop reuses slot storage; collecting references intentionally
 Use whole-vector destination methods when they fit. Validate matching axes before combining multiple
 iterators with `zip`, which otherwise truncates to the shortest. Concurrent writes require independent
 slots and no explicit parent finalization during use. Vector operations reject other possible
-destination/input overlap. Optimized packed broadcast and reductions remain future work; ordinary
-Base expressions still use copied scalar values.
+destination/input overlap. Flat same-format packed assignment broadcast reuses storage as described below. Nested/custom
+expressions and specialized reductions remain on their generic paths.
+
+## Flat in-place packed broadcast
+
+Preallocate a packed destination and use ordinary dotted assignment. Flat identity, `+`, and `*`
+with same-format packed leaves or owned scalar/`Ref(value)` leaves reuse initialized slots. Direct
+packed copies/additions use native kernels; other recognized spans use borrowed scalar destinations.
+Reading `v[i]` still returns an independent value, and allocating `x .+ y` keeps its existing result
+container behavior.
+
+```jldoctest
+julia> using FlintFloats
+
+julia> T = ArbBall{128}; x = PackedBallVector(T, [1, 2, 3]); y = PackedBallVector(T, [4, 5, 6]); dest = similar(x);
+
+julia> dest .= x .+ y;
+
+julia> all(i -> dest[i] == T(2i + 3), eachindex(dest))
+true
+
+julia> dest .= x .* Ref(T(2));
+
+julia> all(i -> dest[i] == T(2i), eachindex(dest))
+true
+
+julia> x .= view(x, 1:1) .+ x;
+
+julia> all(i -> x[i] == T(i + 1), eachindex(x))
+true
+```
+
+Broadcast follows Base's alias preparation: overlapping views, including singleton expansion, are
+snapshotted before writing. These snapshots can allocate, whereas ordinary nonoverlapping typed fast
+paths avoid per-element Julia owners. Explicit `FlintFloats.add!`/`mul!` retain their overlap-rejection
+policy. Repeated-index destinations, nested expressions, callbacks, mixed formats/types, and unsupported
+inputs use Base's generic destination method without retry after errors. Evaluation errors can leave
+a valid partially updated destination; this is not nfloat's commit-on-success guarantee. Bounded nested
+broadcast is the next planned optimization; sum/dot reductions follow separately.
 
 ```@index
 ```

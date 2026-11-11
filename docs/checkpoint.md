@@ -3,10 +3,10 @@
 State of FlintFloats.jl after M0–M3, M4a–M4c bulk arithmetic, and reusable nfloat scratch from
 [enact_interfacing.md](enact_interfacing.md). Written to resume the work cold.
 
-- Last committed implementation before this update: `1ff676c` (packed owners and interface plans).
-  This update implements the copied-read documentation and `eachborrow` follow-up in §9.4.1–2.
-- Prior full-suite baseline: **13,709 pass**. This follow-up uses focused packed ownership/iteration
-  tests and concurrency regression checks on Julia 1.13.3 with four threads, plus documentation/doctests;
+- Last committed implementation before this update: `de89bae` (explicit borrowed iteration). This update implements flat
+  destination broadcast in `src/packed_broadcast.jl` (§9.4.3, first step).
+- Prior full-suite baseline: **13,709 pass**. This follow-up uses 950 focused packed ownership
+  tests and 781 flat-broadcast compatibility/containment checks on Julia 1.13.3 with four threads, plus documentation/doctests;
   it does not rerun the full suite.
 - Binding inventory now includes **307** audited symbols (M4c adds eight); regenerate twice without drift.
 - Pinned FLINT: 3.7.0-dev, source `82c40b299084b92299c2d8dac464e39d6743fce4`, ABI 25, wrapper
@@ -63,6 +63,12 @@ Implemented (per [capability_table.md](capability_table.md), which is the author
   resumed iteration reject finalized parents. Use bulk methods when they fit and explicit iteration
   for custom slot mutation. The concurrency regression test now gives each task independent locals.
 
+- Flat packed assignment broadcast optimizes same-format identity/add/multiply with packed and owning
+  scalar/`Ref(value)` leaves. Base snapshots overlapping views before mutation; native set/add and
+  borrowed multiply/scalar-expansion paths reuse storage. Generic fallback remains for nested/custom/
+  mixed expressions and repeated-index destinations; allocating result-container selection is unchanged.
+  Explicit bulk operations still reject other possible overlap. No new C declarations are needed.
+
 Not implemented: native dot/matrix methods (M4d),
 elementary functions, a shared internal protocol across families, portable artifacts, verified generic
 CI, and `DFloat`/`NFloat` complex types.
@@ -76,6 +82,7 @@ CI, and `DFloat`/`NFloat` complex types.
 | `src/{dfloat,dfloatball,nfloat,arf,acf,arb,acb}.jl` | one family each |
 | `src/{precision,storage,typegrid,conversions,show,compare,promotion,basefloat}.jl` | cross-cutting |
 | `src/arrays.jl`, `src/reusable.jl` | vector contracts/dispatch; reusable scratch, shared nfloat kernels and commit-on-success |
+| `src/packed_broadcast.jl` | flat destination broadcast, Base-compatible alias preparation, generic fallback |
 | `src/packed.jl` | fixed-size packed ball owners, explicit borrowing, semantic copying, native add and borrowed arithmetic |
 | `gen/` | `inventory.toml` (every bound symbol), `inventory.jl`, `audit.jl`, `generate.jl`, own env |
 | `test/abi/` | `probe.c`, `run.sh`, `layout.txt` (recorded C layout evidence) |
@@ -96,6 +103,7 @@ julia --project=benchmark benchmark/m4b_vectors.jl            # nfloat bulk/cont
 julia --project=benchmark benchmark/reusable.jl               # allocating vs reused nfloat scratch
 julia --project=benchmark benchmark/m4c_packed.jl             # packed lifecycle and arithmetic
 julia --project=benchmark benchmark/packed_iteration.jl       # copied/manual/iterator/bulk updates
+julia --project=benchmark benchmark/packed_broadcast.jl       # flat fast paths, Base comparison, alias snapshots
 julia --project=docs docs/make.jl                             # documentation site
 cd docs && pandoc enact_interfacing.md -f gfm -o enact_interfacing.docx
 ```
@@ -153,8 +161,7 @@ method, add a differential test, add a row to `capability_table.md`, all in one 
 
 ## 6. Next
 
-**Flat in-place broadcast (§9.4.3)** is next, followed by bounded nested arithmetic and M4d
-reductions/dot products. For M4d: independently specify accumulation guarantees, empty sums, and
+**Bounded nested broadcast (§9.4.3, second step)** is next, followed by M4d reductions/dot products. For M4d: independently specify accumulation guarantees, empty sums, and
 complex conjugation, then audit selected native kernels and compare equivalent numerical contracts.
 Matrix storage follows only where measured workloads justify it. M5 adds elementary functions,
 portable artifacts, and verified CI. Keep that sequence.

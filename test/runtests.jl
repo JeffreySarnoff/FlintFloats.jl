@@ -16,4 +16,5 @@ using Test
     include("reusable_tests.jl")
     include("packed_tests.jl")
     include("packed_iteration_tests.jl")
+    include("packed_broadcast_tests.jl")
 end

@@ -2,7 +2,7 @@
 
 ## Decisions and scope
 
-Build a Julia interface to FLINT's floating-point families using `FLINT_jll`, as described in `README.md`. Optimize for inexpensive scalar calls, contiguous bulk arithmetic, and source that makes ownership and numerical guarantees easy to inspect. This plan now accompanies implemented M0–M3 and M4a–M4c: the pinned dependency/bindings, seven scalar types, Julia contracts, inline bulk arithmetic, and reusable nfloat scratch are in place. Fixed-size packed ball owners and explicit borrowing are also implemented; Copied-read documentation and explicit `eachborrow` are also implemented; flat in-place broadcast (§9.4.3) is next, followed by nested broadcast and M4d reductions/dot products. See the current [checkpoint](checkpoint_gpt.md), [guide](enact_interfacing.md), and [capability table](capability_table.md) for status and evidence.
+Build a Julia interface to FLINT's floating-point families using `FLINT_jll`, as described in `README.md`. Optimize for inexpensive scalar calls, contiguous bulk arithmetic, and source that makes ownership and numerical guarantees easy to inspect. This plan now accompanies implemented M0–M3 and M4a–M4c: the pinned dependency/bindings, seven scalar types, Julia contracts, inline bulk arithmetic, and reusable nfloat scratch are in place. Fixed-size packed ball owners and explicit borrowing are also implemented; Copied-read documentation and explicit `eachborrow` are also implemented; flat in-place broadcast (§9.4.3, first step) is implemented. Next is bounded nested broadcast, followed by M4d reductions/dot products. See the current [checkpoint](checkpoint_gpt.md), [guide](enact_interfacing.md), and [capability table](capability_table.md) for status and evidence.
 
 The Julia floor is **1.13**. Julia 1.13 gives `Base.ScopedValues` and package extensions without shims; precision itself is a type parameter (below), so scoped values are not used for numeric precision. `Project.toml` and CI are updated with this plan.
 
@@ -63,6 +63,7 @@ src/
   arrays.jl              inline vector validation and dfloat dispatch
   reusable.jl            NFloatWorkspace, shared nfloat kernels and commit-on-success
   packed.jl              PackedBallVector owners, borrowed slots and ball vector arithmetic
+  packed_broadcast.jl    flat destination fast paths, alias snapshots and generic Base fallback
   show.jl                formatting and parsing policy
 gen/                     binding inventory and regeneration tools
 test/                    interface, ABI, numerical and ownership checks

@@ -1,13 +1,13 @@
 # FlintFloats.jl development checkpoint
 
 This handoff covers M0–M3, M4a–M4c, and reusable nfloat scratch. The last implementation
-commit before this update is `1ff676c` (packed owners and interface plans); this checkpoint is updated with copied-read documentation and `eachborrow` in `src/packed.jl`, plus focused tests/benchmarks. It does not replace the [public interface contract](float_interfacing.md),
+commit before this update is `de89bae` (explicit borrowed iteration); this checkpoint is updated with flat packed broadcast in `src/packed_broadcast.jl`, plus focused tests/benchmarks. It does not replace the [public interface contract](float_interfacing.md),
 [capability table](capability_table.md), or [development guide](enact_interfacing.md). Check the current
-tree before acting. The next implementation part is **flat in-place broadcast (§9.4.3)**, followed by nested broadcast and M4d reductions/dot products.
+tree before acting. The next implementation part is **bounded nested broadcast (§9.4.3, second step)**, followed by M4d reductions/dot products.
 
 ## Repository and binary state
 
-- **Completed milestones:** M0 (binary contract), M1 (representations), M2 (scalar arithmetic), and M3 (Julia numeric contracts). M4a (inline vector arithmetic), M4b (nfloat vectors), and reusable nfloat scratch are also implemented. M4c packed ball owners/borrowing and §9.4.1–2 documentation/`eachborrow` are also implemented; flat in-place broadcast is next.
+- **Completed milestones:** M0 (binary contract), M1 (representations), M2 (scalar arithmetic), and M3 (Julia numeric contracts). M4a (inline vector arithmetic), M4b (nfloat vectors), and reusable nfloat scratch are also implemented. M4c packed ball owners/borrowing and §9.4.1–2 documentation/`eachborrow` are also implemented; flat in-place broadcast is implemented; bounded nested broadcast is next.
 - **Julia floor:** 1.13; local development uses 1.13.3.
 - **Pinned library:** FLINT `3.7.0-dev`, source commit `82c40b299084b92299c2d8dac464e39d6743fce4`, ABI 25. The nested `FlintFloat.jl/FLINT_jll` package has version `301.690.0+0`; the main project resolves it by path.
 - **Artifact constraint:** The bundled x86_64 Linux binary is tuned for the development host (i9-14900K, glibc 2.43). It is unsuitable as a portable CI or release artifact. The BinaryBuilder recipe exists but has not been validated on the target matrix.
@@ -91,6 +91,22 @@ parent, while an independent copied scalar can outlive it. Typed warmed iteratio
 Julia allocation; collecting references intentionally allocates their collection. Numerical kernels
 and native declarations are unchanged. Prefer bulk methods for matching whole-vector work.
 
+## Flat in-place broadcast follow-up
+
+`src/packed_broadcast.jl` specializes only the packed destination `copyto!` seam. Identity, binary
+addition, and multiplication with same-format packed/owned-scalar/`Ref(value)` leaves reuse initialized
+storage. Direct packed set/add reuse native kernels; other recognized spans, scalar/singleton
+expansion, and multiplication use borrowed destinations. Shapes and open parents are checked before
+writing. Base's `broadcast_unalias` snapshots possibly overlapping views, including expanded singletons,
+using existing type-preserving unalias-copy rules. Snapshot native memory can be proportional to the
+whole parent; timings report that cost separately. Explicit bulk methods keep overlap rejection.
+
+Nested/custom expressions, other Ref kinds, ordinary array inputs, mixed formats/types, and repeated
+indices on the destination use an explicit invocation of Base's generic method selected before mutation.
+No error retry or global broadcast style is added. Generic callback effects and allocating result types
+are retained. Fast-path evaluation errors may partially update a valid destination. Empty recognized
+calls skip C and scalar Ref reads after validation. Numerical kernels and C bindings are unchanged.
+
 ## Behavioral decisions that matter when extending the code
 
 - Ball comparisons express proofs. Unproved equality or ordering returns `false`; `!=` is implemented separately from negated equality. Balls do not support numeric `isless`, `min`, `max`, or `sort`; use `sortkey` for presentation order.
@@ -129,6 +145,7 @@ julia --project=benchmark benchmark/m4b_vectors.jl
 julia --project=benchmark benchmark/reusable.jl
 julia --project=benchmark benchmark/m4c_packed.jl
 julia --project=benchmark benchmark/packed_iteration.jl
+julia --project=benchmark benchmark/packed_broadcast.jl
 ```
 
 The ABI probe (`./test/abi/run.sh`) expects an external FLINT build tree under `/tmp/flintfloats-jll-build` and a configured OpenBLAS32 library directory. Inspect the script before relying on it in a clean environment. `docs/make.jl` builds the documentation in its own Julia project.
@@ -144,15 +161,16 @@ overflow and input exceptions followed by reuse, and deterministic concurrent/re
 The inventory now contains **307** audited symbols; M4c adds eight arb/acb vector init/clear/set/add exports. Regeneration must remain deterministic. Packed tests add rational endpoint oracles, GC/heap-backed ownership, fixed-size/reference semantics, copy independence, views/aliases, cleanup, and independent concurrent slots. Matching-header ABI evidence now includes nfloat exponent
 limits. Numerical error tests use independent exact dyadics and retain their sampled scope.
 
-This follow-up runs only packed ownership, new iterator/value-semantics tests, and repeated independent
-owner concurrency checks (four threads), plus documentation/doctests. The concurrency test helper has
-independent function locals rather than shared captured bindings. No whole-suite rerun or binding
-change is needed. See `benchmark/results/packed_iteration.txt` for equivalent copied/manual/iterator/
-bulk update comparisons including allocations and gathered-view iteration.
+This follow-up passes 950 packed ownership and 781 flat broadcast checks (four threads), plus documentation/
+doctests. The new suite checks Base compatibility, exact rational endpoint containment, alias snapshots,
+callbacks/exceptions, generic result types/styles, precision, empty calls, allocation behavior, and
+method ambiguities. No full-suite rerun or binding update is needed. See
+`benchmark/results/packed_broadcast.txt` for complete checked-versus-Base operations and separate alias
+snapshot costs, with Julia allocation counts distinct from native memory.
 
 ## Next work and open limits
 
-1. **§9.4.3:** flat in-place broadcast, then bounded nested arithmetic; keep generic fallbacks,
+1. **§9.4.3, second step:** bounded nested arithmetic; keep generic fallbacks,
    alias snapshots, expression-tree rounding, and ordinary allocating-result behavior.
 2. **M4d:** selected native dot products, with exact/certified references, empty sums, complex
    conjugation conventions, and independent accumulation guarantees. Evaluate matrix storage only
