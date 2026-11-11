@@ -1,8 +1,8 @@
 # FlintFloats.jl development checkpoint
 
 State after M0–M3, M4 bulk/packed follow-ups, and the five selected M5 elementary functions from
-[enact_interfacing.md](enact_interfacing.md). This snapshot accompanies the inline-function update;
-its base commit is `cd36c41` (strict arb/acf elementary functions). Inspect `git log` and `git status`
+[enact_interfacing.md](enact_interfacing.md). This snapshot accompanies the CI/docs infrastructure update;
+its base commit is `7500642` (selected inline elementary functions). Inspect `git log` and `git status`
 for the current commit and any subsequent changes.
 
 ## Implemented
@@ -44,6 +44,18 @@ Precision is never a mutable runtime default; `with_precision(f,bits)` passes `V
   See [elementary.md](elementary.md) for domains, flags, native range limits, and source audits.
   Qualified destination and aggregate `_inexact!` methods reuse arb/acf storage. Inline values return
   by value. Failed status-returning outputs are never read.
+
+## Latest infrastructure continuation
+
+Hosted CI now checks source/archive identity, target-gate rejection, and deterministic generation
+without loading tuned native code. Explicit manual native CI requires the controlled runner label
+`flintfloats-i9-14900k-glibc243` and matching headers via `FLINTFLOATS_DEPS_PREFIX`. Host/CPU/libc
+checks precede native import. The installed-artifact ABI checker uses runtime library paths and
+compares a fresh C probe without modifying the recorded layout. Documentation builds have an
+explicit source root and deployment is opt-in. See [ci_release.md](ci_release.md).
+Local validation: five target-gate checks, source/archive identity, fresh C ABI probe, YAML structure,
+and docs/doctests pass. Remote runner provisioning/execution is not claimed. No numeric source
+changed in this step, so numerical suites were not rerun.
 
 ## Current verification
 
@@ -102,7 +114,8 @@ validation steps; ABI probes require the matching external build tree and config
 ## Next and open limits
 
 Continue with compatible CI/documentation setup and portable artifact/release gates (§12).
-The existing generic hosted x86/x64 workflow is scaffolding and cannot run the tuned binary safely.
+Hosted jobs no longer load the tuned binary; controlled native jobs require explicit compatible-runner dispatch.
+Remote runner provisioning/execution and portable artifact validation remain incomplete.
 Selected M5 numerical functions are implemented; additional special functions, mapped reductions,
 and native matrices require individual evidence and measured need rather than speculative expansion.
 

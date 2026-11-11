@@ -832,7 +832,11 @@ For each implementation change, describe the caller-visible behavior, affected g
 
 ## 12. CI, documentation, and release readiness
 
-The current workflow lists Julia 1.13, stable, and prerelease versions on x64/x86 Linux. This is scaffolding, not a verified support matrix. The host-tuned artifact cannot support that matrix as supplied.
+The workflow now runs host-independent source/archive checks and deterministic binding generation
+on hosted Julia 1.13. It does not load FLINT there. An explicitly dispatched compatible-runner job
+validates the host before native imports, then runs contracts, symbol/ABI checks, and docs.
+[CI/release instructions](ci_release.md) document labels, headers, deployment opt-in, and remaining
+external runner/portable-target evidence. The old unverified hosted native matrix has been removed.
 
 Establish one of two explicit CI paths during development: a compatible controlled runner using the local artifact, or a build job producing an appropriate artifact for the test runner. For release, use portable, audited artifacts and test each supported target. Remove or exclude unprovided targets rather than letting incompatible native code run. Include Windows, 32-bit, or other architectures only after their Julia builds, native dependencies, layouts, and numerical behavior have been verified.
 
