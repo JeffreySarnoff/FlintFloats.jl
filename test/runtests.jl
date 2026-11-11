@@ -18,4 +18,5 @@ using Test
     include("packed_iteration_tests.jl")
     include("packed_broadcast_tests.jl")
     include("packed_nested_broadcast_tests.jl")
+    include("packed_reduce_tests.jl")
 end

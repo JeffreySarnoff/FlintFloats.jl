@@ -1,13 +1,13 @@
 # FlintFloats.jl development checkpoint
 
 This handoff covers M0–M3, M4a–M4c, and reusable nfloat scratch. The last implementation
-commit before this update is `a140f35` (flat packed broadcast); this checkpoint is updated with bounded nested packed broadcast in `src/packed_broadcast.jl`, plus focused tests/benchmarks. It does not replace the [public interface contract](float_interfacing.md),
+commit before this update is `409f81e` (bounded nested broadcast); this checkpoint is updated with bounded nested packed broadcast in `src/packed_broadcast.jl`, plus focused tests/benchmarks. It does not replace the [public interface contract](float_interfacing.md),
 [capability table](capability_table.md), or [development guide](enact_interfacing.md). Check the current
-tree before acting. The next implementation part is **borrowed sum (§9.4.4)**, followed by audited M4d dot products.
+tree before acting. The next implementation part is **audited M4d dot products (§9.4.4)**; borrowed sum is implemented.
 
 ## Repository and binary state
 
-- **Completed milestones:** M0 (binary contract), M1 (representations), M2 (scalar arithmetic), and M3 (Julia numeric contracts). M4a (inline vector arithmetic), M4b (nfloat vectors), and reusable nfloat scratch are also implemented. M4c packed ball owners/borrowing and §9.4.1–2 documentation/`eachborrow` are also implemented; flat in-place broadcast is implemented; bounded nested broadcast is implemented; borrowed sum is next.
+- **Completed milestones:** M0 (binary contract), M1 (representations), M2 (scalar arithmetic), and M3 (Julia numeric contracts). M4a (inline vector arithmetic), M4b (nfloat vectors), and reusable nfloat scratch are also implemented. M4c packed ball owners/borrowing and §9.4.1–2 documentation/`eachborrow` are also implemented; flat in-place broadcast is implemented; bounded nested broadcast is implemented; borrowed sum is implemented; audited dot products are next.
 - **Julia floor:** 1.13; local development uses 1.13.3.
 - **Pinned library:** FLINT `3.7.0-dev`, source commit `82c40b299084b92299c2d8dac464e39d6743fce4`, ABI 25. The nested `FlintFloat.jl/FLINT_jll` package has version `301.690.0+0`; the main project resolves it by path.
 - **Artifact constraint:** The bundled x86_64 Linux binary is tuned for the development host (i9-14900K, glibc 2.43). It is unsuitable as a portable CI or release artifact. The BinaryBuilder recipe exists but has not been validated on the target matrix.
@@ -153,6 +153,10 @@ The ABI probe (`./test/abi/run.sh`) expects an external FLINT build tree under `
 For a new FLINT operation, update `gen/inventory.toml`, audit the symbol, regenerate bindings, add the Julia method and a numerical test suited to its stated guarantee, then update `docs/capability_table.md`. Keep the inventory, implementation, test, and capability row in one change.
 
 ## Verification at this checkpoint
+
+Latest sum follow-up: **205 focused reduction checks pass** on four Julia threads, including keyword/
+mapped compatibility, independent empty/singleton results, exact interval containment and cancellation.
+Documentation/doctests and allocation/radius benchmarks cover this step; no full-suite rerun.
 
 The prior full-suite baseline passed **13,709 tests** on Julia 1.13.3 with **four Julia threads**, using
 `JULIA_DEPOT_PATH=/tmp/flint-checkpoint-depot:/home/jas/.julia`. Documentation and doctests pass.

@@ -3,7 +3,7 @@
 State of FlintFloats.jl after M0–M3, M4a–M4c bulk arithmetic, and reusable nfloat scratch from
 [enact_interfacing.md](enact_interfacing.md). Written to resume the work cold.
 
-- Last committed implementation before this update: `a140f35` (flat packed broadcast). This update implements bounded nested
+- Last committed implementation before this update: `409f81e` (bounded nested broadcast). This update implements bounded nested
   destination broadcast in `src/packed_broadcast.jl` (§9.4.3, first step).
 - Prior full-suite baseline: **13,709 pass**. This follow-up uses 950 focused packed ownership
   tests and 781 flat-broadcast compatibility/containment checks on Julia 1.13.3 with four threads, plus documentation/doctests;
@@ -161,7 +161,7 @@ method, add a differential test, add a row to `capability_table.md`, all in one 
 
 ## 6. Next
 
-**Borrowed sum (§9.4.4)** is next, followed by audited M4d dot products. For M4d: independently specify accumulation guarantees, empty sums, and
+**Audited M4d dot products (§9.4.4)** are next; borrowed sum is implemented. For M4d: independently specify accumulation guarantees, empty sums, and
 complex conjugation, then audit selected native kernels and compare equivalent numerical contracts.
 Matrix storage follows only where measured workloads justify it. M5 adds elementary functions,
 portable artifacts, and verified CI. Keep that sequence.

@@ -165,6 +165,26 @@ julia> all(i -> v[i] == T(3i), eachindex(v))
 true
 ```
 
+## Packed sum
+
+Plain `sum(v)` accumulates through borrowed reads into one fresh owned scalar at element precision.
+It encloses the exact sum and returns independent results for empty/singleton inputs too. Accumulation
+is in logical view order; radius/representation can differ from Base's reassociated reduction. Julia
+allocation is bounded by the result owner, not the number of terms. Calls with keywords or mapped
+callbacks retain Base's generic interface; callbacks still receive copied scalar values.
+
+```jldoctest
+julia> using FlintFloats
+
+julia> T = ArbBall{128}; v = PackedBallVector(T, [1, 2, 3]); total = sum(v);
+
+julia> total == T(6) && sum(view(v, 3:-1:1)) == T(6)
+true
+
+julia> sum(PackedBallVector(T, 0)) == T(0)
+true
+```
+
 ```@index
 ```
 

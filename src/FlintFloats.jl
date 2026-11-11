@@ -29,6 +29,7 @@ include("arrays.jl")
 include("reusable.jl")
 include("packed.jl")
 include("packed_broadcast.jl")
+include("packed_reduce.jl")
 
 export FlintReal, FlintNumber, DFloat, DFloatBall, NFloat, NFloatType,
        ArbFloat, ArbBall, AcbFloat, AcbBall, NFloatWorkspace,
