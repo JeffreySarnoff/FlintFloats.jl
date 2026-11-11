@@ -1,8 +1,8 @@
 # FlintFloats.jl development checkpoint
 
 State after M0–M3, M4 bulk/packed follow-ups, and the five selected M5 elementary functions from
-[enact_interfacing.md](enact_interfacing.md). This snapshot accompanies the scalar-copy/persistence correction;
-its base commit is `ccd1da0` (clean installation and portable recipe fixes). Inspect `git log` and `git status`
+[enact_interfacing.md](enact_interfacing.md). This snapshot accompanies the complex scalar assignment correction;
+its base commit is `8cbb4da` (semantic scalar deepcopy and persistence guard). Inspect `git log` and `git status`
 for the current commit and any subsequent changes.
 
 ## Implemented
@@ -44,6 +44,17 @@ Precision is never a mutable runtime default; `with_precision(f,bits)` passes `V
   See [elementary.md](elementary.md) for domains, flags, native range limits, and source audits.
   Qualified destination and aggregate `_inexact!` methods reuse arb/acf storage. Inline values return
   by value. Failed status-returning outputs are never read.
+
+## Latest scalar assignment continuation
+
+Owning complex `set!` was missing despite the scalar assignment contract. Both forms now use the
+existing audited native bindings: `AcbFloat` rounds each part in any of the five strict modes;
+`AcbBall` preserves containment at destination precision. Cross precision, exact aliases, source
+independence, rejected modes before mutation, inference, and zero warmed Julia allocation are checked.
+Validation: **297 assignment + 81 adjacent storage checks pass**; documentation/doctests pass.
+Numerical bindings are unchanged.
+The interface's old proposed dot example is now labeled an unconjugated product sum, with no
+unverified fused-allocation claim. Portable build/dependency setup remains in progress.
 
 ## Latest ownership continuation
 

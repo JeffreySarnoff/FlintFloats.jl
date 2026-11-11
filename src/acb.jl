@@ -109,3 +109,9 @@ end
 
 "Squared modulus `re² + im²` as an enclosure."
 Base.abs2(x::AcbBall) = (r = real(x); i = imag(x); r * r + i * i)
+
+"Set `z` to a containing copy of `x` at destination precision; permits exact aliasing."
+function set!(z::AcbBall{P},x::AcbBall) where {P}
+    LibFlint.acb_set_round(z,x,P)
+    z
+end

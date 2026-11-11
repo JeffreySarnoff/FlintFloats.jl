@@ -232,11 +232,13 @@ All have the form `z = f!(z, args...)` and return the result. `ArbFloat`/`AcbFlo
 4. Scalar destination failure behavior is operation-specific. Nfloat vector operations always compute into private scratch and preserve the destination on arithmetic or input-read failure. Dfloat scalar-loop vector fallbacks can partially update the destination on custom input exceptions.
 5. `set!(z, x)` converts `x` into `z`'s format with enclosure-preserving conversion for balls.
 
-Proposed fused pattern (`addmul!` and a native `dot` surface remain unimplemented):
+Proposed unconjugated product-sum pattern (`addmul!` remains unimplemented; conjugating packed
+`LinearAlgebra.dot` is implemented):
 
 ```julia
-function dot(xs::AbstractVector{T}, ys::AbstractVector{T}) where {T<:FlintNumber}
-    acc = zero(first(xs))
+function productsum(xs::AbstractVector{T}, ys::AbstractVector{T}) where {T<:FlintNumber}
+    axes(xs)==axes(ys) || throw(DimensionMismatch("matching axes required"))
+    acc = zero(T)
     @inbounds for i in eachindex(xs, ys)
         acc = addmul!(acc, xs[i], ys[i])
     end
@@ -244,7 +246,8 @@ function dot(xs::AbstractVector{T}, ys::AbstractVector{T}) where {T<:FlintNumber
 end
 ```
 
-For `ArbBall` and `ArbFloat` this does no allocation in the loop; for `DFloat{2}` it compiles to value arithmetic.
+This is a design sketch, not an allocation claim: fused operations would need their own numerical
+and performance evidence. It is an unconjugated product sum even for complex inputs.
 
 ### 2a.5 Predicates, comparison, hashing
 

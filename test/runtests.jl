@@ -16,6 +16,7 @@ using Test
     include("arithmetic_tests.jl")
     include("ownership_tests.jl")
     include("storage_copy_tests.jl")
+    include("complex_set_tests.jl")
     include("array_tests.jl")
     include("nfloat_array_tests.jl")
     include("reusable_tests.jl")

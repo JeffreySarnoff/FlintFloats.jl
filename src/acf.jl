@@ -201,3 +201,9 @@ function sqrt_inexact!(z::AcbFloat{P}, x::AcbFloat{P}, r::RoundingMode = RoundNe
 end
 sqrt!(z::AcbFloat{P}, x::AcbFloat{P}, r::RoundingMode = RoundNearest) where {P} = first(sqrt_inexact!(z, x, r))
 Base.sqrt(x::AcbFloat{P}) where {P} = sqrt!(AcbFloat{P}(), x)
+
+"Set `z` to `x` rounded at destination precision in a strict explicit mode; permits exact aliasing."
+function set!(z::AcbFloat{P},x::AcbFloat,r::RoundingMode=RoundNearest) where {P}
+    LibFlint.acf_set_round(z,x,P,_rnd(r))
+    z
+end
