@@ -2,7 +2,7 @@
 
 ## Decisions and scope
 
-Build a Julia interface to FLINT's floating-point families using `FLINT_jll`, as described in `README.md`. Optimize for inexpensive scalar calls, contiguous bulk arithmetic, and source that makes ownership and numerical guarantees easy to inspect. This plan now accompanies implemented M0–M3 and M4a–M4c: the pinned dependency/bindings, seven scalar types, Julia contracts, inline bulk arithmetic, and reusable nfloat scratch are in place. Fixed-size packed ball owners and explicit borrowing are also implemented; Copied-read documentation and explicit `eachborrow` are also implemented; flat in-place broadcast (§9.4.3, first step) is implemented. Bounded nested broadcast, borrowed sum, and conjugating native/borrowed dot are now implemented; the selected `sum(abs2, v)` mapping and five M5 elementary functions for all seven families are also implemented. Portable x86_64 glibc artifact acceptance is also complete. Next run remote CI and complete public release publication. See the current [checkpoint](checkpoint_gpt.md), [guide](enact_interfacing.md), and [capability table](capability_table.md) for status and evidence.
+Build a Julia interface to FLINT's floating-point families using `FLINT_jll`, as described in `README.md`. Optimize for inexpensive scalar calls, contiguous bulk arithmetic, and source that makes ownership and numerical guarantees easy to inspect. This plan now accompanies implemented M0–M3 and M4a–M4c: the pinned dependency/bindings, seven scalar types, Julia contracts, inline bulk arithmetic, and reusable nfloat scratch are in place. Fixed-size packed ball owners and explicit borrowing are also implemented; Copied-read documentation and explicit `eachborrow` are also implemented; flat in-place broadcast (§9.4.3, first step) is implemented. Bounded nested broadcast, borrowed sum, and conjugating native/borrowed dot are now implemented; the selected `sum(abs2, v)` mapping and five M5 elementary functions for all seven families are also implemented. Portable x86_64 glibc artifact acceptance is also complete. Hosted CI passes; next complete public release publication. See the current [checkpoint](checkpoint_gpt.md), [guide](enact_interfacing.md), and [capability table](capability_table.md) for status and evidence.
 
 The Julia floor is **1.13**. Julia 1.13 gives `Base.ScopedValues` and package extensions without shims; precision itself is a type parameter (below), so scoped values are not used for numeric precision. `Project.toml` and CI are updated with this plan.
 
@@ -178,7 +178,7 @@ Use Julia threads over independent destinations only. Verify context and library
 
 CI now targets hosted Julia 1.13 x64 Ubuntu using the accepted portable x86-64 glibc artifact.
 Local acceptance includes 34,151 numerical checks plus ABI/symbol and clean-install evidence; actual
-remote workflow execution remains pending. Documentation builds use 1.13. Retain a target only when Julia and the selected FLINT artifact support it; record unsupported configurations rather than assuming all layouts are portable.
+hosted workflow execution now passes at ce2831e. Documentation builds use 1.13. Retain a target only when Julia and the selected FLINT artifact support it; record unsupported configurations rather than assuming all layouts are portable.
 
 ## 8. Review of the earlier approach
 

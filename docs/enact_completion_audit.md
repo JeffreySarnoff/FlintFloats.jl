@@ -23,7 +23,7 @@ Optional matrices, other platforms, further functions, and interoperability are 
 | §9 arrays and packed follow-ups | arrays/reusable/packed/packed_broadcast/packed_reduce sources; focused tests; recorded benchmarks | Shape/alias/lifetime and copied-read contracts are retained. Iterator, bounded trees, fresh sum/dot/abs2 results, conjugation, callback fallback, and constant scratch have independent numerical/ownership evidence. |
 | §10 numerical/performance evidence | Exact dyadic/rational references, directed MPFR and certified complex-series bounds; accepted full run; benchmark drivers/results | 34,151 checks cover the changed binary. Accuracy claims distinguish correct rounding, approximation, and enclosures. Current portable measurements identify the new tree; older reports retain historical identities. |
 | §11 milestones | Capabilities, source map, selected M5 elementary implementation, accepted artifact | Scoped M0–M4 and selected M5 numerical deliverables are implemented; release publication is not marked complete. |
-| §12 CI/docs/release | Hosted workflow; verified header helper and ABI script; acceptance/installation reports; licenses in artifact | Local commands and distribution inputs are verified. Actual remote workflow execution and public publication remain outstanding. |
+| §12 CI/docs/release | Hosted workflow; verified header helper and ABI script; acceptance/installation reports; licenses in artifact | Local commands and distribution inputs are verified. Actual hosted workflow passes at ce2831e, including isolated package tests; public publication remains outstanding. |
 | §13 upgrades/maintenance | Version +1, Source.toml compiler/source/artifact provenance, binary/layout/symbol/numerical evidence, protected native packager | The portable replacement was accepted before selection. Old identities remain in history/provenance. Procedure remains the rule for future updates, not a request to invent another upstream revision now. |
 | §14 decisions/references | Representation/context/promotion decisions, curated inventory, pinned source/header references, portable target metadata | Initial numerical decisions are resolved and supported by source/tests. Other-platform/public-release decisions remain explicitly gated. |
 
@@ -46,8 +46,10 @@ Optional matrices, other platforms, further functions, and interoperability are 
 - Performance: recorded numbers name their workload, numerical contract, Julia/native allocation
   limits and artifact identity. They are not universal performance promises.
 
-Draft PR #5 is open. The initial remote workflow failed expression validation before jobs started;
-the job-scope runner-context error is corrected and SHA-pinned actionlint now checks expressions.
-Corrected remote CI still needs to execute against the review branch, including the actual Pkg.test isolation
-used by the workflow. Public release publication is a separate outstanding external action. These
-remain incomplete until their results exist; this audit does not mark the overall goal achieved.
+Draft PR #5 is open. The initial workflow expression failure was corrected and a SHA-pinned
+linter now validates Actions contexts. [Hosted run 42962433938](https://github.com/JeffreySarnoff/FlintFloats.jl/actions/runs/42962433938)
+passes both jobs at ce2831e, including actual package-isolated tests (34,151), ABI/symbols,
+generation, and docs/doctests. [Selected logs](evidence/hosted_ci_acceptance.txt) identify the head.
+The follow-up changes only evidence/checkpoints, leaving all tested code and workflow inputs
+identical; numerical CI is not rerun for those documentation changes. Public merge/release
+publication remains unperformed and requires authorization. The overall goal is not marked achieved.

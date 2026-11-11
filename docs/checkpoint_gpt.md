@@ -61,7 +61,7 @@ floor is glibc 2.17 and Julia 1.13. Only x86_64 glibc Linux is supplied.
   invoked for FLINT installation. Cached dependency sources/artifacts were reused.
 - Five portable-target gate tests, 21 wrapper smoke checks, source/archive checksum checks,
   and matching downloaded GMP/MPFR headers pass. Hosted CI is configured for this portable artifact;
-  actual remote workflow execution and public release publication remain pending.
+  hosted CI now passes at ce2831e; public release publication remains pending.
 
 Build logs and exact download identities are in [release_evidence.md](release_evidence.md),
 [evidence/portable_build_logs.tar.gz](evidence/portable_build_logs.tar.gz), and
@@ -77,7 +77,7 @@ included in the accepted full run. Matrix and further mapping work remain condit
 ## Completion-audit follow-up
 
 The [section-by-section audit](enact_completion_audit.md) maps all fourteen guide sections and
-release checklist items to current source/evidence, keeping remote CI/publication incomplete.
+release checklist items to current source/evidence, keeping public publication incomplete and recording hosted acceptance below.
 It corrects stale guide entries about the portable recipe and legacy ABI setup. Pinned nfloat
 neg/abs implementations return GR_SUCCESS; their inventory metadata now says `gr`, with no
 binding/runtime change and unchanged generated files.
@@ -155,13 +155,18 @@ was used in a job-level environment, where that context is unavailable. The ABI 
 that environment locally. Official actionlint 1.7.12 (SHA-verified archive) reproduced the exact
 error and validates the correction. Hosted source CI now checks workflow expressions with that
 pinned linter. Numerical sources are unchanged; no numerical rerun accompanied this workflow fix.
-The corrected remote CI attempt must still complete before claiming the CI gate passed.
+The corrected [run 42962433938](https://github.com/JeffreySarnoff/FlintFloats.jl/actions/runs/42962433938)
+passes both jobs at `ce2831e`, including actual isolated Pkg.test (34,151 checks), matching ABI/
+symbols, generation, and docs/doctests on an AMD EPYC hosted runner with Julia 1.13.3.
+Selected logs are in [hosted_ci_acceptance.txt](evidence/hosted_ci_acceptance.txt).
+This follow-up only records documentation/evidence; tested source/workflow inputs are unchanged,
+so it skips repeating the numerical CI suite. The PR remains draft pending merge/publication approval.
 
 ## Next and open limits
 
 Local numerical, ownership, portable artifact, and clean-project installation gates are implemented
-and verified. Next run the configured hosted workflow against these commits and complete public
-release/distribution publication. Those external actions have not occurred. No nonexistent remote
+and verified, including hosted CI. Next obtain approval to merge draft PR #5 and publish the
+prepared v0.1.0 prerelease/distribution. Neither merging nor publication has occurred. No nonexistent remote
 artifact URL or additional platform claim is supplied. The actual archive remains bundled and can
 be installed without compiling FLINT. Additional special functions, mappings, and native matrices
 need individually justified scope/evidence; they do not block the selected numerical milestones.

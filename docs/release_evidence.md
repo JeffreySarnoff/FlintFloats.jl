@@ -1,7 +1,7 @@
 # Release preparation evidence
 
 This report records local portable artifact acceptance and historical development evidence; public
-release publication and remote workflow execution have not occurred.
+release publication has not occurred; hosted CI acceptance is recorded below.
 Authority: FLINT 3.7.0-dev, source `82c40b299084b92299c2d8dac464e39d6743fce4`, ABI 25;
 current local wrapper 301.690.0+1 (historical host build +0); validation uses Julia 1.13.3 on
 i9-14900K/glibc 2.43 with the baseline artifact.
@@ -26,7 +26,7 @@ the new bundle into a separate depot where that artifact was absent. Public API,
 assignment, and Serialization-extension checks passed. FLINT was not compiled. Dependency caches were
 reused, so this does not claim a completely empty-machine download test. The new portable benchmark
 baseline identifies the new tree and accuracy contracts; older host-tuned reports remain historical.
-Actual remote CI execution and public release publication are still pending.
+Hosted CI now passes at ce2831e; public release publication is still pending.
 
 ## Empty-depot installation follow-up
 
@@ -94,9 +94,18 @@ The eight installed rootfs/LLVM/platform/GCC artifacts were independently checke
 No checksum/audit bypass or substitution of unverified compiler bytes was used. Obtaining a
 verified toolchain does not establish that the FLINT candidate build or target tests have passed.
 
-## Outstanding release gates
+## Hosted acceptance and remaining publication
 
-Run the configured hosted workflow against the completed source commits and publish the public
-release/distribution when approved. The archive and hashes are real and bundled; no nonexistent
-remote download URL is advertised. Other platforms remain unprovided. Optional interoperability,
-extra special functions/mappings, and matrix storage require individual future scope and evidence.
+[Draft PR #5](https://github.com/JeffreySarnoff/FlintFloats.jl/pull/5) is open. After correcting a
+job-level runner-context expression, [CI run 42962433938](https://github.com/JeffreySarnoff/FlintFloats.jl/actions/runs/42962433938)
+passes both jobs at ce2831e. Actual isolated `Pkg.test()` passes 34,151 checks on AMD EPYC,
+Julia 1.13.3/glibc 2.43, complementing the local Intel acceptance. Symbol/header ABI, checksum,
+generation and docs/doctests gates also pass. [Selected logs](evidence/hosted_ci_acceptance.txt)
+record head/job identities. An evidence-only follow-up has no code/workflow changes and skips
+redundant numerical CI, following the focused-test policy.
+
+Prepared prerelease assets, checksums and notes are under `/tmp/flint-release-candidate`.
+Merging the draft and publishing v0.1.0 still need authorization; neither has occurred.
+The archive and hashes are real and bundled; no nonexistent remote download URL is advertised.
+Other platforms remain unprovided. Optional interoperability, extra functions/mappings, and matrix
+storage require individual future scope and evidence.

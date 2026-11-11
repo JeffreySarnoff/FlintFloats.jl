@@ -50,7 +50,6 @@ FlintFloats.add!(r, r, ArbBall{128}(1))     # updates v[1], not snapshot
 Use the focused commands in the checkpoints after changing code. Generator, benchmark, and docs
 projects have separate environments. Build docs with `julia --project=docs docs/make.jl` after
 instantiating that project; deployment requires explicit opt-in. Hosted CI performs source checks;
-native checks use the bundled portable artifact on hosted x64 Linux. Remote CI execution and public
-release publication remain pending; other platforms remain unclaimed until their builds and checks pass.
+native checks use the bundled portable artifact on hosted x64 Linux. Hosted CI passes; public release publication remains pending; other platforms remain unclaimed until their builds and checks pass.
 
 Nemo.jl and Arblib.jl inform the interface design; neither is a runtime dependency.
