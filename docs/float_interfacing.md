@@ -13,7 +13,7 @@ Companion to [plan_interfacing.md](plan_interfacing.md) and [enact_interfacing.m
 
 **Precision is a type parameter for every type** (see §6.3 and §8 for the trade-offs). `ArbFloat`/`AcbFloat` wrap FLINT's `arf`/`acf` (correctly rounded floating point, no error bounds); `ArbBall`/`AcbBall` wrap `arb`/`acb`. `mag` stays private. Complex dfloat (`dNc`, `dNcb`, would be `DFloatComplex`/`DFloatComplexBall`) and complex nfloat are deferred.
 
-Facts marked *(docs)* come from the FLINT 3.7.0-dev dfloat pages (index, `balls`, `d1b_struct`, `d1cb_struct`, `DFLOAT_BALL`, `using`, `d1b_add`, `d1b_is_exact`). Those pages say parts of their text were LLM-generated; confirm against `src/dfloat.h` before binding. Facts marked *(pinned docs)* come from the Markdown documentation shipped in the pinned source tree (`doc/src/arf`, `doc/src/acf`), read locally. Facts marked *(checked)* were read from the local build at `/tmp/flintfloats-jll-build/install` (FLINT 3.7.0-dev, source `82c40b29…`, ABI 25). Availability is recorded in [capability_table.md](capability_table.md); proposed surfaces below are not implementation claims. M0–M3 and M4a–M4c are implemented, including `NFloatWorkspace`, `PackedBallVector`, and explicit `BorrowedBall` references. The copied-read documentation and `eachborrow` follow-up is implemented. Flat in-place broadcast (§9.4.3, first step) is implemented. Bounded nested broadcast is next, followed by M4d reductions/dot products.
+Facts marked *(docs)* come from the FLINT 3.7.0-dev dfloat pages (index, `balls`, `d1b_struct`, `d1cb_struct`, `DFLOAT_BALL`, `using`, `d1b_add`, `d1b_is_exact`). Those pages say parts of their text were LLM-generated; confirm against `src/dfloat.h` before binding. Facts marked *(pinned docs)* come from the Markdown documentation shipped in the pinned source tree (`doc/src/arf`, `doc/src/acf`), read locally. Facts marked *(checked)* were read from the local build at `/tmp/flintfloats-jll-build/install` (FLINT 3.7.0-dev, source `82c40b29…`, ABI 25). Availability is recorded in [capability_table.md](capability_table.md); proposed surfaces below are not implementation claims. M0–M3 and M4a–M4c are implemented, including `NFloatWorkspace`, `PackedBallVector`, and explicit `BorrowedBall` references. The copied-read documentation and `eachborrow` follow-up is implemented. Flat in-place broadcast (§9.4.3, first step) is implemented. Bounded nested broadcast is implemented; borrowed sum is next, followed by M4d dot products.
 
 ## 1. What "uniform" means
 
@@ -406,7 +406,7 @@ initialized FLINT allocation. `PackedBallVector(T, values)` copies values into i
 The owner is fixed-size: ordinary indexing and iteration copy independent scalars, while assignment preserves
 containment at the destination precision. `copy`/`deepcopy` initialize independent native storage;
 `similar`, fill, iteration, and ordinary Base broadcasting are supported. Flat same-format identity/add/multiply
-assignment broadcast reuses packed storage; nested/custom expressions remain generic. No matrix representation is introduced.
+assignment broadcast reuses packed storage; unsupported/custom expressions remain generic. No matrix representation is introduced.
 
 `borrow(v, i)` also accepts packed views and returns an explicit nonnumeric `BorrowedBall` retaining
 the fixed-size parent. `r[]`/`copy(r)` copy out; `r[] = value`/`FlintFloats.set!` copy in. Qualified
@@ -800,11 +800,10 @@ broadcast complete the first surrounding-interface steps in [enact_interfacing.m
 The prior M4c full-suite baseline passed 13,709 tests; this update uses focused broadcast and directly
 affected packed-owner checks, plus documentation/doctests. The shared protocol in §4 remains unfactored.
 
-1. **§9.4.3, second step:** bounded nested arithmetic with private per-node scratch, preserved
-   expression-tree rounding, and safe repeated destination leaves. Generic fallbacks remain available.
+1. **§9.4.4:** borrowed sum with a fresh typed result and bounded scratch, preserving generic keyword/callback behavior.
 2. **M4d:** borrowed sum, then selected native dot methods with independent numerical/conjugation
    contracts; mapped reductions and measured matrix work follow their own gates.
 3. **M5:** elementary/special functions, portable artifacts, and verified CI/release targets.
 
 Use the development guide for acceptance criteria and [capability_table.md](capability_table.md)
-for the implemented operation set. Specialized nested broadcast/reduction methods are not available yet.
+for the implemented operation set. Bounded nested broadcast is implemented with per-node scratch (≤8 arithmetic nodes, depth ≤16). Specialized reductions are not available yet.

@@ -107,8 +107,7 @@ The typed borrowed loop reuses slot storage; collecting references intentionally
 Use whole-vector destination methods when they fit. Validate matching axes before combining multiple
 iterators with `zip`, which otherwise truncates to the shortest. Concurrent writes require independent
 slots and no explicit parent finalization during use. Vector operations reject other possible
-destination/input overlap. Flat same-format packed assignment broadcast reuses storage as described below. Nested/custom
-expressions and specialized reductions remain on their generic paths.
+destination/input overlap. Flat same-format packed assignment broadcast reuses storage as described below. Recognized bounded nested arithmetic also reuses private scratch; custom expressions and specialized reductions remain generic.
 
 ## Flat in-place packed broadcast
 
@@ -142,10 +141,29 @@ true
 Broadcast follows Base's alias preparation: overlapping views, including singleton expansion, are
 snapshotted before writing. These snapshots can allocate, whereas ordinary nonoverlapping typed fast
 paths avoid per-element Julia owners. Explicit `FlintFloats.add!`/`mul!` retain their overlap-rejection
-policy. Repeated-index destinations, nested expressions, callbacks, mixed formats/types, and unsupported
+policy. Repeated-index destinations, unsupported expressions, callbacks, mixed formats/types, and unsupported
 inputs use Base's generic destination method without retry after errors. Evaluation errors can leave
-a valid partially updated destination; this is not nfloat's commit-on-success guarantee. Bounded nested
-broadcast is the next planned optimization; sum/dot reductions follow separately.
+a valid partially updated destination; this is not nfloat's commit-on-success guarantee. Bounded nested arithmetic is supported as described below; borrowed sum/dot reductions follow separately.
+
+## Bounded nested packed broadcast
+
+Same-format pure trees of `identity`, unary negation, and binary `+ - * /` reuse one private scalar
+per node occurrence for each operation. The complete scalar tree is evaluated before writing a slot,
+so repeated destination leaves retain their original value. Every node uses the scalar working
+precision; there is no reassociation or fused multiply-add. Up to eight arithmetic nodes and a depth
+of 16 are supported; other expressions retain Base's generic behavior. Scratch allocation depends on
+tree size, not vector length; alias snapshots may still allocate full parent copies.
+
+```jldoctest
+julia> using FlintFloats
+
+julia> T = ArbBall{128}; v = PackedBallVector(T, [1, 2, 3]);
+
+julia> v .= v .* T(2) .+ v;
+
+julia> all(i -> v[i] == T(3i), eachindex(v))
+true
+```
 
 ```@index
 ```
