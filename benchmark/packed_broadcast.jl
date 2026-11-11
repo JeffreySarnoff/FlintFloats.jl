@@ -22,7 +22,7 @@ println("Flat packed broadcast; minimum warmed times, 100 samples, 0.05 s per ca
 println("Julia=",VERSION," CPU=",Sys.cpu_info()[1].model," Julia threads=",Threads.nthreads())
 println("kernel=",Sys.KERNEL," arch=",Sys.ARCH," libc=",readchomp(`getconf GNU_LIBC_VERSION`))
 println("FLINT_jll=",pkgversion(FLINT_jll)," lib=",FLINT_jll.libflint_path)
-println("source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25; host-tuned artifact")
+println("source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25; artifact identity is the loaded library path above")
 println("Inputs: rigorous 1/7 and 2/9; same-format independent parents; reused initialized output")
 println("generic invokes Base's unspecialized destination path; optimized includes axes/lifetime/alias preparation")
 println("Julia allocation counts exclude FLINT allocation/growth; no global thread settings changed")

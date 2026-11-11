@@ -23,7 +23,7 @@ println("M4b nfloat add/multiply; minimum warmed times, 100 samples, 0.05 s per 
 println("Julia=", VERSION, " CPU=", Sys.cpu_info()[1].model, " Julia threads=", Threads.nthreads())
 println("kernel=", Sys.KERNEL, " arch=", Sys.ARCH, " libc=", readchomp(`getconf GNU_LIBC_VERSION`))
 println("FLINT_jll=", pkgversion(FLINT_jll), " lib=", FLINT_jll.libflint_path)
-println("source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25; host-tuned artifact")
+println("source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25; artifact identity is the loaded library path above")
 println("context=shared immutable ALLOW_UNDERFLOW only; no threaded native kernels or global setting changes")
 println("Inputs: full mantissas from decimal parse, finite mixed signs, ordinary exponents; same numerical guarantees")
 println("scalar_transaction includes allocation/copy; checked_native includes scratch initialization, context lookup, validation, native call, commit")

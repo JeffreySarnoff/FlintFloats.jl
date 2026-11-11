@@ -17,7 +17,7 @@ end
 println("Bounded nested packed broadcast; minimum warmed times, 100 samples, 0.05 s per case")
 println("Julia=",VERSION," CPU=",Sys.cpu_info()[1].model," threads=",Threads.nthreads()," FLINT_jll=",pkgversion(FLINT_jll))
 println("lib=",FLINT_jll.libflint_path," source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25")
-println("Host-tuned x86_64 Linux artifact; no global thread changes. Julia bytes exclude native allocations.")
+println("Loaded x86_64 Linux artifact; no global thread changes. Julia bytes exclude native allocations.")
 println("Independent 1/7 and 2/9 inputs; output reused. Trees preserve scalar precision and association.")
 println("family P n nodes generic_ns generic_allocs generic_bytes optimized_ns optimized_allocs optimized_bytes")
 for family in (ArbBall,AcbBall), P in (128,512), n in (1,32,512), nodes in (2,8)

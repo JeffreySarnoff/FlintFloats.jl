@@ -1,9 +1,9 @@
 # FlintFloats.jl development checkpoint
 
-State after M0–M3, M4 bulk/packed follow-ups, and the five selected M5 elementary functions from
-[enact_interfacing.md](enact_interfacing.md). This snapshot accompanies the complex scalar assignment correction;
-its base commit is `8cbb4da` (semantic scalar deepcopy and persistence guard). Inspect `git log` and `git status`
-for the current commit and any subsequent changes.
+State after M0–M3, scoped M4 bulk/packed work, selected M5 elementary functions, ownership
+corrections, and portable x86_64 Linux artifact acceptance. This snapshot accompanies the portable
+bundle promotion; the preceding commit is `4dfb12d` (verified replacement build downloads).
+Inspect `git log` and `git status` for subsequent changes.
 
 ## Implemented
 
@@ -45,67 +45,48 @@ Precision is never a mutable runtime default; `with_precision(f,bits)` passes `V
   Qualified destination and aggregate `_inexact!` methods reuse arb/acf storage. Inline values return
   by value. Failed status-returning outputs are never read.
 
-## Latest build-download continuation
+## Portable artifact acceptance
 
-Base commit: `f48cd72` (complex owning-scalar assignment: 297 focused checks plus 81 adjacent
-storage checks and docs passed). Three replacement rootfs/GCC 14.2 archives were fetched directly
-from their pinned GitHub releases. Each matches the published SHA-256 and passes full gzip integrity;
-all eight installed rootfs/LLVM/platform/GCC trees independently match their recorded Git hashes.
-The retained archives are in `/tmp/flint-verified-downloads`; a small reproducibility manifest is
-committed as [evidence/portable_downloads.json](evidence/portable_downloads.json).
-Portable FLINT build/audit and target checks remain in progress; no accepted portable artifact or
-release download URL is claimed. No numerical tests were rerun for this evidence-only update.
+`FLINT_jll 301.690.0+1` now selects the accepted BinaryBuilder GCC 14.2.0 artifact. Baseline
+x86-64 instructions and maximum GLIBC symbol 2.16 were inspected; the supported wrapper/runtime
+floor is glibc 2.17 and Julia 1.13. Only x86_64 glibc Linux is supplied.
 
-## Latest scalar assignment continuation
+- Tree: `d3d8eabffb56db6d7cfa77fe9fa38dbe6dd4d6c1`.
+- Archive SHA-256: `71384459c4f0da6add70885117c493cab4dff67174d4e2bce926611ded9974a5`.
+- **34,151 tests pass** against that binary; all 374 symbols and the fresh artifact-header ABI
+  probe pass; docs/doctests pass. A full run was appropriate because the binary changed beneath
+  all operations. Source changes before promotion used focused tests.
+- A fresh project with no main manifest installed the new archive into a separate depot, with
+  public API/deepcopy/assignment/Serialization-extension smoke checks passing. No compiler was
+  invoked for FLINT installation. Cached dependency sources/artifacts were reused.
+- Five portable-target gate tests, 21 wrapper smoke checks, source/archive checksum checks,
+  and matching downloaded GMP/MPFR headers pass. Hosted CI is configured for this portable artifact;
+  actual remote workflow execution and public release publication remain pending.
 
-Owning complex `set!` was missing despite the scalar assignment contract. Both forms now use the
-existing audited native bindings: `AcbFloat` rounds each part in any of the five strict modes;
-`AcbBall` preserves containment at destination precision. Cross precision, exact aliases, source
-independence, rejected modes before mutation, inference, and zero warmed Julia allocation are checked.
-Validation: **297 assignment + 81 adjacent storage checks pass**; documentation/doctests pass.
-Numerical bindings are unchanged.
-The interface's old proposed dot example is now labeled an unconjugated product sum, with no
-unverified fused-allocation claim. Portable build/dependency setup remains in progress.
+Build logs and exact download identities are in [release_evidence.md](release_evidence.md),
+[evidence/portable_build_logs.tar.gz](evidence/portable_build_logs.tar.gz), and
+[evidence/portable_downloads.json](evidence/portable_downloads.json). The three previously corrupted
+rootfs/GCC archives were obtained directly, verified by SHA-256 and full gzip checks, and retained
+under `/tmp/flint-verified-downloads`; all eight installed toolchain trees independently match.
 
-## Latest ownership continuation
-
-A release audit of §6.2 found scalar deepcopy was still generic field copying. It now creates
-semantic native copies and preserves alias graphs via the caller's IdDict. The optional Serialization
-stdlib extension rejects writing/typed reconstruction of native scalar/packed owners and borrowed
-references; inline formats retain ordinary stdlib round trips. Tests cover heap-backed mantissas,
-independence after source mutation/finalization, repeated references, extension activation, and nested
-persistence rejection. **81 new + 17 existing ownership checks pass**; docs/doctests pass.
-The extension is a weak dependency, not a mandatory runtime backend. No new C bindings.
-
-## Latest infrastructure continuation
-
-A fresh archived project without its main manifest resolved and installed FLINT into a separate
-depot (the FLINT artifact was excluded from cached dependencies). Public API smoke and installed
-license-file checks passed without compiling FLINT. The separately resolved docs environment passed
-docs/doctests after fixing source-archive builds without Git metadata. Dependency caches were reused;
-this is clean-project/install evidence, not empty-machine network-download or portable certification.
-
-An actual BinaryBuilder attempt exposed and corrected the recipe's invalid +0 source-version suffix.
-The recipe now prefers the SHA-verified bundled source and limits the initial candidate to x86_64
-glibc Linux. It passes version validation and verifies/extracts source; build/audit/target tests are
-still pending. No replacement artifact or remote distribution URL is claimed.
-See [release_evidence.md](release_evidence.md) and [ci_release.md](ci_release.md).
-Five host-gate tests, source/archive checks, fresh C ABI, YAML validation, and local docs passed in
-the previous infrastructure step. Remote runner execution remains unverified. Numeric suites were
-not rerun for this infrastructure-only change.
+Scalar deepcopy now copies native values semantically and preserves alias graphs. The optional
+Serialization extension rejects raw native owners/references. Complex owning `set!` supports strict
+point rounding and containing ball copies across precision; all have focused evidence and are
+included in the accepted full run. Matrix and further mapping work remain conditional on need.
 
 ## Current verification
 
-Julia 1.13.3, four threads. Latest inline step: **712 inline elementary checks** and **2,227 adjacent
-Base-float checks** pass; documentation/doctests, the **374-symbol audit**, and deterministic binding
-regeneration pass. This is focused validation, not a whole-suite rerun.
+Julia 1.13.3, four threads: **34,151 tests pass** on the new portable binary, plus wrapper,
+ABI/symbol, target-gate, checksum, deterministic-generation, and documentation checks as above.
+The following earlier focused counts are historical step evidence, not extra tests to add to that total.
 
 Earlier completed steps: 3,166 strict-point + 291 ball elementary checks; 13,314 nfloat sqrt checks
 (all 66 limb counts, exact integer-root oracle, MPFR, extreme exponents, concurrent reads); 259 mapped
-+ 205 sum + 346 dot checks; 781 flat + 215 nested broadcast checks. The 13,709 full-suite baseline is
-historical M4c evidence, not a current total. Do not add these counts into a claimed full-suite run.
++ 205 sum + 346 dot checks; 781 flat + 215 nested broadcast checks. The 13,709 M4c full-suite baseline is historical and superseded by portable acceptance.
 
-Benchmarks under `benchmark/results/` cover packed lifecycle, iteration, broadcast, sum, dot, mapped
+The current portable acceptance baseline is `benchmark/results/portable_baseline.txt`. Older
+recorded host-tuned reports retain their original identities; driver labels now defer to the actual
+loaded library identity. Benchmarks under `benchmark/results/` cover packed lifecycle, iteration, broadcast, sum, dot, mapped
 abs2, reusable nfloat workspace, and all selected elementary families. Reports identify the pinned
 host/artifact, accuracy, Julia allocations, and relevant radius quality. Julia counters exclude native
 allocation; zero Julia allocation is not proof of zero native allocation. Elementary first-use
@@ -114,9 +95,9 @@ measurements invoke fresh method specializations at runtime to include compilati
 ## Binary and environment
 
 - Julia floor 1.13; FLINT `3.7.0-dev`, revision `82c40b299084b92299c2d8dac464e39d6743fce4`, ABI 25.
-- Local `FLINT_jll 301.690.0+0` resolves through `FlintFloat.jl/FLINT_jll`.
-- Bundled binary is tuned for x86_64 Linux, i9-14900K, glibc 2.43. It is not a portable CI/release
-  artifact. `Source.toml`, `Artifacts.toml`, and bundled checksums identify source/binary provenance.
+- Local `FLINT_jll 301.690.0+1` resolves through `FlintFloat.jl/FLINT_jll`.
+- Bundled binary is portable x86-64 baseline glibc Linux (minimum glibc 2.17).
+  `Source.toml`, `Artifacts.toml`, and bundled checksums identify current and historical provenance.
 - Separate generator, benchmark, docs, and binary-build environments have their own dependencies;
   development manifests for gen/benchmark/docs are ignored. Instantiate each intended environment.
 
@@ -151,14 +132,14 @@ validation steps; ABI probes require the matching external build tree and config
 
 ## Next and open limits
 
-Continue with compatible CI/documentation setup and portable artifact/release gates (§12).
-Hosted jobs no longer load the tuned binary; controlled native jobs require explicit compatible-runner dispatch.
-Remote runner provisioning/execution and portable artifact validation remain incomplete.
-Selected M5 numerical functions are implemented; additional special functions, mapped reductions,
-and native matrices require individual evidence and measured need rather than speculative expansion.
+Local numerical, ownership, portable artifact, and clean-project installation gates are implemented
+and verified. Next run the configured hosted workflow against these commits and complete public
+release/distribution publication. Those external actions have not occurred. No nonexistent remote
+artifact URL or additional platform claim is supplied. The actual archive remains bundled and can
+be installed without compiling FLINT. Additional special functions, mappings, and native matrices
+need individually justified scope/evidence; they do not block the selected numerical milestones.
 
-Release remains incomplete until supported targets have audited portable binaries, verified clean
-installation and numerical/ABI checks, real artifact delivery metadata, licenses, and passing CI/docs.
+
 Optional Rational/Complex{Float64} interoperability, packed point owners, complex dfloat/nfloat types,
 and shared helper factoring remain future work. Ball uncertainty comparisons, explicit conversions,
 parent lifetimes, and status policies must remain intact during any future extension.

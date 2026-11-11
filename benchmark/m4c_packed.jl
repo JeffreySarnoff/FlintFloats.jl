@@ -22,7 +22,7 @@ println("M4c packed ball vectors; minimum warmed times, 100 samples, 0.05 s per 
 println("Julia=",VERSION," CPU=",Sys.cpu_info()[1].model," Julia threads=",Threads.nthreads())
 println("kernel=",Sys.KERNEL," arch=",Sys.ARCH," libc=",readchomp(`getconf GNU_LIBC_VERSION`))
 println("FLINT_jll=",pkgversion(FLINT_jll)," lib=",FLINT_jll.libflint_path)
-println("source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25; host-tuned artifact")
+println("source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25; artifact identity is the loaded library path above")
 println("No global thread settings changed; tested kernels are scalar/native loops without threaded dispatch")
 println("Inputs: rigorous 1/7 and -2/9 balls, same precision and guarantees in all paths")
 println("owned_loop reuses initialized scalar owners; borrowed_loop reuses packed slots; checked_add includes validation and native call")

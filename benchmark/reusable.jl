@@ -14,7 +14,7 @@ println("Reusable nfloat workspace; minimum warmed times, 100 samples, 0.05 s pe
 println("Julia=", VERSION, " CPU=", Sys.cpu_info()[1].model, " Julia threads=", Threads.nthreads())
 println("kernel=", Sys.KERNEL, " arch=", Sys.ARCH, " libc=", readchomp(`getconf GNU_LIBC_VERSION`))
 println("FLINT_jll=", pkgversion(FLINT_jll), " lib=", FLINT_jll.libflint_path)
-println("source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25; host-tuned artifact")
+println("source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25; artifact identity is the loaded library path above")
 println("No native threaded kernels; no global thread settings changed")
 println("Inputs: finite decimal mantissas, mixed signs; same commit-on-success policy in both checked paths")
 println("reuse includes validation, exclusive-use atomic guard, kernel, status check, active-prefix copy; capacity is preallocated")

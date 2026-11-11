@@ -7,7 +7,7 @@ println("M4a DFloatBall vector add; minimum warmed times, 100 samples, 0.1 s bud
 println("Julia=", VERSION, " CPU=", Sys.cpu_info()[1].model, " Julia threads=", Threads.nthreads())
 println("kernel=", Sys.KERNEL, " arch=", Sys.ARCH, " libc=", readchomp(`getconf GNU_LIBC_VERSION`))
 println("FLINT_jll=", pkgversion(FLINT_jll), " lib=", FLINT_jll.libflint_path)
-println("source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25; host-tuned artifact")
+println("source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25; artifact identity is the loaded library path above")
 println("FLINT/BLAS threading: vector add does not invoke threaded kernels; no global settings changed")
 println("Inputs: midpoint i/8, radius 2^-30; matching rigorous scalar/native guarantees")
 println("N length scalar_ns native_checked_ns speedup native_allocs native_bytes allocating_ns allocating_bytes")

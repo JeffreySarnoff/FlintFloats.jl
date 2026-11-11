@@ -34,7 +34,7 @@ println("Packed read/write and eachborrow; minimum warmed times, 100 samples, 0.
 println("Julia=",VERSION," CPU=",Sys.cpu_info()[1].model," Julia threads=",Threads.nthreads())
 println("kernel=",Sys.KERNEL," arch=",Sys.ARCH," libc=",readchomp(`getconf GNU_LIBC_VERSION`))
 println("FLINT_jll=",pkgversion(FLINT_jll)," lib=",FLINT_jll.libflint_path)
-println("source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25; host-tuned artifact")
+println("source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25; artifact identity is the loaded library path above")
 println("No global thread settings changed. Warmed destinations and independent inputs are reused.")
 println("Each path writes source 1/7 + scalar 2/9 at matching precision; copied path retains results through semantic slot assignment.")
 println("Bulk comparison uses a separately prepared packed vector of the same scalar; its construction is excluded.")

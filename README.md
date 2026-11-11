@@ -11,12 +11,12 @@ point approximations, correctly rounded point operations, and rigorous balls hav
 
 ## Development installation
 
-The repository pins a local FLINT 3.7.0-dev wrapper, version 301.690.0+0, ABI 25. Its bundled binary
-is tuned for x86_64 Linux, i9-14900K, glibc 2.43 or later. A portable release is still being prepared.
-Run the host check before loading that artifact. See the [wrapper guide](FlintFloat.jl/FLINT_jll/README.md)
+The repository pins a local FLINT 3.7.0-dev wrapper, version 301.690.0+1, ABI 25. Its bundled binary
+is a BinaryBuilder x86-64 baseline build for glibc Linux (glibc ≥2.17). Other targets are not supplied.
+Run the target check before loading that artifact. See the [wrapper guide](FlintFloat.jl/FLINT_jll/README.md)
 for source/binary provenance and rebuilding on another target.
 
-From a checkout on the verified development host:
+From a checkout on x86_64 glibc Linux:
 
 ```sh
 julia --startup-file=no scripts/check_host.jl
@@ -50,7 +50,7 @@ FlintFloats.add!(r, r, ArbBall{128}(1))     # updates v[1], not snapshot
 Use the focused commands in the checkpoints after changing code. Generator, benchmark, and docs
 projects have separate environments. Build docs with `julia --project=docs docs/make.jl` after
 instantiating that project; deployment requires explicit opt-in. Hosted CI performs source checks;
-native checks require the documented compatible runner. Other platforms remain unclaimed until
-portable builds, ABI/numerical checks, and clean installation pass.
+native checks use the bundled portable artifact on hosted x64 Linux. Remote CI execution and public
+release publication remain pending; other platforms remain unclaimed until their builds and checks pass.
 
 Nemo.jl and Arblib.jl inform the interface design; neither is a runtime dependency.

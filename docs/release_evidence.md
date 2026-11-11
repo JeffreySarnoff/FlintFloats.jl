@@ -1,8 +1,32 @@
 # Release preparation evidence
 
-This report records local development evidence, not a portable release certification.
+This report records local portable artifact acceptance and historical development evidence; public
+release publication and remote workflow execution have not occurred.
 Authority: FLINT 3.7.0-dev, source `82c40b299084b92299c2d8dac464e39d6743fce4`, ABI 25;
-local wrapper 301.690.0+0; Julia 1.13.3 on i9-14900K/glibc 2.43.
+current local wrapper 301.690.0+1 (historical host build +0); validation uses Julia 1.13.3 on
+i9-14900K/glibc 2.43 with the baseline artifact.
+
+## Accepted portable bundle (current)
+
+Wrapper 301.690.0+1 now selects a BinaryBuilder GCC 14.2.0 baseline x86-64 artifact for glibc
+Linux (runtime floor 2.17). Artifact tree: `d3d8eabffb56db6d7cfa77fe9fa38dbe6dd4d6c1`;
+archive SHA-256: `71384459c4f0da6add70885117c493cab4dff67174d4e2bce926611ded9974a5`.
+[Build/audit logs](evidence/portable_build_logs.tar.gz) are retained. ELF notes report x86-64-baseline;
+maximum required GLIBC symbol is 2.16, and RUNPATH is `$ORIGIN`. Source and ABI remain pinned.
+
+The isolated candidate passed **34,151 numerical/ownership/Julia contract checks**, 374-symbol
+resolution, a fresh matching artifact-header ABI probe, and docs/doctests. Because the binary changes
+all underlying operations, this full acceptance run was appropriate; earlier source follow-ups used
+focused tests. The promoted bundle has identical bytes/tree and additionally passed 21 wrapper
+smoke checks and five target-gate checks. Matching GMP/MPFR headers were downloaded and SHA-verified
+using the same script now in hosted CI.
+
+A fresh working-tree copy without its main manifest resolved through its own sources and installed
+the new bundle into a separate depot where that artifact was absent. Public API, deep copy, complex
+assignment, and Serialization-extension checks passed. FLINT was not compiled. Dependency caches were
+reused, so this does not claim a completely empty-machine download test. The new portable benchmark
+baseline identifies the new tree and accuracy contracts; older host-tuned reports remain historical.
+Actual remote CI execution and public release publication are still pending.
 
 ## Fresh project and bundled installation
 
@@ -37,8 +61,8 @@ The recipe uses the checked-in, SHA-verified source archive when available and f
 same pinned source URL/hash otherwise. Its initial candidate target is x86_64 glibc Linux; additional
 targets are not advertised as supported. No audit bypass or fabricated artifact URL is introduced.
 The corrected recipe passes version validation and verifies/extracts the source in an actual build.
-Toolchain/dependency setup and the native build/audit are still in progress; no portable artifact has
-yet been accepted or substituted for the existing host build.
+The corrected recipe subsequently completed build/audit and its artifact passed the acceptance
+checks recorded above; it now replaces the old bundled host artifact.
 
 ## Verified replacement build downloads
 
@@ -58,8 +82,7 @@ verified toolchain does not establish that the FLINT candidate build or target t
 
 ## Outstanding release gates
 
-A portable candidate still needs its complete build, binary/dependency/license audits, target ABI
-and numerical tests, and clean-target installation. Distribution must use real artifact locations
-and checksums. Controlled CI requires provisioning/executing the documented compatible runner.
-External publishing and additional platform claims remain pending those concrete checks.
-See [ci_release.md](ci_release.md) for the workflow and target gates.
+Run the configured hosted workflow against the completed source commits and publish the public
+release/distribution when approved. The archive and hashes are real and bundled; no nonexistent
+remote download URL is advertised. Other platforms remain unprovided. Optional interoperability,
+extra special functions/mappings, and matrix storage require individual future scope and evidence.

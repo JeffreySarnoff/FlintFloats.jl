@@ -9,6 +9,9 @@ Sys.islinux() && Sys.ARCH == :x86_64 || error("Only the x86_64 Linux wrapper is 
 platform = HostPlatform()
 libc(platform) == "glibc" || error("The supplied wrapper requires glibc")
 root = dirname(@__DIR__)
+provenance = TOML.parsefile(joinpath(root,"Source.toml"))
+get(provenance,"active_build","native")=="native" ||
+    error("Host-native packaging cannot replace the selected portable bundle; use an isolated native-build checkout with matching Source.toml provenance")
 prefix = abspath(only(ARGS))
 isfile(joinpath(prefix, "lib", "libflint.so")) || error("Missing lib/libflint.so in $prefix")
 hash = create_artifact() do directory

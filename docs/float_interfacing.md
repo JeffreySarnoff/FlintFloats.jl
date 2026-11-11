@@ -13,7 +13,7 @@ Companion to [plan_interfacing.md](plan_interfacing.md) and [enact_interfacing.m
 
 **Precision is a type parameter for every type** (see §6.3 and §8 for the trade-offs). `ArbFloat`/`AcbFloat` wrap FLINT's `arf`/`acf` (correctly rounded floating point, no error bounds); `ArbBall`/`AcbBall` wrap `arb`/`acb`. `mag` stays private. Complex dfloat (`dNc`, `dNcb`, would be `DFloatComplex`/`DFloatComplexBall`) and complex nfloat are deferred.
 
-Facts marked *(docs)* come from the FLINT 3.7.0-dev dfloat pages (index, `balls`, `d1b_struct`, `d1cb_struct`, `DFLOAT_BALL`, `using`, `d1b_add`, `d1b_is_exact`). Those pages say parts of their text were LLM-generated; confirm against `src/dfloat.h` before binding. Facts marked *(pinned docs)* come from the Markdown documentation shipped in the pinned source tree (`doc/src/arf`, `doc/src/acf`), read locally. Facts marked *(checked)* were read from the local build at `/tmp/flintfloats-jll-build/install` (FLINT 3.7.0-dev, source `82c40b29…`, ABI 25). Availability is recorded in [capability_table.md](capability_table.md); proposed surfaces below are not implementation claims. M0–M3 and M4a–M4c are implemented, including `NFloatWorkspace`, `PackedBallVector`, and explicit `BorrowedBall` references. The copied-read documentation and `eachborrow` follow-up is implemented. Flat in-place broadcast (§9.4.3, first step) is implemented. Bounded nested broadcast is implemented; borrowed sum is implemented; audited dot products are implemented; selected mapped reductions are next.
+Facts marked *(docs)* come from the FLINT 3.7.0-dev dfloat pages (index, `balls`, `d1b_struct`, `d1cb_struct`, `DFLOAT_BALL`, `using`, `d1b_add`, `d1b_is_exact`). Those pages say parts of their text were LLM-generated; confirm against `src/dfloat.h` before binding. Facts marked *(pinned docs)* come from the Markdown documentation shipped in the pinned source tree (`doc/src/arf`, `doc/src/acf`), read locally. Facts marked *(checked)* were read from the local build at `/tmp/flintfloats-jll-build/install` (FLINT 3.7.0-dev, source `82c40b29…`, ABI 25). Availability is recorded in [capability_table.md](capability_table.md); proposed surfaces below are not implementation claims. M0–M3 and M4a–M4c are implemented, including `NFloatWorkspace`, `PackedBallVector`, and explicit `BorrowedBall` references. The copied-read documentation and `eachborrow` follow-up is implemented. Flat in-place broadcast (§9.4.3, first step) is implemented. Bounded nested broadcast is implemented; borrowed sum is implemented; audited dot products, `sum(abs2, v)`, and five selected elementary functions are implemented. The portable x86_64 glibc artifact has passed local acceptance; remote CI and publication remain.
 
 ## 1. What "uniform" means
 
@@ -189,7 +189,7 @@ ldexp(x, n::Integer)               # x * 2^n, exact
 - `abs(z)` and `abs2(z)` of a complex value return `realtype(T)`: `abs(::AcbBall{P})::ArbBall{P}`, `abs(::AcbFloat{P})::ArbFloat{P}`. `sqrt` of a complex value is the principal branch. `sqrt(x::R)` for negative `x`: `DomainError` for points; for balls, `DomainError` only if the ball is wholly negative, otherwise the FLINT-defined enclosure (documented per function).
 - `fma` for points uses the family's fused kernel only if the inventory shows one; otherwise it is `muladd` and documented as not fused. For balls both enclose the exact result.
 - **`ArbFloat`/`AcbFloat` rounding** *(pinned docs)*: `+ - *` are correctly rounded; `/`, `sqrt`, `inv` and the elementary functions are correctly rounded in the strict modes (`RoundNearest`, `RoundToZero`, `RoundFromZero`, `RoundUp`, `RoundDown`, mapping to `ARF_RND_NEAR/DOWN/UP/CEIL/FLOOR`); complex results are correctly rounded in each part (`acf_add/sub/mul`, `acf_div`, `acf_sqrt`, `acf_exp`, ...). The wrapper uses the strict modes only, so results are reproducible and comparable bit for bit with MPFR at the same precision and mode. FLINT's relaxed modes (`ARF_RND_FAST`, 1 ulp; `ARF_RND_ACCURATE`, 0.51 ulp) and the `acf_approx_*` functions are faster but not correctly rounded; exposing them is a later opt-in (§8).
-- Division by zero: `ArbFloat` returns `NaN` for `x/0` with `x` nonzero (there is no signed zero to choose the sign of an infinity) *(pinned docs)*; this differs from `Float64`. Other points follow the family's special-value policy (`±Inf` or `DomainError` depending on context flags); balls return an indeterminate enclosure, never an exception, when the divisor contains zero but is not exactly zero; exactly zero divisor gives `DomainError`.
+- Division by zero: `ArbFloat` returns `NaN` for `x/0` with `x` nonzero (there is no signed zero to choose the sign of an infinity) *(pinned docs)*; this differs from `Float64`. Other points follow their family policy: `NFloat` throws `DivideError`; dfloat follows native nonfinites. `DFloatBall` throws `DomainError` for an exactly zero divisor and returns the whole real line for a zero-containing divisor. Arb/acb balls preserve native indeterminate results for zero or zero-containing divisors.
 
 Elementary functions (inventory-driven; the planned set):
 
@@ -572,7 +572,8 @@ Source: FLINT 3.7.0-dev dfloat docs *(docs)*; confirm against `src/dfloat.h` bef
 
 **Semantics.** Exact operations on exact balls stay exact (`[3±0]·[3±0] = [9±0]`). The error of each midpoint operation is added to the radius, computed with error-free transformations and a final factor of `1 + 2^-45` on the radius *(docs, bound garbled in extract; check)*. Total functions never fail (add, sub, mul, sqr, neg, abs, `ldexp`, exp, expm1, sin, cos, atan, sinh, cosh, tanh, `atan2`, integer powers with nonnegative exponent, division by a ball excluding zero); on `W` they give `W` or a bounded enclosure (`[0±1]` for `sin`, `cos`, `tanh`; `[0±π/2]` for `atan`). Exact zero times anything is exactly zero; `x^0 = 1` exactly.
 
-**Status mapping** (the point where `DFloatBall` follows FLINT's `gr` statuses; `GR_UNABLE = 2`, others unverified):
+**Status mapping** (audited against the pinned source/probe: `GR_SUCCESS = 0`, `GR_DOMAIN = 1`,
+`GR_UNABLE = 2`; statuses can be combined bit sets):
 
 | C status | Meaning (docs) | Julia behaviour |
 | --- | --- | --- |
@@ -808,7 +809,7 @@ and `atan` functions now support all seven families with individual guarantees d
 [elementary.md](elementary.md). The [checkpoints](checkpoint_gpt.md) record focused evidence;
 [capability_table.md](capability_table.md) identifies implemented operations.
 
-Next complete compatible CI/docs setup, audited portable artifacts, and clean-target installation,
-ABI/numerical checks and release provenance. Matrices, other mappings, special functions, and optional
-interoperability require individually justified scope and evidence. Existing host-tuned artifacts
-remain unsuitable for generic hosted CI or portable release.
+Portable artifact, clean-project installation, ABI/numerical checks, and release provenance are
+implemented for the supplied target. Next execute remote CI and complete public release publication. Matrices, other mappings, special functions, and optional
+interoperability require individually justified scope and evidence. The new bundled x86-64 baseline glibc artifact has passed local acceptance. Actual remote CI
+execution and public release publication remain pending; other targets are not supplied.

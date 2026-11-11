@@ -1,58 +1,58 @@
 # CI and release gates
 
-The bundled artifact supports the verified development host only: x86_64 Linux, i9-14900K,
-glibc 2.43 or later. It is CPU tuned and is not a portable release artifact. The source recipe
-and a workflow file alone do not establish support for another platform.
+The supplied `FLINT_jll 301.690.0+1` artifact is a BinaryBuilder x86-64 baseline build for glibc
+Linux, with a supported runtime floor of glibc 2.17 and Julia 1.13. It replaces the previous
+host-tuned development bundle. Other architectures, operating systems, and musl remain unprovided.
 
-## Development checks
+## CI and local checks
 
-Hosted push/pull-request jobs run source/archive checksums and deterministic binding generation
-without importing FLINT. They also exercise the target-gate rejection paths with simulated host
-values. No generic hosted x86/32-bit native matrix is advertised.
+Hosted push/pull-request jobs use Julia 1.13 x64 on Ubuntu. Source checks verify pinned identities,
+archive checksums, target-gate rejection, and deterministic generation. Native jobs install the
+bundled portable artifact, run the numerical/ownership/Julia contracts, audit symbols, compare a
+fresh artifact-header C ABI probe, and build docs/doctests. No dedicated tuned-host runner is needed.
+Remote workflow execution is still a release verification gate; local command validation does not
+claim an actual GitHub Actions run.
 
-Native CI is a manually dispatched job (`host_validation=true`) using the label
-`flintfloats-i9-14900k-glibc243` in addition to `self-hosted`, `Linux`, and `X64`. Provision a runner
-with Julia 1.13, the verified CPU/libc, a C compiler, and matching GMP/MPFR development headers.
-Set repository variable `FLINTFLOATS_DEPS_PREFIX` to that header installation prefix. The native
-job is not attached to automatic pull-request execution. Runner registration/execution is external
-infrastructure work; local script validation does not claim that a remote runner is provisioned.
-
-Before native import, `scripts/check_host.jl` rejects unverified CPU/OS/architecture and older libc.
-The native job then installs the bundled artifact, runs numerical/ownership/Julia contracts, audits
-symbols, compares a new artifact-header C ABI probe, and builds documentation/doctests.
-`scripts/check_abi.jl` derives loaded runtime library paths from the wrapper and uses `DEPS_PREFIX`
-for headers omitted by Julia's runtime JLLs; it never overwrites the recorded layout.
-
-From the repository root on the verified host:
+`scripts/check_host.jl` rejects unprovided OS/architecture and older glibc before importing the
+wrapper. For the active portable profile it permits generic x86-64 CPUs. Historical native-build
+provenance remains recorded but is not used to advertise the new artifact's CPU requirements.
+`scripts/prepare_abi_headers.jl` fetches SHA-verified GMP/MPFR header archives from the pinned URLs
+in `Source.toml`. This developer/CI-only step avoids relying on headers omitted by Julia runtime
+JLLs. `scripts/check_abi.jl` derives loaded runtime library paths from the wrapper and compares
+against the recorded layout without overwriting it. A compiler is needed for this verification,
+not for ordinary package loading or bundled installation.
 
 ```sh
 julia --startup-file=no scripts/check_sources.jl
 julia --startup-file=no test/ci_host_tests.jl
 julia --startup-file=no scripts/check_host.jl
+julia --project=. -e 'using Pkg; Pkg.instantiate(;allow_autoprecomp=false); Pkg.build("FLINT_jll")'
 julia --project=gen gen/audit.jl
-DEPS_PREFIX=/path/to/matching/headers julia --project=gen scripts/check_abi.jl
+julia --startup-file=no scripts/prepare_abi_headers.jl /tmp/flint-abi-headers
+DEPS_PREFIX=/tmp/flint-abi-headers julia --project=gen scripts/check_abi.jl
 julia --project=docs docs/make.jl
 ```
 
-`docs/make.jl` has an explicit source root and builds locally by default. Deployment is enabled
-only when `FLINTFLOATS_DOCS_DEPLOY=true`, with the intended credentials/repository setup. Ordinary
-verification does not publish documentation. Instantiate the docs project separately; its sources
-resolve the main package and nested wrapper without a developer main-project manifest.
+Instantiate gen/docs in their own projects first. The docs script has an explicit source root and
+builds locally by default; source archives work without Git metadata. Deployment requires
+`FLINTFLOATS_DOCS_DEPLOY=true` and the intended credentials/repository setup. Verification does
+not publish docs.
 
-## Release evidence still required
+## Release evidence
 
 | Gate | Current evidence/status |
 | --- | --- |
-| Selected numerical functions | Five elementary functions implemented for all seven families with per-family guarantees and focused evidence; see [elementary.md](elementary.md). |
-| Foreign declarations | 374 audited symbols, deterministic generation, existing layout evidence. |
-| Host-independent CI | Workflow and local checksum/generation/target-gate checks implemented. Remote job execution remains unverified. |
-| Controlled native CI | Explicit compatible-runner job and locally verified gate/ABI/docs commands; external runner provisioning/execution remains pending. |
-| Portable artifact | BinaryBuilder recipe exists; building/auditing a candidate and its dependencies remains required. |
-| Clean supported-target installation | Local bundled installer exists; portable clean-target evidence and actual distribution locations remain required. |
-| Additional platforms | Unclaimed until their binaries, layouts, numerical behavior, and clean installation pass. |
-| Public release | Pending the preceding gates, real artifact delivery metadata, license/provenance checks, and final review. |
+| Selected numerical functions | Five elementary functions for all seven families, with individual guarantees; [audit/evidence](elementary.md). |
+| Native declarations/layout | 374 symbols resolve; matching artifact-header C ABI probe; deterministic generation. |
+| Portable artifact | BinaryBuilder GCC 14.2.0, baseline x86-64, accepted local build/audit; [logs](evidence/portable_build_logs.tar.gz). |
+| Numerical acceptance | 34,151 tests pass against the new binary; docs/doctests pass. The full run was warranted because all native operations changed binary. |
+| Clean project installation | New bundled tree unpacked into a separate depot without compiling FLINT; main manifest absent; API/extension smoke passed. Cached dependency sources/artifacts were reused. |
+| CI | Hosted portable job configuration and its local commands verified; remote workflow run still pending. |
+| Distribution | Real source/binary archives and checksums are bundled; public tagged release/remote distribution remains pending final publication. No nonexistent download URLs are advertised. |
+| Other targets | Unclaimed until their artifacts, layouts, numerical behavior, and clean installation pass. |
 
-A portable build must retain the source/hash pin, use an appropriate baseline toolchain, and pass
-BinaryBuilder audits and target-specific checks. Never relabel a host rebuild as portable or invent
-download URLs. The local artifact remains usable until a replacement passes its required checks.
-Publishing/releasing artifacts or registering a runner is separate from preparing source commits.
+See [release_evidence.md](release_evidence.md) for exact artifact hashes, toolchain downloads,
+installation scope, and remaining publication gates. Historical host-tuned benchmark reports remain
+historical; [the portable baseline](../benchmark/results/portable_baseline.txt) identifies the new
+artifact. A host-native packager cannot overwrite a selected portable bundle without changing the
+provenance in an isolated native-build checkout.
