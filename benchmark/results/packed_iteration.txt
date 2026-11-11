@@ -1,0 +1,58 @@
+Packed read/write and eachborrow; minimum warmed times, 100 samples, 0.05 s per case
+Julia=1.13.3 CPU=Intel(R) Core(TM) i9-14900K Julia threads=1
+kernel=Linux arch=x86_64 libc=glibc 2.43
+FLINT_jll=301.690.0+0 lib=/home/jas/.julia/artifacts/b375a8872bc46fbeeae1a15e10297b29900d2451/lib/libflint.so
+source=82c40b299084b92299c2d8dac464e39d6743fce4 ABI=25; host-tuned artifact
+No global thread settings changed. Warmed destinations and independent inputs are reused.
+Each path writes source 1/7 + scalar 2/9 at matching precision; copied path retains results through semantic slot assignment.
+Bulk comparison uses a separately prepared packed vector of the same scalar; its construction is excluded.
+Julia allocation counts exclude FLINT allocation and mantissa growth; no native-memory-allocation claim.
+family P n span copied_ns copied_allocs copied_bytes manual_ns iterator_ns iterator_allocs iterator_bytes bulk_ns
+ArbBall 128 1 full 44.6 2 128 22.1 23.1 0 0 31.5
+ArbBall 128 1 strided 47.7 2 128 28.3 27.7 0 0 57.1
+ArbBall 128 1 reversed 48.6 2 128 28.3 28.1 0 0 54.9
+ArbBall 128 1 gather 43.7 2 128 24.0 26.0 0 0 unsupported
+ArbBall 128 32 full 1335.6 64 4096 620.9 611.2 0 0 602.6
+ArbBall 128 32 strided 2105.7 64 4096 652.0 661.5 0 0 759.5
+ArbBall 128 32 reversed 2098.0 64 4096 662.6 1145.3 0 0 757.3
+ArbBall 128 32 gather 2116.9 64 4096 641.0 617.0 0 0 unsupported
+ArbBall 128 512 full 33455.0 1024 65536 11428.0 10375.0 0 0 10994.0
+ArbBall 128 512 strided 32680.0 1024 65536 10305.0 10992.0 0 0 11592.0
+ArbBall 128 512 reversed 32213.0 1024 65536 10262.0 10892.0 0 0 11586.0
+ArbBall 128 512 gather 32382.0 1024 65536 10743.0 10435.0 0 0 unsupported
+ArbBall 512 1 full 66.4 2 128 27.2 27.1 0 0 33.1
+ArbBall 512 1 strided 74.4 2 128 31.5 30.7 0 0 59.1
+ArbBall 512 1 reversed 74.1 2 128 31.6 30.7 0 0 58.8
+ArbBall 512 1 gather 67.2 2 128 25.5 25.1 0 0 unsupported
+ArbBall 512 32 full 2049.4 64 4096 676.1 682.7 0 0 679.5
+ArbBall 512 32 strided 2093.3 64 4096 766.7 758.7 0 0 865.4
+ArbBall 512 32 reversed 2071.4 64 4096 761.1 753.5 0 0 865.4
+ArbBall 512 32 gather 2021.0 64 4096 698.6 695.0 0 0 unsupported
+ArbBall 512 512 full 32204.0 1024 65536 10663.0 11322.0 0 0 11058.0
+ArbBall 512 512 strided 32999.0 1024 65536 12526.0 12421.0 0 0 14118.0
+ArbBall 512 512 reversed 32916.0 1024 65536 12081.0 12221.0 0 0 13664.0
+ArbBall 512 512 gather 32290.0 1024 65536 11504.0 11027.0 0 0 unsupported
+AcbBall 128 1 full 58.0 2 224 28.7 26.7 0 0 36.0
+AcbBall 128 1 strided 63.1 2 224 31.7 30.5 0 0 59.3
+AcbBall 128 1 reversed 62.9 2 224 31.5 30.6 0 0 58.1
+AcbBall 128 1 gather 58.1 2 224 30.9 29.8 0 0 unsupported
+AcbBall 128 32 full 1802.4 64 7168 768.9 802.6 0 0 1235.5
+AcbBall 128 32 strided 1826.9 64 7168 806.7 787.0 0 0 858.4
+AcbBall 128 32 reversed 1802.8 64 7168 813.5 789.9 0 0 873.6
+AcbBall 128 32 gather 1826.7 64 7168 793.1 825.0 0 0 unsupported
+AcbBall 128 512 full 28841.0 1024 114688 13141.0 13814.0 0 0 13235.0
+AcbBall 128 512 strided 29160.0 1024 114688 13015.0 13683.0 0 0 13142.0
+AcbBall 128 512 reversed 28342.0 1024 114688 13002.0 13232.0 0 0 13377.0
+AcbBall 128 512 gather 27983.0 1024 114688 12545.0 12793.0 0 0 unsupported
+AcbBall 512 1 full 80.5 2 224 29.6 29.2 0 0 38.9
+AcbBall 512 1 strided 87.7 2 224 34.6 34.0 0 0 64.5
+AcbBall 512 1 reversed 87.0 2 224 34.6 33.8 0 0 64.6
+AcbBall 512 1 gather 79.9 2 224 30.6 29.9 0 0 unsupported
+AcbBall 512 32 full 3878.2 64 7168 794.4 797.3 0 0 829.4
+AcbBall 512 32 strided 3795.0 64 7168 861.7 859.9 0 0 969.5
+AcbBall 512 32 reversed 3765.0 64 7168 863.4 858.4 0 0 980.0
+AcbBall 512 32 gather 3781.6 64 7168 842.2 811.2 0 0 unsupported
+AcbBall 512 512 full 40217.0 1024 114688 13161.0 13081.0 0 0 12999.0
+AcbBall 512 512 strided 60044.0 1024 114688 13742.0 14008.0 0 0 15322.0
+AcbBall 512 512 reversed 61511.0 1024 114688 13712.0 13913.0 0 0 15155.0
+AcbBall 512 512 gather 40104.0 1024 114688 13403.0 13715.0 0 0 unsupported

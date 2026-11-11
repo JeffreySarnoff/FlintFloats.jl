@@ -31,7 +31,7 @@ include("packed.jl")
 
 export FlintReal, FlintNumber, DFloat, DFloatBall, NFloat, NFloatType,
        ArbFloat, ArbBall, AcbFloat, AcbBall, NFloatWorkspace,
-       PackedBallVector, BorrowedBall, borrow,
+       PackedBallVector, BorrowedBall, borrow, eachborrow,
        pointtype, balltype, realtype, complextype,
        midpoint, radius, isindeterminate, isexact, containszero, overlaps, with_precision, sortkey
 

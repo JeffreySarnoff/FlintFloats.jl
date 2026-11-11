@@ -8,7 +8,12 @@ const PackedBallScalar = Union{ArbBall,AcbBall}
 Fixed-size vector owning one initialized FLINT allocation. New slots are zero. All elements use the
 concrete type `T` and its working precision. Indexing copies out an independent scalar; assignment
 copies into initialized storage with containing precision conversion. `borrow(v, i)` returns an
-explicit parent-retaining reference. Resizing is unsupported, so borrowed addresses remain stable.
+explicit parent-retaining reference; `eachborrow(v)` iterates such references explicitly.
+
+Ordinary iteration also copies. `FlintFloats.add!(v[i], v[i], step)` mutates a temporary, not the
+slot: write back with `v[i] = value`, use allocating `v[i] += step`, or mutate `borrow(v, i)`.
+Views retain the owner, but reading a view element still copies; assignment through it changes the
+mapped slot. Resizing is unsupported, so borrowed addresses remain stable.
 
 `copy` and `deepcopy` create independent storage; ordinary assignment aliases the owner. Mutating
 operations require independent writable destinations across tasks. Fields and raw pointers are private.
@@ -70,7 +75,9 @@ Base.precision(::PackedBallVector{T}) where {T} = precision(T)
 An explicit reference to initialized packed storage, retaining its fixed-size parent. Read an
 independent scalar with `r[]` or `copy(r)`, write with `r[] = value` or `FlintFloats.set!`, and use
 qualified destination `add!`, `sub!`, `mul!`, `div!` with same-format scalars/references. References
-are not numbers and have no independent clear action. No public raw-pointer constructor is provided.
+are not numbers and have no independent clear action. Reading `r[]` also copies. Keeping one
+reference keeps the entire packed owner alive; an independent copied scalar needs no parent.
+Concurrent mutation requires independent writable slots. No public raw-pointer constructor is provided.
 """
 struct BorrowedBall{T<:PackedBallScalar}
     parent::PackedBallVector{T}
@@ -86,7 +93,9 @@ end
     borrow(view(v, indices), i)
 
 Return a parent-retaining [`BorrowedBall`](@ref) to a checked packed slot. Read a copy with `r[]`,
-write with `r[] = value`, or use qualified destination arithmetic. The parent cannot resize.
+write with `r[] = value`, or use qualified destination arithmetic. The parent cannot resize. A view
+maps the logical index to its parent slot; ordinary indexing of that view still returns a copy.
+Use [`eachborrow`](@ref) for explicit reference iteration, and bulk methods for matching whole-vector work.
 """
 borrow(v::PackedBallVector, i::Integer) = BorrowedBall(v, i)
 const PackedBallView = SubArray{T,1,V} where {T,V<:PackedBallVector{T}}
@@ -94,6 +103,51 @@ const PackedBallSpan = Union{PackedBallVector,PackedBallView}
 function borrow(v::PackedBallView, i::Integer)
     checkbounds(v, i)
     return borrow(parent(v), parentindices(v)[1][i])
+end
+
+# Retain a span, not pointers or a changing reference cursor. Every yielded reference stores its
+# own fixed parent index, including when gather-view indices repeat.
+struct _BorrowedElements{T<:PackedBallScalar,V<:PackedBallSpan}
+    span::V
+end
+
+"""
+    eachborrow(v::PackedBallVector)
+    eachborrow(view(v, indices))
+
+Iterate explicit parent-retaining [`BorrowedBall`](@ref) references in logical span order, including
+strided, reversed, and gathered views. Ordinary iteration of `v` continues to return independent
+scalar values. Saved references stay attached to their original slots after iteration ends.
+
+The iterator and each yielded reference retain the fixed-size parent. Construction and every
+iteration step reject finalized parents, including empty spans. Follow Base's view rules for index
+maps. Reading `r[]` or `copy(r)` copies out; qualified destination arithmetic mutates the parent.
+Concurrent writes require independent slots and no explicit parent finalization during use.
+`collect(eachborrow(v))` allocates a collection of references and retains their parent.
+
+# Example
+```julia
+scale = ArbBall{128}(2)
+for r in eachborrow(v)
+    FlintFloats.mul!(r, r, scale)
+end
+```
+
+For whole-vector arithmetic, prefer `FlintFloats.add!`/`mul!` when they fit. Validate matching axes
+before combining multiple iterators with `zip`, which otherwise truncates to the shortest input.
+"""
+@inline function eachborrow(v::V) where {V<:PackedBallSpan}
+    _check_packed_open(_packed_parent(v))
+    return _BorrowedElements{eltype(V),V}(v)
+end
+Base.IteratorSize(::Type{<:_BorrowedElements}) = Base.HasLength()
+Base.IteratorEltype(::Type{<:_BorrowedElements}) = Base.HasEltype()
+Base.eltype(::Type{_BorrowedElements{T,V}}) where {T,V} = BorrowedBall{T}
+Base.length(it::_BorrowedElements) = length(it.span)
+@inline function Base.iterate(it::_BorrowedElements, i::Int=1)
+    _check_packed_open(_packed_parent(it.span))
+    i > length(it) && return nothing
+    return borrow(it.span, i), i+1
 end
 
 # ccall retains the conversion object, which retains the parent; the pointer never escapes a call.

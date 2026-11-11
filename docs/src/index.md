@@ -35,28 +35,80 @@ true
 
 ## Packed ball vectors and borrowed slots
 
-Packed vectors own fixed-size initialized FLINT storage. Indexing returns an independent value;
-`borrow` explicitly retains and refers to a parent slot. References support qualified scalar
-destination arithmetic and never clear elements independently. Vector operations reject other
-possible destination/input overlap; concurrent writes require independent slots. Dot products and
-matrix kernels remain future work.
+Packed vectors own fixed-size initialized FLINT storage at their element working precision.
+**Ordinary indexing and iteration return independent scalar values.** Assignment copies into a slot
+with containing precision conversion. Views retain the parent, but reading a view element also copies;
+writing through a view changes its mapped slot.
+
+| Intent | Use |
+| --- | --- |
+| Read an independent value | `x = v[i]` or `for x in v` |
+| Write a value back | `v[i] = x` |
+| Convenient read/arithmetic/write update | `v[i] += step` (can allocate temporary owners) |
+| Mutate one slot using its storage | `r = borrow(v, i); FlintFloats.add!(r, r, step)` |
+| Mutate slots in a custom loop | `for r in eachborrow(v)` with qualified destination arithmetic |
+| Reuse storage for whole-vector work | `FlintFloats.add!(dest, x, y)` / `mul!` |
+
+`FlintFloats.add!(v[i], v[i], step)` changes a temporary, not the packed slot. Use explicit write-back
+or a borrowed reference when mutation is intended:
 
 ```jldoctest
 julia> using FlintFloats
 
-julia> T = ArbBall{128}; v = PackedBallVector(T, [1, 2, 3]); r = borrow(v, 2);
+julia> T = ArbBall{128}; v = PackedBallVector(T, [1, 2, 3]); step = T(1);
 
-julia> snapshot = v[2]; FlintFloats.add!(r, r, T(1));
-
-julia> v[2] == T(3) && snapshot == T(2)
+julia> x = v[2]; FlintFloats.add!(x, x, step); v[2] == T(2)
 true
 
-julia> w = similar(v); FlintFloats.add!(w, v, v) === w
+julia> FlintFloats.add!(v[2], v[2], step); v[2] == T(2)
 true
 
-julia> all(i -> w[i] == v[i] + v[i], eachindex(v))
+julia> v[2] = x; v[2] += step; v[2] == T(4)
+true
+
+julia> selected = view(v, 3:-2:1); copied = selected[1];
+
+julia> FlintFloats.add!(copied, copied, step); v[3] == T(3)
+true
+
+julia> selected[1] = copied; v[3] == T(4)
+true
+
+julia> r = borrow(v, 2); snapshot = r[]; FlintFloats.add!(r, r, step);
+
+julia> v[2] == T(5) && snapshot == T(4)
 true
 ```
+
+### Explicit reference iteration
+
+`eachborrow(v)` yields nonnumeric references in logical order, including strided, reversed, and gathered
+views. Saved references retain their original slots after iteration; the iterator and each reference
+keep the entire fixed-size parent alive. Reading `r[]` or `copy(r)` copies out, and that scalar can
+survive independently of the parent. References never clear slots and reject already-finalized parents.
+
+```jldoctest
+julia> using FlintFloats
+
+julia> T = ArbBall{128}; v = PackedBallVector(T, [1, 2, 3]); scale = T(2);
+
+julia> for r in eachborrow(view(v, 3:-1:1))
+           FlintFloats.mul!(r, r, scale)
+       end
+
+julia> all(i -> v[i] == T(2i), eachindex(v))
+true
+
+julia> refs = collect(eachborrow(v)); refs[1][] = T(10); v[1] == T(10)
+true
+```
+
+The typed borrowed loop reuses slot storage; collecting references intentionally allocates a collection.
+Use whole-vector destination methods when they fit. Validate matching axes before combining multiple
+iterators with `zip`, which otherwise truncates to the shortest. Concurrent writes require independent
+slots and no explicit parent finalization during use. Vector operations reject other possible
+destination/input overlap. Optimized packed broadcast and reductions remain future work; ordinary
+Base expressions still use copied scalar values.
 
 ```@index
 ```

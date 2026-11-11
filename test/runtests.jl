@@ -15,4 +15,5 @@ using Test
     include("nfloat_array_tests.jl")
     include("reusable_tests.jl")
     include("packed_tests.jl")
+    include("packed_iteration_tests.jl")
 end

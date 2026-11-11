@@ -1,14 +1,13 @@
 # FlintFloats.jl development checkpoint
 
 This handoff covers M0–M3, M4a–M4c, and reusable nfloat scratch. The last implementation
-commit before this update is `e1a67ac` (reusable scratch); this checkpoint is updated with `src/packed.jl`, its
-integration, tests, benchmarks, and documentation. It does not replace the [public interface contract](float_interfacing.md),
+commit before this update is `1ff676c` (packed owners and interface plans); this checkpoint is updated with copied-read documentation and `eachborrow` in `src/packed.jl`, plus focused tests/benchmarks. It does not replace the [public interface contract](float_interfacing.md),
 [capability table](capability_table.md), or [development guide](enact_interfacing.md). Check the current
-tree before acting. The next implementation part is **M4d: dot products**.
+tree before acting. The next implementation part is **flat in-place broadcast (§9.4.3)**, followed by nested broadcast and M4d reductions/dot products.
 
 ## Repository and binary state
 
-- **Completed milestones:** M0 (binary contract), M1 (representations), M2 (scalar arithmetic), and M3 (Julia numeric contracts). M4a (inline vector arithmetic), M4b (nfloat vectors), and reusable nfloat scratch are also implemented. M4c packed ball owners/borrowing is also implemented; M4d is next.
+- **Completed milestones:** M0 (binary contract), M1 (representations), M2 (scalar arithmetic), and M3 (Julia numeric contracts). M4a (inline vector arithmetic), M4b (nfloat vectors), and reusable nfloat scratch are also implemented. M4c packed ball owners/borrowing and §9.4.1–2 documentation/`eachborrow` are also implemented; flat in-place broadcast is next.
 - **Julia floor:** 1.13; local development uses 1.13.3.
 - **Pinned library:** FLINT `3.7.0-dev`, source commit `82c40b299084b92299c2d8dac464e39d6743fce4`, ABI 25. The nested `FlintFloat.jl/FLINT_jll` package has version `301.690.0+0`; the main project resolves it by path.
 - **Artifact constraint:** The bundled x86_64 Linux binary is tuned for the development host (i9-14900K, glibc 2.43). It is unsuitable as a portable CI or release artifact. The BinaryBuilder recipe exists but has not been validated on the target matrix.
@@ -81,6 +80,17 @@ Validation failures preserve destinations; custom input-read exceptions may part
 balls. Indeterminate enclosures follow FLINT. Arithmetic throughput is comparable to scalar-owner
 loops; native layout and construction/cleanup are the principal measured advantages so far.
 
+## Explicit borrowed iteration follow-up
+
+`eachborrow(v)` is exported; its iterator type is private and retains the span. It yields concrete,
+immutable `BorrowedBall{T}` references in logical full/strided/reversed/gathered order. Saved references
+keep their original parent slot; duplicates in a gather refer to the same slot per occurrence.
+Construction and every iteration step check finalized parents, including empty/end states. Ordinary
+indexing and iteration still copy; `r[]` also copies. Retaining an iterator/reference retains the whole
+parent, while an independent copied scalar can outlive it. Typed warmed iteration avoids per-element
+Julia allocation; collecting references intentionally allocates their collection. Numerical kernels
+and native declarations are unchanged. Prefer bulk methods for matching whole-vector work.
+
 ## Behavioral decisions that matter when extending the code
 
 - Ball comparisons express proofs. Unproved equality or ordering returns `false`; `!=` is implemented separately from negated equality. Balls do not support numeric `isless`, `min`, `max`, or `sort`; use `sortkey` for presentation order.
@@ -118,6 +128,7 @@ julia --project=benchmark benchmark/m4a_vectors.jl
 julia --project=benchmark benchmark/m4b_vectors.jl
 julia --project=benchmark benchmark/reusable.jl
 julia --project=benchmark benchmark/m4c_packed.jl
+julia --project=benchmark benchmark/packed_iteration.jl
 ```
 
 The ABI probe (`./test/abi/run.sh`) expects an external FLINT build tree under `/tmp/flintfloats-jll-build` and a configured OpenBLAS32 library directory. Inspect the script before relying on it in a clean environment. `docs/make.jl` builds the documentation in its own Julia project.
@@ -126,19 +137,27 @@ For a new FLINT operation, update `gen/inventory.toml`, audit the symbol, regene
 
 ## Verification at this checkpoint
 
-The source update passed **13,709 tests** on Julia 1.13.3 with **four Julia threads**, using
+The prior full-suite baseline passed **13,709 tests** on Julia 1.13.3 with **four Julia threads**, using
 `JULIA_DEPOT_PATH=/tmp/flint-checkpoint-depot:/home/jas/.julia`. Documentation and doctests pass.
 Workspace tests cover growth, active prefixes, alias/type rejection, zero warmed native allocations,
 overflow and input exceptions followed by reuse, and deterministic concurrent/reentrant-use rejection.
 The inventory now contains **307** audited symbols; M4c adds eight arb/acb vector init/clear/set/add exports. Regeneration must remain deterministic. Packed tests add rational endpoint oracles, GC/heap-backed ownership, fixed-size/reference semantics, copy independence, views/aliases, cleanup, and independent concurrent slots. Matching-header ABI evidence now includes nfloat exponent
 limits. Numerical error tests use independent exact dyadics and retain their sampled scope.
 
+This follow-up runs only packed ownership, new iterator/value-semantics tests, and repeated independent
+owner concurrency checks (four threads), plus documentation/doctests. The concurrency test helper has
+independent function locals rather than shared captured bindings. No whole-suite rerun or binding
+change is needed. See `benchmark/results/packed_iteration.txt` for equivalent copied/manual/iterator/
+bulk update comparisons including allocations and gathered-view iteration.
+
 ## Next work and open limits
 
-1. **M4d:** selected native dot products, with exact/certified references, empty sums, complex
+1. **§9.4.3:** flat in-place broadcast, then bounded nested arithmetic; keep generic fallbacks,
+   alias snapshots, expression-tree rounding, and ordinary allocating-result behavior.
+2. **M4d:** selected native dot products, with exact/certified references, empty sums, complex
    conjugation conventions, and independent accumulation guarantees. Evaluate matrix storage only
    after measured workloads justify it.
-2. **M5:** elementary/special functions with per-operation source/rounding/domain evidence, portable
+3. **M5:** elementary/special functions with per-operation source/rounding/domain evidence, portable
    artifacts, and CI on supported binaries. Keep elementary functions after M4.
 
 Remaining gaps include native dot/matrix methods, optimized packed broadcast, packed point owners, elementary functions,

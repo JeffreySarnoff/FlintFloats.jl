@@ -10,6 +10,18 @@ _interval_sub(a,b) = (a[1]-b[2], a[2]-b[1])
 _interval_mul(a,b) = extrema((a[1]*b[1],a[1]*b[2],a[2]*b[1],a[2]*b[2]))
 _interval_covers(a,b) = a[1] <= b[1] && b[2] <= a[2]
 
+# A separate function gives each task its own locals. Assigning x/y/z inside a spawned closure
+# would capture the enclosing testset's later x/y/z bindings and race through shared boxes.
+function _packed_independent_owner_task()
+    T=ArbBall{256}
+    x=PackedBallVector(T,fill(T(2),33))
+    y,z=copy(x),similar(x)
+    GC.gc()
+    FF.add!(z,x,y)
+    FF.mul!(z,z,y)
+    return all(a -> a == T(8),z)
+end
+
 @testset "M4c packed ball owners and borrowing" begin
     @test_throws ArgumentError PackedBallVector(ArbBall, 2)
     @test_throws ArgumentError PackedBallVector(ArbBall{1}, 2)
@@ -204,11 +216,7 @@ _interval_covers(a,b) = a[1] <= b[1] && b[2] <= a[2]
     end
 
     @testset "independent concurrent owners" begin
-        tasks=[Threads.@spawn begin
-            T=ArbBall{256}; x=PackedBallVector(T,fill(T(2),33)); y=copy(x); z=similar(x)
-            GC.gc(); FF.add!(z,x,y); FF.mul!(z,z,y)
-            all(a -> a == T(8),z)
-        end for _ in 1:8]
+        tasks=[Threads.@spawn _packed_independent_owner_task() for _ in 1:8]
         @test all(fetch,tasks)
         T=AcbBall{256}
         x,y,z=PackedBallVector(T,fill(T(2),8*33)),PackedBallVector(T,fill(T(3),8*33)),PackedBallVector(T,8*33)

@@ -3,9 +3,11 @@
 State of FlintFloats.jl after M0–M3, M4a–M4c bulk arithmetic, and reusable nfloat scratch from
 [enact_interfacing.md](enact_interfacing.md). Written to resume the work cold.
 
-- Last committed implementation before this update: `e1a67ac` (reusable scratch). This update adds
-  `src/packed.jl`, its audited bindings, tests, benchmarks, and documentation.
-- Tests: **13,709 pass** on Julia 1.13.3 with four Julia threads. Use focused tests for subsequent changes.
+- Last committed implementation before this update: `1ff676c` (packed owners and interface plans).
+  This update implements the copied-read documentation and `eachborrow` follow-up in §9.4.1–2.
+- Prior full-suite baseline: **13,709 pass**. This follow-up uses focused packed ownership/iteration
+  tests and concurrency regression checks on Julia 1.13.3 with four threads, plus documentation/doctests;
+  it does not rerun the full suite.
 - Binding inventory now includes **307** audited symbols (M4c adds eight); regenerate twice without drift.
 - Pinned FLINT: 3.7.0-dev, source `82c40b299084b92299c2d8dac464e39d6743fce4`, ABI 25, wrapper
   `FLINT_jll 301.690.0+0` (host-tuned: x86_64 Linux, i9-14900K).
@@ -56,6 +58,11 @@ Implemented (per [capability_table.md](capability_table.md), which is the author
   possible overlap and gathered destinations are rejected. Custom-input errors may partially update
   valid ball destinations. Finalization is idempotent; references reject closed parents.
 
+- Exported `eachborrow(v)` retains its span and yields stable parent-retaining references in logical
+  owner/view order. Ordinary reads and iteration still copy. Iterator traits are concrete; empty and
+  resumed iteration reject finalized parents. Use bulk methods when they fit and explicit iteration
+  for custom slot mutation. The concurrency regression test now gives each task independent locals.
+
 Not implemented: native dot/matrix methods (M4d),
 elementary functions, a shared internal protocol across families, portable artifacts, verified generic
 CI, and `DFloat`/`NFloat` complex types.
@@ -88,6 +95,7 @@ julia --project=benchmark benchmark/m4a_vectors.jl            # inline ball vect
 julia --project=benchmark benchmark/m4b_vectors.jl            # nfloat bulk/context/copy benchmark
 julia --project=benchmark benchmark/reusable.jl               # allocating vs reused nfloat scratch
 julia --project=benchmark benchmark/m4c_packed.jl             # packed lifecycle and arithmetic
+julia --project=benchmark benchmark/packed_iteration.jl       # copied/manual/iterator/bulk updates
 julia --project=docs docs/make.jl                             # documentation site
 cd docs && pandoc enact_interfacing.md -f gfm -o enact_interfacing.docx
 ```
@@ -145,7 +153,8 @@ method, add a differential test, add a row to `capability_table.md`, all in one 
 
 ## 6. Next
 
-**M4d, dot products**, is next: independently specify accumulation guarantees, empty sums, and
+**Flat in-place broadcast (§9.4.3)** is next, followed by bounded nested arithmetic and M4d
+reductions/dot products. For M4d: independently specify accumulation guarantees, empty sums, and
 complex conjugation, then audit selected native kernels and compare equivalent numerical contracts.
 Matrix storage follows only where measured workloads justify it. M5 adds elementary functions,
 portable artifacts, and verified CI. Keep that sequence.

@@ -13,7 +13,7 @@ Companion to [plan_interfacing.md](plan_interfacing.md) and [enact_interfacing.m
 
 **Precision is a type parameter for every type** (see §6.3 and §8 for the trade-offs). `ArbFloat`/`AcbFloat` wrap FLINT's `arf`/`acf` (correctly rounded floating point, no error bounds); `ArbBall`/`AcbBall` wrap `arb`/`acb`. `mag` stays private. Complex dfloat (`dNc`, `dNcb`, would be `DFloatComplex`/`DFloatComplexBall`) and complex nfloat are deferred.
 
-Facts marked *(docs)* come from the FLINT 3.7.0-dev dfloat pages (index, `balls`, `d1b_struct`, `d1cb_struct`, `DFLOAT_BALL`, `using`, `d1b_add`, `d1b_is_exact`). Those pages say parts of their text were LLM-generated; confirm against `src/dfloat.h` before binding. Facts marked *(pinned docs)* come from the Markdown documentation shipped in the pinned source tree (`doc/src/arf`, `doc/src/acf`), read locally. Facts marked *(checked)* were read from the local build at `/tmp/flintfloats-jll-build/install` (FLINT 3.7.0-dev, source `82c40b29…`, ABI 25). Availability is recorded in [capability_table.md](capability_table.md); proposed surfaces below are not implementation claims. M0–M3 and M4a–M4c are implemented, including `NFloatWorkspace`, `PackedBallVector`, and explicit `BorrowedBall` references. M4d dot products are next.
+Facts marked *(docs)* come from the FLINT 3.7.0-dev dfloat pages (index, `balls`, `d1b_struct`, `d1cb_struct`, `DFLOAT_BALL`, `using`, `d1b_add`, `d1b_is_exact`). Those pages say parts of their text were LLM-generated; confirm against `src/dfloat.h` before binding. Facts marked *(pinned docs)* come from the Markdown documentation shipped in the pinned source tree (`doc/src/arf`, `doc/src/acf`), read locally. Facts marked *(checked)* were read from the local build at `/tmp/flintfloats-jll-build/install` (FLINT 3.7.0-dev, source `82c40b29…`, ABI 25). Availability is recorded in [capability_table.md](capability_table.md); proposed surfaces below are not implementation claims. M0–M3 and M4a–M4c are implemented, including `NFloatWorkspace`, `PackedBallVector`, and explicit `BorrowedBall` references. The copied-read documentation and `eachborrow` follow-up is implemented. Flat in-place broadcast (§9.4.3) is next, followed by nested broadcast and M4d reductions/dot products.
 
 ## 1. What "uniform" means
 
@@ -211,6 +211,9 @@ Unsupported function or family combination: `MethodError`. No `BigFloat` fallbac
 Scalar destination methods exist for the four mutable owned types and are qualified as
 `FlintFloats.add!`, `mul!`, etc.; they are not exported. Immutable scalar `DFloat`, `DFloatBall`,
 and `NFloat` use ordinary arithmetic. Vector `add!`/`mul!` are implemented as described in §2a.9.
+For a packed ball vector, `FlintFloats.add!(v[i], v[i], step)` changes a copied temporary; use
+`v[i] = value`, allocating `v[i] += step`, or qualified arithmetic on `borrow(v, i)` instead.
+Ordinary iteration also copies; `eachborrow(v)` is explicit reference iteration.
 The following broader list includes proposed fused/utility methods; consult the capability table
 before using an operation such as `addmul!`, `inv!`, `zero!`, or `ldexp!`.
 
@@ -400,7 +403,7 @@ No result-buffer borrowing or swapping API is provided.
 
 **Packed ball vectors (M4c):** `PackedBallVector(ArbBall{P}, n)` or the complex-ball form owns one
 initialized FLINT allocation. `PackedBallVector(T, values)` copies values into initialized slots.
-The owner is fixed-size: ordinary indexing copies an independent scalar, while assignment preserves
+The owner is fixed-size: ordinary indexing and iteration copy independent scalars, while assignment preserves
 containment at the destination precision. `copy`/`deepcopy` initialize independent native storage;
 `similar`, fill, iteration, and ordinary Base broadcasting are supported. No optimized broadcast
 or matrix representation is introduced.
@@ -419,6 +422,20 @@ multiply use borrowed scalar calls. All paths preserve rigorous enclosures and F
 Empty calls skip C. Validation errors preserve destinations; custom input-read errors can leave
 valid partially updated values. See [measurements](../benchmark/results/m4c_packed.txt) for zero warmed
 Julia allocations, arithmetic comparisons, copied reads, and construction/copy/cleanup costs.
+
+**Explicit borrowed iteration:** `eachborrow(v)` accepts the same owners/views as `borrow`, yields
+stable nonnumeric `BorrowedBall{eltype(v)}` references in logical order, and retains the parent without
+caching raw pointers. Strided/reversed/gathered views retain their index mapping under Base's view
+rules. Saved references remain attached to their original parent slots. Construction and every
+iteration step reject finalized parents, including empty spans; pointer conversion still checks the
+parent before a C call. Ordinary `eltype(v)` and iteration are unchanged.
+
+A reference or iterator keeps the entire parent alive; an independent copied scalar does not need
+that owner. Reading `r[]` copies. Views also copy on read and write through on assignment. `v[i] += step`
+works through ordinary read/arithmetic/write-back and can allocate. Prefer existing vector destination
+methods for matching bulk work, and `eachborrow` for custom mutation loops. Collecting references
+allocates their collection intentionally. Validate multi-vector axes before using `zip`; concurrent
+writes require independent slots.
 
 `PackedVector`, `flintzeros`, `flintones`, `flintvec`, and `flintmatrix` remain unavailable design
 names. Native dot products need separate accumulation/error and complex-conjugation contracts (M4d).
@@ -763,13 +780,17 @@ The proposed shared mapping would live in `_status`; current family implementati
 
 ## 9. Next steps
 
-M0–M3 and M4a–M4c are implemented. Reusable nfloat scratch and packed ball owners/borrowing are integrated,
-with 13,709 passing tests on Julia 1.13.3/four threads, documentation/doctests, and recorded benchmarks.
-The shared protocol in §4 remains unfactored; it is not a prerequisite for the next part.
+M0–M3 and M4a–M4c are implemented. Copied-read documentation and `eachborrow` now complete the
+first surrounding-interface steps in [enact_interfacing.md §9.4](enact_interfacing.md).
+The prior M4c full-suite baseline passed 13,709 tests; this update uses focused packed ownership,
+iterator/value-semantics, and concurrency checks, plus documentation/doctests. The shared protocol
+in §4 remains unfactored; it is not a prerequisite for the next change.
 
-1. **M4d:** selected native dot methods with independent numerical and conjugation contracts;
-   measured matrix work only after vector evidence.
-2. **M5:** elementary/special functions, portable artifacts, and verified CI/release targets.
+1. **§9.4.3:** flat in-place broadcast, then bounded nested arithmetic, with Base-compatible alias
+   preparation and preserved expression-tree rounding. Ordinary allocating results remain unchanged.
+2. **M4d:** borrowed sum, then selected native dot methods with independent numerical/conjugation
+   contracts; mapped reductions and measured matrix work follow their own gates.
+3. **M5:** elementary/special functions, portable artifacts, and verified CI/release targets.
 
-Use [enact_interfacing.md §9](enact_interfacing.md) for acceptance criteria and
-[capability_table.md](capability_table.md) for the implemented operation set.
+Use the development guide for acceptance criteria and [capability_table.md](capability_table.md)
+for the implemented operation set. Planned broadcast/reduction methods are not available yet.
