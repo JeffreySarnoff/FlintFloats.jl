@@ -14,7 +14,7 @@ each claim. Add a row in the same change as each new operation.
 | `sqrt` | `DFloatBall{N}` | `dNb_sqrt` | rigorous enclosure | `GR_DOMAIN` (entirely negative): `DomainError`; `GR_UNABLE`: whole real line | `unary_tests` |
 | `+ - *` | `NFloat{L}` | `nfloat_add/sub/mul` | flags = underflow only; see note 1 | finite-only; overflow gives an error status | `arithmetic_tests` |
 | `/` | `NFloat{L}` | `nfloat_div` | truncated, error under 1 ulp, **not** correctly rounded | divisor zero: `DivideError` | `arithmetic_tests` |
-| `sqrt` | `NFloat{L}` | `nfloat_sqrt` | see FLINT docs; not yet differentially tested | negative: `DomainError` (checked in Julia; FLINT reports `GR_UNABLE`) | `unary_tests` (exact cases only) |
+| `sqrt` | `NFloat{L}` | `nfloat_sqrt` | correctly truncated toward zero in the default context; pinned exact integer-root kernels | negative: `DomainError` (checked in Julia; FLINT reports `GR_UNABLE`) | `nfloat_sqrt_tests` (all 1:66 limbs, exact integer oracle, MPFR differential, exponent limits, concurrent readers); `unary_tests` |
 | `+ - * /` | `ArbFloat{P}` | `arf_add/sub/mul_rnd_any/div` | correctly rounded in the five strict modes; inexact flag via `_inexact!` | `x/0` is NaN; no negative zero; unbounded exponent | MPFR bit-for-bit, `arithmetic_tests` |
 | `sqrt` | `ArbFloat{P}` | `arf_sqrt` | correctly rounded in the five strict modes | negative: `DomainError` (checked in Julia); NaN stays NaN | MPFR bit-for-bit, `unary_tests` |
 | `+ - * /` | `AcbFloat{P}` | `acf_add/sub/mul/div` | each part correctly rounded in the five strict modes (sampled, P ≤ 53) | follows `arf` | exact-reference differential, `arithmetic_tests` |

@@ -1,17 +1,20 @@
 # Checkpoint
 
-## Latest continuation: mapped squared magnitudes
+## Latest continuation: nfloat square-root evidence
 
-HEAD before this step: `f5d929a` (conjugating packed dot). This continuation adds `sum(abs2, v)`
-with fresh `ArbBall{P}` results for both packed families, borrowed reads, and constant owned scratch.
-Keyword and arbitrary callback behavior stays generic. Tests cover rational endpoint bounds,
-zero crossing, view order, ownership, finalized parents, inference, and constant Julia allocation.
-Validation: **259 mapped + 205 sum + 346 dot checks pass** on Julia 1.13.3/four threads;
-documentation/doctests pass. No whole-suite rerun.
-See `benchmark/results/packed_mapped_reduce.txt` for complete-operation timings and radius quality.
-This source/documentation step is prepared for one commit; use `git log` for its resulting hash.
-Next: close the nfloat square-root differential-evidence gap, then audited M5 elementary functions.
-Native matrices remain conditional on measured need; portable artifacts and CI remain release work.
+Previous step committed as `25d36c3` (packed `sum(abs2, v)`). This step closes the documented
+nfloat square-root verification gap. The pinned `rounding.md` and `src/nfloat/sqrt.c` specify exact
+truncation toward zero in the default context. `test/nfloat_sqrt_tests.jl` checks every supported
+limb count (1:66), odd/even and extreme native exponents, normalized mantissa boundaries, seeded
+random mantissas, MPFR comparisons, negative domains, zero, inference, and concurrent context reads.
+The independent oracle uses integer `isqrt` and exact dyadic scaling, not FLINT root arithmetic.
+The inventory status is corrected to `gr`; no new bindings or runtime rounding modes are added.
+Validation: **13,314 focused root checks pass** with four Julia threads; documentation/doctests
+and the 309-symbol audit pass; generation leaves bindings unchanged. The prior mapped step passed
+259 mapped + 205 sum + 346 dot checks and documentation/doctests; no full-suite rerun.
+Next: audited M5 elementary functions, beginning with real/complex ball enclosures. Matrix work
+remains conditional on measured need; portable artifacts and CI remain release work.
+
 
 
 State after M0–M3, M4a–M4c, reusable scratch, bounded packed broadcast, sum and dot from
@@ -180,7 +183,7 @@ method, add a differential test, add a row to `capability_table.md`, all in one 
 
 - Elementary functions are not started (scheduled for M5; FLINT exports them for every family).
   Needs per-function: inventory row, pinned guarantee, domain behaviour, differential test, table row.
-- `NFloat` `sqrt` is tested on exact cases only; no differential test.
+- `NFloat` `sqrt` now has exact integer-root and MPFR differential evidence across all supported limbs.
 - `hash` of an `ArbFloat` whose exponent is outside MPFR's range collides with `Inf` (allowed, documented).
 - `DFloat`/`NFloat` complex types, `Rational` interop, `Complex{Float64}` interop: not done.
 - Shared `_result`/`_with`/`_status` protocol from `float_interfacing.md` §4 was not factored; each family has

@@ -761,7 +761,8 @@ symbol = "nfloat_sqrt"
 family = "nfloat"
 sig = "int(nfloat_ptr, nfloat_srcptr, gr_ctx_ptr)"
 kind = "export"
-status = "none"
+status = "gr"
+note = "Correctly truncated toward zero in the default context. Pinned rounding.md and src/nfloat/sqrt.c use exact integer-root kernels through the supported 1:66 limbs. Negative inputs need finite-only domain handling."
 
 [[op]]
 symbol = "arf_neg"

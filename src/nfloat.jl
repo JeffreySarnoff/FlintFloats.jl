@@ -114,6 +114,13 @@ for (op, cf) in ((:-, :neg), (:abs, :abs))
     end
 end
 
+"""
+    sqrt(x::NFloat{L})
+
+Square root truncated toward zero to `64L` bits by the pinned FLINT kernel. Negative arguments
+throw `DomainError`; zero returns zero. No runtime rounding-mode setting is changed. The pinned
+implementation uses exact truncated integer roots for the supported limb range.
+"""
 function Base.sqrt(x::NFloat{L}) where {L}
     # With no NaN in the context FLINT reports GR_UNABLE for a negative argument; name it a domain error.
     signbit(x) && throw(DomainError(x, "sqrt of a negative NFloat"))

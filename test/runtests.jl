@@ -6,6 +6,7 @@ using Test
     include("construction_tests.jl")
     include("conversion_tests.jl")
     include("unary_tests.jl")
+    include("nfloat_sqrt_tests.jl")
     include("compare_tests.jl")
     include("promotion_tests.jl")
     include("basefloat_tests.jl")
