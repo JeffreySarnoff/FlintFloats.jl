@@ -10,8 +10,8 @@ Hosted push/pull-request jobs use Julia 1.13 x64 on Ubuntu. Source checks first 
 archive checksums, target-gate rejection, and deterministic generation. Native jobs install the
 bundled portable artifact, run the numerical/ownership/Julia contracts, audit symbols, compare a
 fresh artifact-header C ABI probe, and build docs/doctests. No dedicated tuned-host runner is needed.
-The [hosted run](https://github.com/JeffreySarnoff/FlintFloats.jl/actions/runs/42962433938) passes
-both jobs at ce2831e, including isolated Pkg.test (34,151 checks) and docs/doctests.
+The [accepted main run](https://github.com/JeffreySarnoff/FlintFloats.jl/actions/runs/42964341337) passes
+both jobs at f3cc856, including isolated Pkg.test (34,151 checks) and docs/doctests.
 [Recorded log evidence](evidence/hosted_ci_acceptance.txt) identifies the exact head and runner.
 
 `scripts/check_host.jl` rejects unprovided OS/architecture and older glibc before importing the
@@ -47,13 +47,17 @@ not publish docs.
 | Native declarations/layout | 374 symbols resolve; matching artifact-header C ABI probe; deterministic generation. |
 | Portable artifact | BinaryBuilder GCC 14.2.0, baseline x86-64, accepted local build/audit; [logs](evidence/portable_build_logs.tar.gz). |
 | Numerical acceptance | 34,151 tests pass against the new binary; docs/doctests pass. The full run was warranted because all native operations changed binary. |
-| Clean project installation | New bundled tree unpacked into a separate depot without compiling FLINT; main manifest absent; API/extension smoke passed. Cached dependency sources/artifacts were reused. |
-| CI | Both hosted jobs pass at ce2831e; actual package-isolated numerical/ABI/generation/docs gates verified. |
-| Distribution | Real source/binary archives and checksums are bundled; public tagged release/remote distribution remains pending final publication. No nonexistent download URLs are advertised. |
+| Clean project installation | New bundled tree unpacked into a separate depot without compiling FLINT; main manifest absent; API/extension smoke passed. A follow-up empty-depot install independently downloaded dependencies and passed API/extension smoke; docs resolved without developer manifests. |
+| CI | Both hosted main jobs pass at f3cc856; actual package-isolated numerical/ABI/generation/docs gates verified. |
+| Distribution | [v0.1.0 prerelease](https://github.com/JeffreySarnoff/FlintFloats.jl/releases/tag/v0.1.0) is public; all source/binary/log/checksum assets were downloaded and verified. |
 | Other targets | Unclaimed until their artifacts, layouts, numerical behavior, and clean installation pass. |
 
 See [release_evidence.md](release_evidence.md) for exact artifact hashes, toolchain downloads,
-installation scope, and remaining publication gates. Historical host-tuned benchmark reports remain
+installation scope, and completed publication verification. Historical host-tuned benchmark reports remain
 historical; [the portable baseline](../benchmark/results/portable_baseline.txt) identifies the new
 artifact. A host-native packager cannot overwrite a selected portable bundle without changing the
 provenance in an isolated native-build checkout.
+
+The public tag resolves to f3cc856; [publication evidence](evidence/prerelease_v0.1.0.json) records
+actual URLs, sizes, SHA-256 values and end-to-end download checks. No required release gate remains
+for the supplied target. Other targets require their own evidence.

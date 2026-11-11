@@ -6,14 +6,14 @@ The objective is a Julia interface to FLINT's **dfloat (plain and ball), nfloat,
 
 Descriptions of the existing repository are distinguished from requirements for future implementation. Proposed Julia constructors and operations below are interface specifications, not claims that those methods already exist.
 
-**Resume point:** Scoped M0–M4 and five selected M5 elementary functions are implemented for all
-seven families, including ownership/deepcopy/persistence corrections. The accepted portable
-x86-64 glibc artifact (`FLINT_jll 301.690.0+1`) passes **34,151 tests**, 374-symbol/fresh ABI checks,
-wrapper/target checks, clean-project installation, and docs/doctests. The [checkpoints](checkpoint.md)
-and [release evidence](release_evidence.md) identify the exact archive/tree and historical checks.
-The [completion audit](enact_completion_audit.md) maps the remaining gates to evidence.
-The hosted workflow passes at ce2831e, including actual package-isolated tests and docs.
-Next obtain approval to merge the draft PR and publish the prepared prerelease; neither has occurred. Additional platforms, functions, or matrices require separate evidence.
+**Completed:** Scoped M0–M5 implementation and release work is complete for all seven scalar
+families and the supplied x86_64 glibc Linux target. [PR #5](https://github.com/JeffreySarnoff/FlintFloats.jl/pull/5)
+is merged; [main CI](https://github.com/JeffreySarnoff/FlintFloats.jl/actions/runs/42964341337) passes 34,151 numerical/contract checks plus source, ABI/symbol,
+generation and docs gates. [v0.1.0 is published as a prerelease](https://github.com/JeffreySarnoff/FlintFloats.jl/releases/tag/v0.1.0) at the accepted
+merge/tag commit f3cc856. All public source/binary/log/checksum assets were independently downloaded
+and SHA-256 verified. [The completion audit](enact_completion_audit.md) and [publication evidence](evidence/prerelease_v0.1.0.json)
+identify exact results. The sections below preserve the contracts and procedures for maintenance;
+additional platforms, functions, mappings, or matrices require separately justified future scope.
 
 ## 1. Starting point and development priorities
 
@@ -21,13 +21,13 @@ Next obtain approval to merge the draft PR and publish the prepared prerelease; 
 
 | Area | Current state | Consequence for development |
 | --- | --- | --- |
-| Main Julia package | Seven scalar types, M0–M3, M4a–M4c bulk operations, packed ball owners/borrowing, and reusable nfloat scratch are implemented | Hosted CI passes; complete publication; extend mappings/matrices only on measured need. |
+| Main Julia package | Seven scalar types, M0–M3, M4a–M4c bulk operations, packed ball owners/borrowing, and reusable nfloat scratch are implemented | Hosted CI and public prerelease publication are complete; extend mappings/matrices only on measured need. |
 | Julia compatibility | Main project requires Julia 1.13; precision is in the type | Use `with_precision(f, bits)` as a `Val` function barrier; there is no scoped runtime precision default. |
 | Local binary package | [`FlintFloat.jl/FLINT_jll`](../FlintFloat.jl/FLINT_jll/README.md) contains a working loader, native artifact, headers, source archive, and build tools | Use this package for host development rather than waiting for a published dfloat-capable wrapper. |
 | Pinned FLINT source | `82c40b299084b92299c2d8dac464e39d6743fce4`, reporting `3.7.0-dev` | Consult this revision's declarations and implementation when writing bindings. |
 | Local wrapper version | `301.690.0+1`, shared-library ABI 25 | Do not equate its layout or compatibility with the reference wrapper's ABI 24. |
-| Existing validation | Binary/layout/symbol checks and 6,540 Julia tests passed at the M3 checkpoint; scalar benchmarks are recorded | Preserve those contracts; add container and per-kernel evidence for M4. Sampled numerical tests are not universal proofs. |
-| Portable distribution | Executed BinaryBuilder recipe; bundled baseline x86_64 glibc Linux artifact passed local acceptance | Hosted CI passes; public publication remains; other targets require separate evidence. |
+| Existing validation | 34,151 tests and hosted main CI pass; symbols/layout, docs, installation and public asset downloads are verified | Preserve those contracts and add focused evidence for each future change. Sampled numerical tests are not universal proofs. |
+| Portable distribution | Executed BinaryBuilder recipe; bundled baseline x86_64 glibc Linux artifact passed local acceptance | Hosted CI and public prerelease publication are complete; other targets require separate evidence. |
 
 The active artifact is a BinaryBuilder GCC 14.2.0 x86-64 baseline build for glibc Linux, with
 a supported glibc floor of 2.17. It passes 34,151 tests, 374-symbol and fresh ABI checks, and
@@ -382,9 +382,9 @@ Prevent resize or reallocation while references can be borrowed; a fixed-size ow
 
 Prioritize vector add/multiply, dot products, and measured matrix workloads. A fused or native dot kernel may have different rounding behavior from a scalar accumulation; publish its own guarantee. Add `@inbounds` or `@simd` only after establishing indexing and independence invariants.
 
-### 9.3 Next implementation: M4 in reviewable parts
+### 9.3 M4 implementation in reviewable parts (complete)
 
-**M4a–M4c are complete. Documentation, borrowed iteration, and flat in-place broadcast are implemented; sum and dot products are implemented; `sum(abs2, v)` is implemented (§9.4.4); nfloat square-root evidence is complete; M5 ball elementary functions are implemented; strict arb/acf point functions are also implemented; all seven families now implement the five selected functions; portable artifact acceptance is complete; hosted CI passes and publication remains.** Ordinary Julia arrays already store concrete inline types; dot accumulation and measured matrix follow-up retain their separate numerical contracts. M4a is implemented in `src/arrays.jl`: qualified `FlintFloats.add!`/`mul!` accept matching-format `DFloat`/`DFloatBall` vectors, with ordinary/strided destinations, checked scalar fallbacks, and a native contiguous ball-add path at length ≥ 4. Exact aliasing uses `===`; other possible destination/input overlap is rejected. Gather/repeated-index destinations are rejected because they do not guarantee independent slots. M4b extends the same interface to `NFloat{L}`, with native aligned contiguous input paths and checked scalar fallbacks. It uses initialized private scratch and commits only after successful arithmetic, preserving the destination on numerical or input-read failure. M4c adds `PackedBallVector`, copied indexing, explicit `borrow` references, native ball-add, and borrowed scalar multiply. M4d sum, dot, and selected `sum(abs2, v)` are implemented; other mappings/matrices need measured scope. The checkpoints summarize this state.
+**M4a–M4c are complete. Documentation, borrowed iteration, and flat in-place broadcast are implemented; sum and dot products are implemented; `sum(abs2, v)` is implemented (§9.4.4); nfloat square-root evidence is complete; M5 ball elementary functions are implemented; strict arb/acf point functions are also implemented; all seven families now implement the five selected functions; portable artifact acceptance is complete; hosted CI and public prerelease publication are complete.** Ordinary Julia arrays already store concrete inline types; dot accumulation and measured matrix follow-up retain their separate numerical contracts. M4a is implemented in `src/arrays.jl`: qualified `FlintFloats.add!`/`mul!` accept matching-format `DFloat`/`DFloatBall` vectors, with ordinary/strided destinations, checked scalar fallbacks, and a native contiguous ball-add path at length ≥ 4. Exact aliasing uses `===`; other possible destination/input overlap is rejected. Gather/repeated-index destinations are rejected because they do not guarantee independent slots. M4b extends the same interface to `NFloat{L}`, with native aligned contiguous input paths and checked scalar fallbacks. It uses initialized private scratch and commits only after successful arithmetic, preserving the destination on numerical or input-read failure. M4c adds `PackedBallVector`, copied indexing, explicit `borrow` references, native ball-add, and borrowed scalar multiply. M4d sum, dot, and selected `sum(abs2, v)` are implemented; other mappings/matrices need measured scope. The checkpoints summarize this state.
 
 | Part | Deliverable | Acceptance evidence |
 | --- | --- | --- |
@@ -762,7 +762,7 @@ method. A planned benchmark or test is not current evidence.
 
 ### 9.5 Carry forward checkpoint limits
 
-Keep the following limits visible while extending the package: `NFloat` square root now has an independent exact integer-root oracle across all 1:66 limb counts, MPFR truncation comparisons, native exponent limits, and concurrent-read checks (`test/nfloat_sqrt_tests.jl`); `Rational` and `Complex{Float64}` interop remain future work; shared helper factoring remains incomplete; and the portable x86_64 glibc artifact has passed local acceptance; hosted CI passes; public publication remains pending. New bulk methods inherit none of the scalar numerical guarantees automatically: record the selected kernel's guarantee and failure policy explicitly. The five selected elementary functions are implemented for all seven families with individual audits/evidence; any further function needs its own contract.
+Keep the following limits visible while extending the package: `NFloat` square root now has an independent exact integer-root oracle across all 1:66 limb counts, MPFR truncation comparisons, native exponent limits, and concurrent-read checks (`test/nfloat_sqrt_tests.jl`); `Rational` and `Complex{Float64}` interop remain future work; shared helper factoring remains incomplete; and the portable x86_64 glibc artifact has passed local acceptance; hosted CI and public prerelease publication are complete. New bulk methods inherit none of the scalar numerical guarantees automatically: record the selected kernel's guarantee and failure policy explicitly. The five selected elementary functions are implemented for all seven families with individual audits/evidence; any further function needs its own contract.
 
 ### 9.6 M5 selected elementary functions (implemented)
 
@@ -781,7 +781,7 @@ uncertain inputs, formats through 66 nfloat limbs, failure recovery, and concurr
 adjacent Base-float test now expects explicit exp support. The inventory audits 374 symbols.
 [Measurements](../benchmark/results/elementary_inline.txt) report complete inline-call costs.
 Portable artifact acceptance is also complete; hosted CI now passes; merge/publication approval remains. Selected functions are sufficient for this milestone; further special
-functions require individually justified scope. The supplied portable artifact passed local acceptance; public merge/release publication remains the final external gate.
+functions require individually justified scope. The supplied portable artifact passed local acceptance; public prerelease publication also passed its final verification.
 
 ## 10. Verification and performance evidence
 
@@ -835,7 +835,7 @@ Use Julia threads only over independent writable destinations. Verify context be
 
 **Status:** M0–M3 and scoped M4 bulk/packed work are implemented, including `sum(abs2, v)`.
 Nfloat square-root evidence is complete. M5's five selected elementary functions are implemented
-for all seven families. Portable artifact and clean-project validation are complete for the supplied target. Hosted CI passes; public merge/release publication remains unfinished. Native matrices and further mappings require measured need; optional interoperability
+for all seven families. Portable artifact and clean-project validation are complete for the supplied target. Hosted CI and public prerelease publication are complete. Native matrices and further mappings require measured need; optional interoperability
 and shared-helper refactoring do not block the scoped numerical milestones.
 
 All seven types participate in M1 and M2. A family-specific issue may delay its completion without forcing unrelated work to stop, but the first complete release includes all seven. Do not expand the function inventory faster than it can be verified.
@@ -856,7 +856,8 @@ Documentation has its own environment. Ensure it resolves the intended wrapper a
 The [release evidence report](release_evidence.md) records fresh-project resolution, actual bundled
 installation, archive docs checks, portable-recipe fixes, and independently verified replacement
 toolchain downloads/tree hashes, accepted portable artifact, 34,151 tests, and matching ABI/symbols.
-Public merge/release publication remains outstanding. Before release, require all of the following:
+All of the following gates have evidence for v0.1.0 in the completion audit. Require the same
+evidence before each future release:
 
 - All seven types implement the documented scalar foundation and numerical guarantees.
 - Every foreign declaration resolves against supported artifacts and every mirrored layout has matching probe evidence.
@@ -903,6 +904,6 @@ Resolve these decisions at their designated milestone rather than leaving them i
 | Exact supported function/rounding/flag set | Before each operation is added | Inventory entry, source guarantee, and numerical test cases. |
 | Hash normalization and mixed-type identity | M3 — **resolved** in `src/compare.jl` and `test/compare_tests.jl`; includes canonical indeterminate balls and allowed huge-exponent hash collisions | Preserve equality/hash laws across supported mixed types and seeds. |
 | First native bulk kernels | M4a — **resolved**: contiguous `_dNb_vec_add`, N = 1–4; M4b adds `_nfloat_vec_add`/`_nfloat_vec_mul`; M4c adds arb/acb init/clear/set/add; M4d adds verified conjugating native/borrowed packed dot | Exact endpoint containment, scalar equivalence, alias/layout checks, and recorded benchmarks. |
-| Portable artifact delivery and supported platforms | x86_64 glibc Linux artifact built/audited and locally accepted; other targets unprovided | Exact archive/tree, ABI/symbol/numerical checks, installation evidence; hosted CI passes; publication still pending. |
+| Portable artifact delivery and supported platforms | x86_64 glibc Linux artifact built/audited and locally accepted; other targets unprovided | Exact archive/tree, ABI/symbol/numerical checks, installation evidence; hosted CI and public prerelease publication pass. |
 
 This sequence keeps the managed numeric interface deep: callers obtain useful arithmetic and containment behavior from a small interface, while implementation details and verification remain local to the code that owns them.

@@ -1,7 +1,7 @@
 # Release preparation evidence
 
 This report records local portable artifact acceptance and historical development evidence; public
-release publication has not occurred; hosted CI acceptance is recorded below.
+v0.1.0 prerelease publication and hosted main acceptance are complete and verified below.
 Authority: FLINT 3.7.0-dev, source `82c40b299084b92299c2d8dac464e39d6743fce4`, ABI 25;
 current local wrapper 301.690.0+1 (historical host build +0); validation uses Julia 1.13.3 on
 i9-14900K/glibc 2.43 with the baseline artifact.
@@ -26,7 +26,7 @@ the new bundle into a separate depot where that artifact was absent. Public API,
 assignment, and Serialization-extension checks passed. FLINT was not compiled. Dependency caches were
 reused, so this does not claim a completely empty-machine download test. The new portable benchmark
 baseline identifies the new tree and accuracy contracts; older host-tuned reports remain historical.
-Hosted CI now passes at ce2831e; public release publication is still pending.
+Hosted main CI passes at f3cc856 and public prerelease publication is complete (recorded below).
 
 ## Empty-depot installation follow-up
 
@@ -94,18 +94,23 @@ The eight installed rootfs/LLVM/platform/GCC artifacts were independently checke
 No checksum/audit bypass or substitution of unverified compiler bytes was used. Obtaining a
 verified toolchain does not establish that the FLINT candidate build or target tests have passed.
 
-## Hosted acceptance and remaining publication
+## Hosted main acceptance and completed publication
 
-[Draft PR #5](https://github.com/JeffreySarnoff/FlintFloats.jl/pull/5) is open. After correcting a
-job-level runner-context expression, [CI run 42962433938](https://github.com/JeffreySarnoff/FlintFloats.jl/actions/runs/42962433938)
-passes both jobs at ce2831e. Actual isolated `Pkg.test()` passes 34,151 checks on AMD EPYC,
-Julia 1.13.3/glibc 2.43, complementing the local Intel acceptance. Symbol/header ABI, checksum,
-generation and docs/doctests gates also pass. [Selected logs](evidence/hosted_ci_acceptance.txt)
-record head/job identities. An evidence-only follow-up has no code/workflow changes and skips
-redundant numerical CI, following the focused-test policy.
+[PR #5](https://github.com/JeffreySarnoff/FlintFloats.jl/pull/5) was merged with implementation history
+preserved. [Main CI](https://github.com/JeffreySarnoff/FlintFloats.jl/actions/runs/42964341337) passes both jobs at f3cc856. Actual isolated Pkg.test passes
+34,151 checks, with matching symbols/ABI, generation and docs/doctests. [Main logs](evidence/main_release_acceptance.txt)
+record exact results. The earlier PR run and workflow-expression correction remain recorded history.
 
-Prepared prerelease assets, checksums and notes are under `/tmp/flint-release-candidate`.
-Merging the draft and publishing v0.1.0 still need authorization; neither has occurred.
-The archive and hashes are real and bundled; no nonexistent remote download URL is advertised.
-Other platforms remain unprovided. Optional interoperability, extra functions/mappings, and matrix
-storage require individual future scope and evidence.
+After explicit authorization, [v0.1.0 was published as a prerelease](https://github.com/JeffreySarnoff/FlintFloats.jl/releases/tag/v0.1.0). Its tag resolves
+to `f3cc856e7a0fcd712809483c4da798178b784162`, the accepted merge commit. All four public source,
+binary, build-log and checksum assets were independently downloaded; every SHA-256 matches the
+local prepared bytes, GitHub's recorded digest, and published checksum file. [Publication evidence](evidence/prerelease_v0.1.0.json)
+records actual asset URLs, sizes, hashes and end-to-end results.
+
+The normal default-depot workspace was also updated through the bundled installer and passes
+package-load/version/artifact-identity and elementary smoke checks.
+
+The final handoff changes only documentation/checkpoints; tested code and workflow inputs are
+unchanged. Source archives retain their immutable release-commit snapshot. No numerical rerun is
+needed for this evidence-only follow-up. No required enactment/publication step remains for the
+supplied target. Other platforms and optional interoperability/functions/matrices remain future work.

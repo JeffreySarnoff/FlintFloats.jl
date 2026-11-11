@@ -1,0 +1,41 @@
+{
+  "release_url": "https://github.com/JeffreySarnoff/FlintFloats.jl/releases/tag/v0.1.0",
+  "tag": "v0.1.0",
+  "target_commit": "f3cc856e7a0fcd712809483c4da798178b784162",
+  "draft": false,
+  "prerelease": true,
+  "assets": [
+    {
+      "name": "FLINT.v301.690.0+1.build-logs.tar.gz",
+      "bytes": 33248,
+      "sha256": "28fccd451bb63db61a7db9dbe8d438bae4ea01ff282da5c75bb23f2c5f1c03b6",
+      "url": "https://github.com/JeffreySarnoff/FlintFloats.jl/releases/download/v0.1.0/FLINT.v301.690.0%2B1.build-logs.tar.gz",
+      "public_download_verified": true
+    },
+    {
+      "name": "FLINT.v301.690.0+1.x86_64-linux-gnu.tar.gz",
+      "bytes": 40814635,
+      "sha256": "71384459c4f0da6add70885117c493cab4dff67174d4e2bce926611ded9974a5",
+      "url": "https://github.com/JeffreySarnoff/FlintFloats.jl/releases/download/v0.1.0/FLINT.v301.690.0%2B1.x86_64-linux-gnu.tar.gz",
+      "public_download_verified": true
+    },
+    {
+      "name": "FlintFloats-v0.1.0-source.tar.gz",
+      "bytes": 55054114,
+      "sha256": "89dd8783a12434cf8e47ad7056cb7be91f2862381919096c11e2c6de29aef9f1",
+      "url": "https://github.com/JeffreySarnoff/FlintFloats.jl/releases/download/v0.1.0/FlintFloats-v0.1.0-source.tar.gz",
+      "public_download_verified": true
+    },
+    {
+      "name": "SHA256SUMS",
+      "bytes": 311,
+      "sha256": "67fb3a402aafe962b5a0b1ef9e3197819c9d3e18cbea86ac2985b35c9e344cfb",
+      "url": "https://github.com/JeffreySarnoff/FlintFloats.jl/releases/download/v0.1.0/SHA256SUMS",
+      "public_download_verified": true
+    }
+  ],
+  "pull_request_url": "https://github.com/JeffreySarnoff/FlintFloats.jl/pull/5",
+  "accepted_main_ci_url": "https://github.com/JeffreySarnoff/FlintFloats.jl/actions/runs/42964341337",
+  "tag_commit": "f3cc856e7a0fcd712809483c4da798178b784162",
+  "publication_date": "2026-11-11"
+}

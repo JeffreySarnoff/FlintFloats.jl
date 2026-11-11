@@ -5,6 +5,23 @@ corrections, and portable x86_64 Linux artifact acceptance. The portable bundle 
 requirement-by-requirement completion audit.
 Inspect `git log` and `git status` for subsequent changes.
 
+## Completed prerelease
+
+All required guide work for the selected numerical interface and supplied x86_64 glibc Linux
+platform is complete. [PR #5](https://github.com/JeffreySarnoff/FlintFloats.jl/pull/5) is merged,
+preserving the implementation commits. [v0.1.0 is published as a prerelease](https://github.com/JeffreySarnoff/FlintFloats.jl/releases/tag/v0.1.0)
+at `f3cc856e7a0fcd712809483c4da798178b784162` after explicit merge/publication authorization.
+
+[Main CI](https://github.com/JeffreySarnoff/FlintFloats.jl/actions/runs/42964341337) passes both jobs,
+including isolated Pkg.test (34,151 checks), symbols/ABI, generation, and docs/doctests. The tag
+resolves to that accepted commit. Source, binary, build-log, and checksum assets were downloaded
+from their public URLs and all SHA-256 values match; [publication evidence](evidence/prerelease_v0.1.0.json)
+and [main CI evidence](evidence/main_release_acceptance.txt) record exact identities.
+
+The final follow-up changes only documentation/checkpoints and does not change tested numerical,
+packaging, generation, or workflow inputs. No numerical suite is rerun for this handoff update. The normal default-depot workspace also
+installs the published portable bundle and passes its focused package-load/elementary smoke check.
+
 ## Implemented
 
 Seven public scalar types carry precision in their type:
@@ -61,7 +78,7 @@ floor is glibc 2.17 and Julia 1.13. Only x86_64 glibc Linux is supplied.
   invoked for FLINT installation. Cached dependency sources/artifacts were reused.
 - Five portable-target gate tests, 21 wrapper smoke checks, source/archive checksum checks,
   and matching downloaded GMP/MPFR headers pass. Hosted CI is configured for this portable artifact;
-  hosted CI now passes at ce2831e; public release publication remains pending.
+  hosted CI now passes at ce2831e; public prerelease publication is complete (see the completion record above).
 
 Build logs and exact download identities are in [release_evidence.md](release_evidence.md),
 [evidence/portable_build_logs.tar.gz](evidence/portable_build_logs.tar.gz), and
@@ -77,7 +94,8 @@ included in the accepted full run. Matrix and further mapping work remain condit
 ## Completion-audit follow-up
 
 The [section-by-section audit](enact_completion_audit.md) maps all fourteen guide sections and
-release checklist items to current source/evidence, keeping public publication incomplete and recording hosted acceptance below.
+release checklist items to current source/evidence. Its original external gates are now completed
+and recorded in the published-prerelease section above.
 It corrects stale guide entries about the portable recipe and legacy ABI setup. Pinned nfloat
 neg/abs implementations return GR_SUCCESS; their inventory metadata now says `gr`, with no
 binding/runtime change and unchanged generated files.
@@ -86,7 +104,7 @@ A genuinely empty depot independently downloaded registry/package/artifact depen
 the bundled portable FLINT without compilation, and passed seven-family/public API/deepcopy/optional-
 extension smoke checks. The docs project also resolves with neither main nor docs developer manifest.
 The source-archive docs navbar now has an explicit repository link. Review-branch push and a draft
-PR are authorized by the user; public release publication is not yet performed.
+PR are authorized by the user; public prerelease publication subsequently completed (recorded above).
 
 ## Current verification
 
@@ -146,10 +164,10 @@ validation steps. The current `scripts/check_abi.jl` uses installed artifact hea
 GMP/MPFR headers from `scripts/prepare_abi_headers.jl`; the legacy `test/abi/run.sh` instead expects
 an external native build tree.
 
-## Remote review and workflow validation
+## Review and workflow validation history
 
 User-authorized review branch `codex/enact-interfacing-complete` is pushed and
-[draft PR #5](https://github.com/JeffreySarnoff/FlintFloats.jl/pull/5) is open and mergeable.
+[PR #5](https://github.com/JeffreySarnoff/FlintFloats.jl/pull/5) was subsequently merged.
 The first workflow attempt (42961944810) failed validation before any jobs ran: `runner.temp`
 was used in a job-level environment, where that context is unavailable. The ABI step now declares
 that environment locally. Official actionlint 1.7.12 (SHA-verified archive) reproduced the exact
@@ -160,21 +178,15 @@ passes both jobs at `ce2831e`, including actual isolated Pkg.test (34,151 checks
 symbols, generation, and docs/doctests on an AMD EPYC hosted runner with Julia 1.13.3.
 Selected logs are in [hosted_ci_acceptance.txt](evidence/hosted_ci_acceptance.txt).
 This follow-up only records documentation/evidence; tested source/workflow inputs are unchanged,
-so it skips repeating the numerical CI suite. The PR remains draft pending merge/publication approval.
+so it skips repeating the numerical CI suite. The PR was subsequently merged and the authorized prerelease published; see the completion record above.
 
-## Next and open limits
+## Future maintenance and optional scope
 
-Local numerical, ownership, portable artifact, and clean-project installation gates are implemented
-and verified, including hosted CI. Next obtain approval to merge draft PR #5 and publish the
-prepared v0.1.0 prerelease/distribution. Neither merging nor publication has occurred. No nonexistent remote
-artifact URL or additional platform claim is supplied. The actual archive remains bundled and can
-be installed without compiling FLINT. Additional special functions, mappings, and native matrices
-need individually justified scope/evidence; they do not block the selected numerical milestones.
-
-
-Optional Rational/Complex{Float64} interoperability, packed point owners, complex dfloat/nfloat types,
-and shared helper factoring remain future work. Ball uncertainty comparisons, explicit conversions,
-parent lifetimes, and status policies must remain intact during any future extension.
+No required enactment/publication step remains. Preserve the pinned source/ABI and numerical,
+ownership, hashing, conversion, and precision contracts during future upgrades (§13 of the guide).
+The prerelease supports x86_64 glibc Linux only. Other platforms, additional functions/mappings,
+matrices, optional Rational/Complex interoperability, packed point owners, complex dfloat/nfloat
+formats, and further helper refactoring require separately justified future scope and evidence.
 
 ## Resuming implementation
 

@@ -1,0 +1,20 @@
+Main-branch prerelease acceptance
+Run: https://github.com/JeffreySarnoff/FlintFloats.jl/actions/runs/42964341337
+Merge/tag commit: f3cc856e7a0fcd712809483c4da798178b784162
+PR #5 merged preserving implementation commits.
+Conclusion: both jobs successful before publication.
+Native job: 130337952402
+
+2026-11-11T05:13:46.1971792Z julia version 1.13.3
+2026-11-11T05:13:46.5639976Z Supported bundled target: x86_64 Linux, AMD EPYC 7763 64-Core Processor, glibc 2.43.0
+2026-11-11T05:13:59.1840814Z all present
+2026-11-11T05:14:00.7952432Z Supported bundled target: x86_64 Linux, AMD EPYC 7763 64-Core Processor, glibc 2.43.0
+2026-11-11T05:14:01.8535201Z Fresh artifact-header ABI probe matches recorded layout
+2026-11-11T05:16:26.6367367Z Test Summary:  |  Pass  Total     Time
+2026-11-11T05:16:26.6367970Z FlintFloats.jl | 34151  34151  2m16.0s
+2026-11-11T05:16:26.7406446Z      Testing FlintFloats tests passed 
+2026-11-11T05:17:44.5903249Z [ Info: Doctest: running doctests.
+2026-11-11T05:17:57.1967198Z [ Info: HTMLWriter: rendering HTML pages.
+
+Published prerelease: https://github.com/JeffreySarnoff/FlintFloats.jl/releases/tag/v0.1.0
+All four public assets independently downloaded and SHA-256 checked; see prerelease_v0.1.0.json.
