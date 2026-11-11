@@ -45,6 +45,17 @@ Precision is never a mutable runtime default; `with_precision(f,bits)` passes `V
   Qualified destination and aggregate `_inexact!` methods reuse arb/acf storage. Inline values return
   by value. Failed status-returning outputs are never read.
 
+## Latest build-download continuation
+
+Base commit: `f48cd72` (complex owning-scalar assignment: 297 focused checks plus 81 adjacent
+storage checks and docs passed). Three replacement rootfs/GCC 14.2 archives were fetched directly
+from their pinned GitHub releases. Each matches the published SHA-256 and passes full gzip integrity;
+all eight installed rootfs/LLVM/platform/GCC trees independently match their recorded Git hashes.
+The retained archives are in `/tmp/flint-verified-downloads`; a small reproducibility manifest is
+committed as [evidence/portable_downloads.json](evidence/portable_downloads.json).
+Portable FLINT build/audit and target checks remain in progress; no accepted portable artifact or
+release download URL is claimed. No numerical tests were rerun for this evidence-only update.
+
 ## Latest scalar assignment continuation
 
 Owning complex `set!` was missing despite the scalar assignment contract. Both forms now use the

@@ -40,6 +40,22 @@ The corrected recipe passes version validation and verifies/extracts the source 
 Toolchain/dependency setup and the native build/audit are still in progress; no portable artifact has
 yet been accepted or substituted for the existing host build.
 
+## Verified replacement build downloads
+
+Direct downloads from the pinned JuliaPackaging/Yggdrasil GitHub release URLs replaced failed
+package-server downloads of the root filesystem and GCC 14.2.0 GNU/musl compiler components.
+All three archives match the SHA-256 values in BinaryBuilderBase 1.49.0's artifact metadata and
+pass a complete gzip decompression/CRC check. The retained files are under
+`/tmp/flint-verified-downloads`; [the verification manifest](evidence/portable_downloads.json)
+records exact URLs, hashes, tree identities, and byte sizes. These large build archives are not
+committed to the source repository.
+
+The eight installed rootfs/LLVM/platform/GCC artifacts were independently checked with
+`Pkg.Artifacts.verify_artifact`: rootfs 2026.6.10, LLVM bootstrap 23.1.1, GNU/musl platform support
+2025.8.13, and GNU/musl GCC bootstrap 14.2.0 and 4.8.5 all match their expected Git tree hashes.
+No checksum/audit bypass or substitution of unverified compiler bytes was used. Obtaining a
+verified toolchain does not establish that the FLINT candidate build or target tests have passed.
+
 ## Outstanding release gates
 
 A portable candidate still needs its complete build, binary/dependency/license audits, target ABI

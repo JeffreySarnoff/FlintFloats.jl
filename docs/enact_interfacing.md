@@ -855,7 +855,8 @@ Establish one of two explicit CI paths during development: a compatible controll
 Documentation has its own environment. Ensure it resolves the intended wrapper and run it from a clean setup; do not rely on a developer's main-project manifest. Keep expensive memory diagnostics and noisy speed comparisons in separate jobs or controlled runners. Ordinary CI should run deterministic numerical, ownership, ABI, and contract checks.
 
 The [release evidence report](release_evidence.md) records fresh-project resolution, actual bundled
-installation, archive docs checks, and portable-recipe fixes. These do not satisfy portable-target
+installation, archive docs checks, portable-recipe fixes, and independently verified replacement
+toolchain downloads/tree hashes. These do not satisfy portable-target
 certification. Before release, require all of the following:
 
 - All seven types implement the documented scalar foundation and numerical guarantees.
